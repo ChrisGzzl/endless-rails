@@ -11,7 +11,7 @@
   <main id="app">
     <header class="hud" aria-label="战斗状态">
       <div class="brand"><span class="brand-mark">◆</span><div><small>OUTLAND EXPRESS</small><strong>荒原轨道</strong></div></div>
-      <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 03</strong></div>
+      <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
     </header>
 
@@ -19,6 +19,7 @@
       <canvas id="gameCanvas" width="390" height="680"></canvas>
       <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
       <div class="health-wrap"><div class="health-label"><span>列车完整度</span><strong id="healthText">100%</strong></div><div class="health-track"><i id="healthFill"></i></div></div>
+      <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">荒原掘行者</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
       <div class="combo" id="comboText"></div>
       <div class="toast" id="toast"></div>
       <div class="touch-hint" id="touchHint">拖动青色无人机<br><b>守住列车</b></div>
@@ -33,19 +34,21 @@
 
   <section class="overlay start-screen" id="startScreen">
     <div class="poster-art" aria-hidden="true"><div class="poster-sun"></div><div class="poster-track"></div><div class="poster-train"></div><div class="poster-drone"></div></div>
-    <div class="start-copy"><p class="eyebrow">A SHORT MOBILE PROTOTYPE</p><h1>荒原轨道</h1><p class="subtitle">无人机守卫</p><p class="lede">列车不停，荒原不睡。<br>拖动无人机，护送最后一班车。</p><button class="primary-button" id="startButton">出发</button><p class="microcopy">3 个车站 · 自动射击 · 原创试玩版</p></div>
+    <div class="start-copy"><p class="eyebrow">A SHORT MOBILE PROTOTYPE · V0.2</p><h1>荒原轨道</h1><p class="subtitle">无人机守卫</p><p class="lede">列车不停，荒原不睡。<br>拖动无人机，护送最后一班车。</p><button class="primary-button" id="startButton">出发</button><p class="microcopy">5 个车站 · 双升级系统 · 原创试玩版</p></div>
   </section>
 
   <section class="overlay station-screen" id="stationScreen" hidden>
-    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span></p><h2>给列车装上<br><em>下一种可能</em></h2><p>选择一件模块，马上回到轨道。</p></div>
+    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span> / 04</p><h2>给列车装上<br><em>下一种可能</em></h2><p>飞机负责主动火力，列车负责被动生存。</p></div>
     <div class="upgrade-list" id="upgradeList"></div>
-    <div class="train-strip"><span class="train-strip__label">当前编组</span><div class="mini-train"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
+    <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
     <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
+  <script src="balance.js"></script>
+  <script src="motion.js"></script>
   <script src="game.js"></script>
 </body>
 </html>
