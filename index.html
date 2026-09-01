@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#071018">
+  <title>荒原轨道：无人机守卫</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app">
+    <header class="hud" aria-label="战斗状态">
+      <div class="brand"><span class="brand-mark">◆</span><div><small>OUTLAND EXPRESS</small><strong>荒原轨道</strong></div></div>
+      <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 03</strong></div>
+      <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
+    </header>
+
+    <section class="arena-wrap" aria-label="荒原战场">
+      <canvas id="gameCanvas" width="390" height="680"></canvas>
+      <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
+      <div class="health-wrap"><div class="health-label"><span>列车完整度</span><strong id="healthText">100%</strong></div><div class="health-track"><i id="healthFill"></i></div></div>
+      <div class="combo" id="comboText"></div>
+      <div class="toast" id="toast"></div>
+      <div class="touch-hint" id="touchHint">拖动青色无人机<br><b>守住列车</b></div>
+    </section>
+
+    <footer class="controls">
+      <div class="run-readout"><span id="phaseLabel">行驶中</span><strong id="timerValue">22.0</strong><small>秒</small></div>
+      <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
+      <div class="drone-readout"><span>无人机</span><strong id="droneLevel">MK-I</strong><small>自动火力</small></div>
+    </footer>
+  </main>
+
+  <section class="overlay start-screen" id="startScreen">
+    <div class="poster-art" aria-hidden="true"><div class="poster-sun"></div><div class="poster-track"></div><div class="poster-train"></div><div class="poster-drone"></div></div>
+    <div class="start-copy"><p class="eyebrow">A SHORT MOBILE PROTOTYPE</p><h1>荒原轨道</h1><p class="subtitle">无人机守卫</p><p class="lede">列车不停，荒原不睡。<br>拖动无人机，护送最后一班车。</p><button class="primary-button" id="startButton">出发</button><p class="microcopy">3 个车站 · 自动射击 · 原创试玩版</p></div>
+  </section>
+
+  <section class="overlay station-screen" id="stationScreen" hidden>
+    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span></p><h2>给列车装上<br><em>下一种可能</em></h2><p>选择一件模块，马上回到轨道。</p></div>
+    <div class="upgrade-list" id="upgradeList"></div>
+    <div class="train-strip"><span class="train-strip__label">当前编组</span><div class="mini-train"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
+    <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
+  </section>
+
+  <section class="overlay result-screen" id="resultScreen" hidden>
+    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><button class="primary-button" id="restartButton">再跑一趟</button></section>
+
+  <script src="game.js"></script>
+</body>
+</html>
