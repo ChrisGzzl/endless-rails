@@ -13,6 +13,10 @@
       <div class="brand"><span class="brand-mark">◆</span><div><small>OUTLAND EXPRESS</small><strong>荒原轨道</strong></div></div>
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
+      <div class="progress-strip" aria-label="路线与经验进度">
+        <div class="progress-row"><span id="routeProgressLabel">距下一站 20.0 km</span><i><b id="routeProgressFill"></b></i></div>
+        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">Lv.1 · 0 / 10</span><i><b id="experienceProgressFill"></b></i></div>
+      </div>
     </header>
 
     <section class="arena-wrap" aria-label="荒原战场">
@@ -44,11 +48,17 @@
     <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
   </section>
 
+  <section class="overlay levelup-screen" id="levelUpScreen" hidden>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级</p><h2>选择你的火力</h2><p>列车仍在冲刺，升级后继续清场。</p></div>
+    <div class="upgrade-list" id="levelUpList"></div>
+  </section>
+
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
   <script src="balance.js"></script>
   <script src="motion.js"></script>
+  <script src="progression.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

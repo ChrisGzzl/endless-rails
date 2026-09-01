@@ -9,6 +9,7 @@ const ids = [
   "droneLevel", "pulseButton", "pulseCooldown", "objectiveText", "comboText", "toast", "touchHint",
   "startScreen", "stationScreen", "stationTitle", "upgradeList", "continueButton", "resultScreen",
   "bossWrap", "bossText", "bossFill", "trainLengthLabel", "miniTrain", "startButton", "restartButton",
+  "routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen", "levelUpList",
 ];
 
 function createElement(id) {
@@ -48,6 +49,7 @@ const sandbox = {
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(__dirname + "/balance.js", "utf8"), sandbox);
 vm.runInContext(fs.readFileSync(__dirname + "/motion.js", "utf8"), sandbox);
+vm.runInContext(fs.readFileSync(__dirname + "/progression.js", "utf8"), sandbox);
 vm.runInContext(fs.readFileSync(__dirname + "/game.js", "utf8"), sandbox);
 
 let clickError = null;
@@ -60,5 +62,10 @@ try {
 assert.equal(clickError, null, "clicking start must not fail when the optional motion script is unavailable");
 assert.equal(elements.startScreen.hidden, true, "clicking start must hide the start screen");
 assert.equal(elements.phaseLabel.textContent, "行驶中", "clicking start must enter combat");
+
+const html = fs.readFileSync(__dirname + "/index.html", "utf8");
+for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {
+  assert.match(html, new RegExp(`id=\\"${id}\\"`), `${id} must exist in the HUD`);
+}
 
 console.log("startup test passed");
