@@ -25,6 +25,39 @@ function stepChaser(entity, dt, center, driftSpeed) {
   };
 }
 
-const motionApi = { FORWARD, worldDrift, spawnPoint, stepChaser };
+const LAYER_MULTIPLIERS = Object.freeze({ near: 1, mid: 0.48, far: 0.16 });
+
+function scrollOffset(time, speed, multiplier = 1) {
+  return time * speed * multiplier;
+}
+
+function hashSeed(seed, index) {
+  let hash = 2166136261;
+  const text = `${seed}:${index}`;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967296;
+}
+
+function wrap(value, size) {
+  return ((value % size) + size) % size;
+}
+
+function projectLandmark(seed, index, width, height, offset, layer = "near") {
+  const multiplier = typeof layer === "number" ? layer : (LAYER_MULTIPLIERS[layer] ?? 1);
+  const xSeed = hashSeed(seed, index * 2);
+  const ySeed = hashSeed(seed, index * 2 + 1);
+  const distance = scrollOffset(offset, 1, multiplier);
+  return {
+    x: wrap(xSeed * width - FORWARD.x * distance, width),
+    y: wrap(ySeed * height - FORWARD.y * distance, height),
+    layer,
+    multiplier,
+  };
+}
+
+const motionApi = { FORWARD, worldDrift, spawnPoint, stepChaser, scrollOffset, projectLandmark };
 if (typeof module !== "undefined" && module.exports) module.exports = motionApi;
 if (typeof window !== "undefined") window.EndlessRailsMotion = motionApi;
