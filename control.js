@@ -10,15 +10,13 @@ function relativeCommand(point, train, bounds, radius) {
   const dx = point.x - train.x;
   const dy = point.y - train.y;
   const reach = Math.max(0, Number(radius) || 0);
-  const xSoftLimit = reach * 0.62;
-  const ySoftLimit = reach * 0.4053030303030303;
-  const xOffset = dx ? (dx / (Math.abs(dx) + xSoftLimit)) * reach : 0;
-  const yOffset = dy ? (dy / (Math.abs(dy) + ySoftLimit)) * reach : 0;
   const distance = Math.hypot(dx, dy);
-  const strength = distance ? Math.min(1, distance / (distance + Math.min(xSoftLimit, ySoftLimit))) : 0;
+  const strength = reach && distance ? Math.min(1, distance / reach) : 0;
+  const scale = distance ? Math.min(1, reach / distance) : 0;
   return {
-    x: Math.round(clamp(train.x + xOffset, bounds.left, bounds.right)),
-    y: Math.round(clamp(train.y + yOffset, bounds.top, bounds.bottom)),
+    x: clamp(train.x + dx * scale, bounds.left, bounds.right),
+    y: clamp(train.y + dy * scale, bounds.top, bounds.bottom),
+    angle: distance ? Math.atan2(dy, dx) : 0,
     strength,
   };
 }
@@ -36,9 +34,10 @@ function createCommandRing(target, life = DEFAULT_LIFE) {
 }
 
 function advanceCommandRing(ring, dt) {
-  if (!ring || ring.life <= 0) return false;
-  ring.life = Math.max(0, ring.life - Math.max(0, dt));
-  return ring.life > 0;
+  if (!ring || ring.life <= 0) return null;
+  const life = Math.max(0, ring.life - Math.max(0, Number(dt) || 0));
+  if (life <= 0) return null;
+  return { target: { x: ring.target.x, y: ring.target.y }, life };
 }
 
 const controlApi = { relativeCommand, directCommand, createCommandRing, advanceCommandRing };
