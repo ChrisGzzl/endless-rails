@@ -1,0 +1,11 @@
+"use strict";
+const assert = require("node:assert/strict");
+const records = require("./run-record.js");
+const summary = records.buildRunSummary({ station: 3, kills: 42, scrap: 99, bestCombo: 11, activeEvent: { id: "dust" }, activeContract: { id: "fragile" }, modules: { rapid: 2 }, coreStacks: { arc: 1 }, outcome: "lost" });
+const record = records.mergeRecord(records.emptyRecord(), summary);
+assert.equal(record.bestStations, 3);
+assert.equal(record.runs, 1);
+assert.deepEqual(record.latest.modules, { rapid: 2 });
+assert.equal(records.saveRecord({ setItem() { throw new Error("disabled"); } }, record), false);
+assert.deepEqual(records.loadRecord({ getItem() { return "not json"; } }), records.emptyRecord());
+console.log("run record tests passed");

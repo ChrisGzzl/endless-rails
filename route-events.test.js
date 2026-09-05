@@ -1,0 +1,14 @@
+"use strict";
+const assert = require("node:assert/strict");
+const events = require("./route-events.js");
+const picks = events.pickRouteEvents(1234, 2);
+assert.equal(picks.length, 3);
+assert.equal(new Set(picks.map(event => event.id)).size, 3);
+assert.deepEqual(events.pickRouteEvents(1234, 2), picks);
+assert.equal(events.pickContracts(1234).length, 3);
+const base = { routeDistance: 20, enemySpeed: 1, enemyHp: 1, eliteChance: 0.07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1 };
+const modifiers = events.applyRouteModifiers(base, picks[0], events.pickContracts(1234)[0]);
+assert.ok(modifiers.routeDistance > 0);
+assert.notStrictEqual(modifiers, base);
+assert.equal(base.routeDistance, 20);
+console.log("route events tests passed");
