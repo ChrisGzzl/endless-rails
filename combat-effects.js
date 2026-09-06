@@ -22,11 +22,35 @@ const OWNERSHIP = Object.freeze({
   overclock: "team-utility",
 });
 
+const DRONE_TYPES = Object.freeze([
+  {id:"gun", module:"rapid", name:"机枪机", color:"#65e5ff", icon:"ϟ"},
+  {id:"missile", module:"missile", name:"导弹机", color:"#ff9c58", icon:"➤"},
+  {id:"incendiary", module:"incendiary", name:"燃烧机", color:"#ffcf5c", icon:"♨"},
+  {id:"ricochet", module:"ricochet", name:"弹跳机", color:"#d6a0ff", icon:"◉"},
+  {id:"blades", module:"blades", name:"刀刃机", color:"#a5f1ff", icon:"✺"},
+  {id:"chain", module:"chain", name:"电弧机", color:"#8b9dff", icon:"∿"},
+  {id:"scatter", module:"scatter", name:"散射机", color:"#ff83b7", icon:"✣"},
+  {id:"piercing", module:"piercing", name:"穿透机", color:"#f4f8ff", icon:"↠"},
+]);
+function swarmRoster(modules={}) {
+  const fleet=DRONE_TYPES.flatMap((type,slot)=>type.id==="gun"||moduleLevel(modules,type.module)>0
+    ? [{...type,slot,level:type.id==="gun"?1+moduleLevel(modules,"rapid"):moduleLevel(modules,type.module)}] : []);
+  for(let i=0;i<Math.min(3,moduleLevel(modules,"wingman"));i++)fleet.push({...DRONE_TYPES[0],id:"escort"+i,slot:8+i,level:1,name:"机枪僚机"});
+  return fleet;
+}
+function formationPosition(center, slot, time, width, height) {
+  const radius=slot<8?64:92, angle=Math.PI/2+(slot<8?slot*Math.PI/4:(slot-8)*Math.PI*2/3)+Math.sin(time*.5)*.08;
+  // Move the formation inward near edges instead of stacking every follower on the boundary.
+  const cx=Math.max(108,Math.min(width-108,center.x)),cy=Math.max(108,Math.min(height-108,center.y));
+  return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
+}
+
 function moduleLevel(map, id) {
   return Math.max(0, Number(map?.[id]) || 0);
 }
 
 function weaponOwnership(id) {
+  if(DRONE_TYPES.some(type=>type.module===id))return "escort-only";
   return OWNERSHIP[id] || "main-only";
 }
 
@@ -100,6 +124,9 @@ function applyAreaDamage(targets, center, radius, damage) {
 }
 
 const combatEffects = {
+  DRONE_TYPES,
+  swarmRoster,
+  formationPosition,
   ESCORT_BASE_DAMAGE_RATIO: COMBAT_ESCORT_BASE_DAMAGE_RATIO,
   ESCORT_INTERVAL_MULTIPLIER: COMBAT_ESCORT_INTERVAL_MULTIPLIER,
   ESCORT_DPS_CAP_RATIO: COMBAT_ESCORT_DPS_CAP_RATIO,

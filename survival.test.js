@@ -14,15 +14,15 @@ run('chooseLevelUp(experiencePool[1]);chooseLevelUp(experiencePool[2]);');
 assert.equal(run('state.mode'),"combat");
 
 // Each new weapon has distinct damage / movement behavior.
-run('state.enemies=[];state.boss=null;state.modules={blades:1};state.visualTime=0;state.weaponClocks={};state.drone.x=180;state.drone.y=260;state.enemies.push({x:238,y:260,r:13,hp:10,maxHp:10,delay:0});updateArsenal(.1);');
+run('state.enemies=[];state.boss=null;state.swarm=[];state.modules={blades:1};state.visualTime=0;state.weaponClocks={gun:Infinity};state.drone.x=180;state.drone.y=260;state.enemies.push({x:220,y:260,r:9,hp:10,maxHp:10,delay:0});updateArsenal(.1);');
 assert.ok(run('state.enemies[0].hp')<10,"orbiting blade cuts an adjacent target");
 run('state.modules={incendiary:1};state.weaponClocks={};state.zones=[];updateArsenal(.1);');
 assert.equal(run('state.zones.length'),1);
 const before=run('state.enemies[0].hp');
 run('updateArsenal(.65);updateArsenal(.4);');
 assert.ok(run('state.enemies[0].hp')<before,"grenade lands and burns without a bullet collision");
-run('state.modules={ricochet:1};state.weaponClocks={};state.shots=[];updateArsenal(.1);state.shots[0].x=389;state.shots[0].vx=270;updateShots(.1);');
-assert.ok(run('state.shots[0].vx')<0,"energy ball bounces from the wall");
+run('state.modules={ricochet:1};state.weaponClocks={gun:Infinity};state.shots=[];updateArsenal(.1);state.shots[0].x=389;state.shots[0].vx=270;updateShots(.1);');
+assert.ok(run('state.shots.find(s=>s.bounce).vx')<0,"energy ball bounces from the wall");
 run('state.modules={missile:1};state.shots=[];fireMissile();state.enemies[0].y+=100;updateShots(.1);');
 assert.ok(run('state.shots[0].vy')>0,"missile steers towards moving target");
 run('state.enemies=[{x:200,y:260,r:13,hp:10,maxHp:10,delay:0},{x:235,y:260,r:13,hp:10,maxHp:10,delay:0}];state.shots=[{x:200,y:260,vx:0,vy:0,life:2,missile:true,damage:4,color:"#fff"}];updateShots(.001);');
@@ -50,7 +50,7 @@ assert.equal(run('state.routeElapsed'),0);
 assert.ok(run('state.spawnClock')>1);
 
 // Final victory waits for the same protected arrival sequence.
-run('state.boss={dead:true};startDocking(true);for(let i=0;i<220;i++)update(1/60);');
+run('state.boss={dead:true};startDocking(true);for(let i=0;i<650;i++)update(1/60);');
 assert.equal(run('state.mode'),"result");
 assert.equal(run('state.outcome'),"won");
 
@@ -66,4 +66,3 @@ for(let seed=1;seed<=12;seed++){
  openings.push(result);
 }
 console.log("survival tests passed",JSON.stringify(openings));
-

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css??v=20260906-survival">
+  <link rel="stylesheet" href="styles.css??v=20260906-swarm">
 </head>
 <body>
   <main id="app">
@@ -36,7 +36,7 @@
       <div class="movement-readout"><span>无人机移速</span><strong id="moveSpeedValue">180 px/s</strong><small>滑动 / 方向键</small></div>
       <div class="control-readouts">
         <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">20.0</strong><small>秒 / 下一站</small></div>
-        <div class="drone-readout"><span>无人机</span><strong id="droneLevel">MK-I</strong></div>
+        <div class="drone-readout"><span>蜂群</span><strong id="droneLevel">2 架</strong></div>
       </div>
       <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
     </footer>
@@ -66,21 +66,21 @@
   <section class="overlay choice-screen" id="eventScreen" hidden><div class="station-heading"><p class="eyebrow">路线事件</p><h2>选择前方路线</h2><p>路线会改变地面、敌群和掉落。</p></div><div class="upgrade-list" id="eventList"></div></section>
 
   <section class="overlay levelup-screen" id="levelUpScreen" hidden>
-    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组合你的火力</h2><p>战斗已暂停。选择武器，升级后继续护送。</p></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>战斗已暂停。选择武器，升级后继续护送。</p></div>
     <div class="upgrade-list" id="levelUpList"></div>
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
-  <script src="balance.js?v=20260906-survival"></script>
-  <script src="motion.js?v=20260906-survival"></script>
-  <script src="progression.js?v=20260906-survival"></script>
-  <script src="combat-effects.js?v=20260906-survival"></script>
-  <script src="control.js??v=20260906-survival"></script>
-  <script src="route-events.js?v=20260906-survival"></script>
-  <script src="run-record.js?v=20260906-survival"></script>
-  <script src="renderer.js??v=20260906-survival"></script>
-  <script src="game.js??v=20260906-survival"></script>
+  <script src="balance.js?v=20260906-swarm"></script>
+  <script src="motion.js?v=20260906-swarm"></script>
+  <script src="progression.js?v=20260906-swarm"></script>
+  <script src="combat-effects.js?v=20260906-swarm"></script>
+  <script src="control.js??v=20260906-swarm"></script>
+  <script src="route-events.js?v=20260906-swarm"></script>
+  <script src="run-record.js?v=20260906-swarm"></script>
+  <script src="renderer.js??v=20260906-swarm"></script>
+  <script src="game.js??v=20260906-swarm"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 "use strict";
-module.exports = function createGame() {
+module.exports = function createGame({context} = {}) {
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -34,7 +34,9 @@ function createElement(id) {
     releasePointerCapture() { this.capturedPointer = null; },
     getBoundingClientRect() { return { left: 0, top: 0, width: 390, height: 680 }; },
     getContext() {
-      return new Proxy({}, { get: (_target, property) => {
+      if(context)return context;
+      return new Proxy({}, { get: (target, property) => {
+        if(property in target)return target[property];
         if (property === "createLinearGradient" || property === "createRadialGradient") return () => ({ addColorStop() {} });
         return () => {};
       } });

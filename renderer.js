@@ -40,11 +40,11 @@ function drawBackground() {
     terrainPaint.set(index, paint);
   }
   ctx.fillStyle = terrainPaint.get(index); ctx.fillRect(0, 0, W, H);
-  const offset = (state.visualTime || 0) * WORLD_SPEED;
+  const offset = state.worldDistance;
   const seedShift = (state.runSeed % 997) / 997;
   for (let i = 0; i < terrainSeeds.length; i++) {
     const seed = terrainSeeds[i];
-    const speed = i < 12 ? .35 : .85;
+    const speed = 1;
     const x = (((seed.x + seedShift) * (W + 140) - motion.FORWARD.x * offset * speed) % (W + 140) + W + 140) % (W + 140) - 70;
     const y = (((seed.y + seedShift * .7) * (H + 140) - motion.FORWARD.y * offset * speed) % (H + 140) + H + 140) % (H + 140) - 70;
     ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(seed.angle);
@@ -77,7 +77,7 @@ function drawRails() {
   const nx = -fy, ny = fx, length = balance.RAIL_HALF_LENGTH;
   const track = (offset, color, width) => line(state.train.x + nx * offset - fx * length, state.train.y + ny * offset - fy * length, state.train.x + nx * offset + fx * length, state.train.y + ny * offset + fy * length, color, width);
   track(0, "#161d1866", 77); track(0, "#33372c", 63); track(0, "#65604455", 51);
-  const scroll = (state.visualTime || 0) * WORLD_SPEED * 2.6 % 26;
+  const scroll = state.worldDistance % 26;
   for (let t = -length - scroll; t < length; t += 26) {
     const x = state.train.x + fx * t, y = state.train.y + fy * t;
     line(x - nx * 27 + 1, y - ny * 27 + 3, x + nx * 27 + 1, y + ny * 27 + 3, "#151e19", 7);
@@ -137,27 +137,34 @@ function drawTrain() {
   }
 }
 function drawZombie(e, boss=false) {
-  ctx.save();ctx.translate(e.x,e.y);
-  ctx.rotate(Math.atan2(state.train.y-e.y,state.train.x-e.x));
-  const r=e.r, gait=Math.sin(state.visualTime*11+e.hue*9)*4;
-  const skin=e.hit>.4?"#ffffff":boss?"#d680b9":e.elite?"#d0ff52":"#91ed4c";
-  ctx.fillStyle="#100d1b80";ctx.beginPath();ctx.ellipse(3,5,r*1.25,r,0,0,TAU);ctx.fill();
-  // Human silhouette: two shambling legs, torn torso, reaching arms and bald head.
-  line(-r*.4,-r*.4,-r-5,-r*.45+gait,"#241b35",7);
-  line(-r*.4,r*.4,-r-5,r*.45-gait,"#241b35",7);
-  line(-r-5,-r*.45+gait,-r-8,-r*.45+gait,"#d9d4da",4);
-  line(-r-5,r*.45-gait,-r-8,r*.45-gait,"#d9d4da",4);
-  line(0,-r*.55,r*.8,-r*.9+gait*.4,skin,boss?11:6);
-  line(0,r*.55,r*.9,r*.85-gait*.4,skin,boss?11:6);
-  shape([[-r*.8,-r*.6],[r*.1,-r*.72],[r*.5,0],[r*.1,r*.72],[-r*.65,r*.5],[-r*.4,0]],boss?"#67345c":"#633a75","#160f25",2);
-  ctx.fillStyle=skin;ctx.beginPath();ctx.arc(r*.55,0,r*.46,0,TAU);ctx.fill();
-  ctx.strokeStyle="#1b142a";ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle="#ff426c";ctx.fillRect(r*.75,-r*.27,3,3);ctx.fillRect(r*.75,r*.1,3,3);
-  line(r*.84,-2,r*.84,2,"#271324",2);
-  if(e.elite||boss) {
+  const phase=state.visualTime*(7+(e.speed||60)*.045)+(e.hue||0)*TAU;
+  const stride=Math.sin(phase),sway=Math.sin(phase*.5)*.08,r=e.r;
+  ctx.save();ctx.translate(e.x,e.y);ctx.rotate(Math.atan2(state.train.y-e.y,state.train.x-e.x)+sway);
+  const skin=e.hit>.4?"#ffffff":boss?"#d680b9":e.elite?"#d0ff52":"#91dc5b";
+  ctx.fillStyle="#100d1b80";ctx.beginPath();ctx.ellipse(2,3,r*1.2,r*.8,0,0,TAU);ctx.fill();
+  // Two articulated, alternating steps; hunched shoulders and loose reaching hands.
+  for(const side of [-1,1]){
+    const step=stride*side,hipY=side*r*.31,kneeX=-r*.68+step*r*.18;
+    const footX=-r*1.22+step*r*.28,footY=side*r*.44;
+    line(-r*.28,hipY,kneeX,side*r*.38,"#37253f",r*.37);
+    line(kneeX,side*r*.38,footX,footY,"#251e31",r*.3);
+    line(footX,footY,footX+r*.2,footY,"#b9b2b9",r*.26);
+    const elbowX=r*.24-step*r*.12,handX=r*.84-step*r*.1,handY=side*r*.74;
+    line(0,side*r*.45,elbowX,side*r*.8,skin,r*.32);
+    line(elbowX,side*r*.8,handX,handY,skin,r*.24);
+    line(handX,handY,handX+r*.2,handY-side*r*.08,"#c2f18d",r*.16);
+  }
+  shape([[-r*.6,-r*.42],[r*.15,-r*.58],[r*.45,0],[r*.12,r*.52],[-r*.58,r*.4],[-r*.4,0]],boss?"#67345c":"#714775","#1c1428",1.5);
+  line(-r*.15,-r*.37,r*.1,r*.24,"#ac6d93",1);
+  const bob=Math.abs(stride)*r*.06;
+  ctx.fillStyle=skin;ctx.beginPath();ctx.ellipse(r*.55+bob,0,r*.37,r*.34,0,0,TAU);ctx.fill();
+  ctx.strokeStyle="#213221";ctx.lineWidth=1.2;ctx.stroke();
+  ctx.fillStyle="#ff426c";ctx.fillRect(r*.72,-r*.2,2,2);ctx.fillRect(r*.72,r*.08,2,2);
+  line(r*.87,-r*.1,r*.87,r*.1,"#302130",1);
+  if(e.elite||boss){
     ctx.fillStyle="#e3ff87";
-    for(const [x,y] of [[-5,-6],[-8,4],[0,8]]){ctx.beginPath();ctx.arc(x,y,boss?5:3,0,TAU);ctx.fill();}
-    line(-r*.5,-r*.7,0,-r*.85,"#fc4778",3);
+    for(const [x,y] of [[-.35,-.32],[-.3,.25],[.12,.32]]){ctx.beginPath();ctx.arc(x*r,y*r,r*.14,0,TAU);ctx.fill();}
+    line(-r*.45,-r*.5,0,-r*.65,"#fc4778",2);
   }
   ctx.restore();
 }
@@ -183,7 +190,8 @@ function droneSprite(x, y, scale, color) {
     line(side * 3, front * 5 - 1, side * 15, front * 11 - 1, "#b3be9f", 2);
     ctx.fillStyle = "#16332d"; ctx.beginPath(); ctx.ellipse(side * 16, front * 12, 7, 5, 0, 0, TAU); ctx.fill();
     ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke();
-    line(side * 16 - 5, front * 12, side * 16 + 5, front * 12, "#c9e2c380", 1);
+    const spin=state.visualTime*35+side+front,rx=Math.cos(spin)*6,ry=Math.sin(spin)*4;
+    line(side*16-rx,front*12-ry,side*16+rx,front*12+ry,"#e5f8ffbb",1.5);
     ctx.fillStyle = "#e1e5be"; ctx.fillRect(side * 16 - 1, front * 12 - 1, 2, 2);
   }
   shape([[-6, -12], [5, -12], [9, 4], [4, 12], [-5, 12], [-9, 4]], "#f3fcff", "#123b62", 2);
@@ -192,13 +200,54 @@ function droneSprite(x, y, scale, color) {
   line(-3, 7, 3, 7, "#716f4e", 2);
   glow(0, -3, 17, "#99ead733"); ctx.restore();
 }
+function drawSpecialist(drone) {
+  const kind=drone.id.startsWith("escort")?"gun":drone.id;
+  const scale=.69+Math.min(3,drone.level-1)*.035;
+  ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(drone.angle+Math.PI/2);
+  droneSprite(0,0,scale,drone.color);
+  ctx.scale(scale,scale);
+  ctx.fillStyle=drone.color;
+  if(kind==="missile") {
+    for(const side of [-1,1]){
+      ctx.fillStyle="#334450";ctx.fillRect(side*10-4,-14,8,23);
+      shape([[side*10-3,-13],[side*10,-20],[side*10+3,-13]],drone.color);
+      line(side*10,-10,side*10,5,"#effaff",2);
+    }
+  }else if(kind==="incendiary"){
+    ctx.fillStyle="#674628";ctx.fillRect(-10,-5,20,14);
+    ctx.fillStyle=drone.color;ctx.beginPath();ctx.arc(0,1,7,0,TAU);ctx.fill();
+    line(-4,-12,4,-12,"#ff7948",4);
+  }else if(kind==="ricochet"){
+    glow(0,-5,20,"#ba75ff66");ctx.strokeStyle=drone.color;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(0,-5,9,0,TAU);ctx.stroke();
+  }else if(kind==="blades"){
+    ctx.strokeStyle=drone.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,20,0,TAU);ctx.stroke();
+    shape([[-22,-4],[-29,5],[-16,4]],"#effcff");shape([[22,4],[29,-5],[16,-4]],"#effcff");
+  }else if(kind==="chain"){
+    line(-8,0,-8,-22,drone.color,3);line(8,0,8,-22,drone.color,3);
+    line(-8,-22,8,-22,"#e2eaff",1);
+  }else{
+    const barrels=kind==="scatter"?[-9,0,9]:[0];
+    for(const x of barrels)line(x,-6,x,kind==="piercing"?-29:-21,drone.color,3);
+  }
+  // Hardware tier marks remain visible between attacks.
+  for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=drone.color;ctx.fillRect(-7+i*6,11,3,2);}
+  if(drone.flash>0){glow(0,-24,17,drone.color+"88");shape([[-4,-23],[0,-34],[4,-23]],"#ffffff");}
+  ctx.restore();
+}
 function drawDrone() {
-  const time = state.visualTime || 0;
-  for (const wingman of effects.wingmanPositions(state.drone, level("wingman"), state.railClock)) droneSprite(wingman.x, wingman.y, .58, "#ecc17b");
-  ctx.save(); ctx.translate(state.drone.x, state.drone.y);
-  ctx.strokeStyle = "#50dfff99"; ctx.lineWidth = 1;
-  ctx.setLineDash([5, 10]); ctx.beginPath(); ctx.arc(0, 0, 29, 0, TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
-  droneSprite(state.drone.x, state.drone.y + Math.sin(time * 3) * 1.5, 1, "#50dfff");
+  for(const specialist of state.swarm)drawSpecialist(specialist);
+  const x=state.drone.x,y=state.drone.y;
+  glow(x,y,46,"#37bfff35");
+  ctx.strokeStyle="#63dfff";ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(x,y,34,0,TAU);ctx.stroke();
+  for(const side of [-1,1]){
+    line(x+side*39,y-9,x+side*44,y,"#ffffff",2.5);
+    line(x+side*44,y,x+side*39,y+9,"#ffffff",2.5);
+  }
+  droneSprite(x,y,1.38,"#43d8ff");
+  ctx.fillStyle="#f3fdff";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
+  ctx.fillText("主控",x,Math.min(H-7,y+47));
 }
 function drawShots() {
   for (const shot of state.shots) {

@@ -22,11 +22,11 @@ Route one has no elites. Later routes gradually raise elite probability and move
 - Chain arc: visible link to a second nearby enemy.
 - Station volatile protocol: kills trigger local explosions; secondary explosions do not recurse.
 
-Each level offers three choices and includes an unlearned trajectory weapon while one is available. Drone movement remains the floating, analog, speed-based joystick (180 logical px/s).
+Each level offers three choices and includes an unlearned aircraft type while one is available. Drone movement remains the floating, analog, speed-based joystick (180 logical px/s).
 
 ## Station flow
 
-The station approaches in the final seven seconds. Entering its defense zone stops spawning and disables player input. Four visible turrets fire beams and destroy pursuers over time while the train slows to a halt. Only after the 3.4-second sequence ends and no pursuers remain does the station selection open. Station kills do not award experience, preventing a string of combat upgrade overlays interrupting arrival.
+The station approaches in the final seven seconds. Entering its defense zone stops spawning and disables player input. Four visible turrets fire beams and destroy pursuers over time while the train slows to a halt. Only after braking finishes and no pursuers remain does the station selection open. Station kills do not award experience, preventing a string of combat upgrade overlays interrupting arrival.
 
 Every intermediate station repairs the train and offers three free major upgrades. Scrap can reroll the offers once; zero scrap never blocks departure. Reroll clears any previous selection. The choice overlays use viewport-sized grids and three cards with compact short-screen styling.
 
@@ -42,3 +42,9 @@ Every intermediate station repairs the train and offers three free major upgrade
 Run `node --test endless-rails/*.test.js`. Regression coverage includes opening pacing over 12 deterministic seeds, distinct weapon damage/paths, queued upgrades, turret clearing before selection, free departure, final arrival, and joystick behavior.
 
 Genre inspiration: [Vampire Survivors developer page](https://poncle.itch.io/vampire-survivors), [Survivor.io weapon roles](https://www.bluestacks.com/blog/game-guides/survivor-io/sio-skills-evolution-guide-en.html). Values above are designed for this short train-escort game, not copied from either title. Opening simulations are an initial balance check, not a substitute for player feedback.
+
+## Specialist swarm and ground movement
+
+The player controls a large, white/cyan command drone. A machine-gun aircraft starts in formation; missiles, incendiary grenades, ricochet balls, orbiting blades, chain lightning, scatter fire and piercing fire each unlock their own specialist. Weapon origins and rendering use the same persistent aircraft positions. Upgrading an existing type increases its weapon level and hull tier marks instead of duplicating its damage on the command craft. Up to three extra machine-gun escorts can join. Formation slots remain distinct near edges and followers have bounded movement speed.
+
+Ground features, railway sleepers, ground fire, core drops and station braking use a single integrated world-distance value. Burning areas stay attached to their landing site and leave the screen with the ground; moving the command drone cannot move them. The final station has a longer braking approach because it starts farther away. Combat animations use a separate clock. Small zombies have alternating jointed steps, shoulder sway and reaching hands; aircraft have spinning rotors and type-specific firing flashes.
