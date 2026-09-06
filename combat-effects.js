@@ -17,6 +17,7 @@ const OWNERSHIP = Object.freeze({
   repair: "train-only",
   shield: "train-only",
   cargo: "team-utility",
+  volatile: "team-utility",
   magnet: "team-utility",
   overclock: "team-utility",
 });

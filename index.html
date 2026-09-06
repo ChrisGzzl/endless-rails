@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260906-floating">
+  <link rel="stylesheet" href="styles.css??v=20260906-survival">
 </head>
 <body>
   <main id="app">
@@ -14,8 +14,8 @@
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
       <div class="progress-strip" aria-label="路线与经验进度">
-        <div class="progress-row"><span id="routeProgressLabel">距下一站 20.0 km</span><i><b id="routeProgressFill"></b></i></div>
-        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">Lv.1 · 0 / 10</span><i><b id="experienceProgressFill"></b></i></div>
+        <div class="progress-row"><span id="routeProgressLabel">距下一站 48.0 s</span><i><b id="routeProgressFill"></b></i></div>
+        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">Lv.1 · 0 / 4</span><i><b id="experienceProgressFill"></b></i></div>
       </div>
     </header>
 
@@ -26,7 +26,7 @@
       <div class="command-ring" id="commandRing" aria-hidden="true"></div>
       <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
       <div class="health-wrap"><div class="health-label"><span>列车完整度</span><strong id="healthText">100%</strong></div><div class="health-track"><i id="healthFill"></i></div></div>
-      <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">荒原掘行者</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
+      <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">感染巨兽</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
       <div class="combo" id="comboText"></div>
       <div class="toast" id="toast"></div>
       <div class="touch-hint" id="touchHint">按住战场任意位置，滑动移动<br><b>浮动摇杆 · 松手停止 · 自动开火</b></div>
@@ -55,7 +55,7 @@
   </section>
 
   <section class="overlay station-screen" id="stationScreen" hidden>
-    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span> / 04</p><h2>整备列车<em>继续向前</em></h2><p>飞机负责主动火力，列车负责被动生存。</p></div>
+    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>防卫炮台已清场 · 免费选择一项 · 完整度已修复</p></div>
     <div class="upgrade-list" id="upgradeList"></div>
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
@@ -66,21 +66,21 @@
   <section class="overlay choice-screen" id="eventScreen" hidden><div class="station-heading"><p class="eyebrow">路线事件</p><h2>选择前方路线</h2><p>路线会改变地面、敌群和掉落。</p></div><div class="upgrade-list" id="eventList"></div></section>
 
   <section class="overlay levelup-screen" id="levelUpScreen" hidden>
-    <div class="levelup-heading"><p class="eyebrow">战斗升级</p><h2>火力升级</h2><p>列车仍在冲刺，升级后继续清场。</p></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组合你的火力</h2><p>战斗已暂停。选择武器，升级后继续护送。</p></div>
     <div class="upgrade-list" id="levelUpList"></div>
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
-  <script src="balance.js"></script>
-  <script src="motion.js"></script>
-  <script src="progression.js"></script>
-  <script src="combat-effects.js"></script>
-  <script src="control.js?v=20260906-floating"></script>
-  <script src="route-events.js"></script>
-  <script src="run-record.js"></script>
-  <script src="renderer.js?v=20260906-visual"></script>
-  <script src="game.js?v=20260906-floating"></script>
+  <script src="balance.js?v=20260906-survival"></script>
+  <script src="motion.js?v=20260906-survival"></script>
+  <script src="progression.js?v=20260906-survival"></script>
+  <script src="combat-effects.js?v=20260906-survival"></script>
+  <script src="control.js??v=20260906-survival"></script>
+  <script src="route-events.js?v=20260906-survival"></script>
+  <script src="run-record.js?v=20260906-survival"></script>
+  <script src="renderer.js??v=20260906-survival"></script>
+  <script src="game.js??v=20260906-survival"></script>
 </body>
 </html>

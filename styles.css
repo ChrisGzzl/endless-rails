@@ -199,3 +199,55 @@ button:disabled { cursor: default; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; scroll-behavior: auto !important; }
   .upgrade-card:hover, .primary-button:active { transform: none; }
 }
+
+/* Three readable choices and actions fit the viewport; no scroll-to-continue. */
+.station-screen, .choice-screen, .levelup-screen {
+  display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 16px;
+  padding: max(24px, env(safe-area-inset-top)) 22px max(20px, env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+.station-screen::before, .choice-screen::before, .levelup-screen::before { display: none; }
+.station-heading .eyebrow, .levelup-heading .eyebrow { margin: 0 0 9px; }
+.station-heading h2, .levelup-heading h2 { font-size: clamp(23px, 4dvh, 30px); }
+.station-heading p:last-child, .levelup-heading p:last-child { margin-top: 7px; font-size: 13px; line-height: 1.5; }
+.upgrade-list { grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; min-height: 0; max-height: 480px; }
+.upgrade-card, .event-card { min-height: 0; padding: 18px 14px; gap: 12px; grid-template-columns: 40px minmax(0, 1fr); }
+.upgrade-icon { width: 38px; height: 38px; font-size: 24px; }
+.upgrade-card h3 { font-size: 16px; margin-bottom: 6px; }
+.upgrade-card p { font-size: 13px; line-height: 1.5; }
+.upgrade-card:hover, .upgrade-card.selected { transform: none; }
+.station-screen {
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto; gap: 10px;
+  padding-top: clamp(54px, 12dvh, 108px);
+  background: linear-gradient(180deg, #0b142000 0%, #0b1420b8 12%, #101c28f5 28%, #101c28 100%);
+}
+.station-screen .upgrade-list { max-height: 340px; }
+.station-screen .upgrade-card { border-color: #5b6e7f; background: linear-gradient(100deg,#233749,#152534); }
+.station-screen .upgrade-card.selected { border-color: #ffd06b; background: #3c4032; }
+.station-screen .reroll-button { min-height: 36px; font-size: 13px; }
+.station-screen .continue-button { min-height: 48px; margin: 0; padding: 12px 16px; }
+.station-screen .train-strip { display: flex; align-items: center; gap: 10px; padding: 8px 0; margin: 0; }
+.station-screen .train-strip__label { flex-shrink: 0; margin: 0; font-size: 11px; }
+.station-screen .mini-train { gap: 4px; flex-wrap: nowrap; overflow: hidden; }
+.station-screen .mini-car { width: 22px; min-width: 16px; height: 17px; font-size: 10px; }
+@media (max-height: 650px) {
+  .station-screen, .choice-screen, .levelup-screen { padding-inline: 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); gap: 8px; }
+  .choice-screen, .levelup-screen { padding-top: max(16px, env(safe-area-inset-top)); }
+  .upgrade-list { gap: 7px; }
+  .upgrade-card, .event-card { padding: 12px 10px; gap: 9px; grid-template-columns: 32px minmax(0, 1fr); }
+  .upgrade-icon { width: 30px; height: 32px; font-size: 21px; }
+  .upgrade-card h3 { font-size: 14px; margin-bottom: 4px; }
+  .upgrade-card p { font-size: 12px; line-height: 1.4; }
+  .station-screen .continue-button { min-height: 40px; padding-block: 9px; }
+  .station-screen .train-strip { padding-block: 4px; }
+  .station-heading .eyebrow, .levelup-heading .eyebrow { font-size: 10px; margin-bottom: 5px; }
+}
+@media (max-height: 450px) and (min-width: 600px) {
+  :root { --frame-width: min(100vw, 780px); --frame-height: 100dvh; }
+  .upgrade-list { grid-template-columns: repeat(3, minmax(0,1fr)); grid-template-rows: minmax(0,1fr); }
+  .upgrade-card { grid-template-columns: minmax(0,1fr); align-content: center; }
+  .upgrade-icon { display: none; }
+  .station-screen { padding-top: 12px; }
+  .station-screen .train-strip { display: none; }
+  .station-screen { grid-template-rows: auto minmax(0,1fr) auto auto; }
+}

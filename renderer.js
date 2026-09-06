@@ -102,7 +102,7 @@ function drawTrain() {
       ctx.fillStyle = "#131d19"; ctx.fillRect(-half + 4, side * (height + 3) - 3, 12, 6); ctx.fillRect(half - 16, side * (height + 3) - 3, 12, 6);
       line(-half + 5, side * (height + 4), half - 6, side * (height + 4), "#6c7560", 1);
     }
-    const body = i === 0 ? "#b57142" : i % 2 ? "#77754d" : "#8c613e";
+    const body = i === 0 ? "#ffc44d" : i % 2 ? "#e89429" : "#ffbb48";
     shape([[-half, -height + 3], [-half + 4, -height], [half - 4, -height], [half, -height + 4], [half, height - 3], [half - 3, height], [-half, height]], body, "#151e18", 3);
     line(-half + 4, -height + 2, half - 5, -height + 2, "#ebbd79", 2);
     line(-half + 2, height - 2, half - 2, height - 2, "#573c29", 3);
@@ -125,7 +125,7 @@ function drawTrain() {
       beam.addColorStop(0, "#ffdb861b"); beam.addColorStop(1, "#ffdb8600");
       shape([[half + 6, -11], [half + 118, -42], [half + 118, 42], [half + 6, 11]], beam);
     } else {
-      ctx.fillStyle = i % 2 ? "#4b5944" : "#65513b"; ctx.fillRect(-half + 6, -height + 6, half * 2 - 12, height * 2 - 12);
+      ctx.fillStyle = i % 2 ? "#986122" : "#ab7327"; ctx.fillRect(-half + 6, -height + 6, half * 2 - 12, height * 2 - 12);
       for (let x = -half + 9; x < half - 6; x += 7) {
         line(x, -height + 5, x, height - 5, "#1d2b2188", 2);
         line(x + 1, -height + 6, x + 1, height - 6, "#b7a46b77", 1);
@@ -136,48 +136,44 @@ function drawTrain() {
     ctx.restore();
   }
 }
+function drawZombie(e, boss=false) {
+  ctx.save();ctx.translate(e.x,e.y);
+  ctx.rotate(Math.atan2(state.train.y-e.y,state.train.x-e.x));
+  const r=e.r, gait=Math.sin(state.visualTime*11+e.hue*9)*4;
+  const skin=e.hit>.4?"#ffffff":boss?"#d680b9":e.elite?"#d0ff52":"#91ed4c";
+  ctx.fillStyle="#100d1b80";ctx.beginPath();ctx.ellipse(3,5,r*1.25,r,0,0,TAU);ctx.fill();
+  // Human silhouette: two shambling legs, torn torso, reaching arms and bald head.
+  line(-r*.4,-r*.4,-r-5,-r*.45+gait,"#241b35",7);
+  line(-r*.4,r*.4,-r-5,r*.45-gait,"#241b35",7);
+  line(-r-5,-r*.45+gait,-r-8,-r*.45+gait,"#d9d4da",4);
+  line(-r-5,r*.45-gait,-r-8,r*.45-gait,"#d9d4da",4);
+  line(0,-r*.55,r*.8,-r*.9+gait*.4,skin,boss?11:6);
+  line(0,r*.55,r*.9,r*.85-gait*.4,skin,boss?11:6);
+  shape([[-r*.8,-r*.6],[r*.1,-r*.72],[r*.5,0],[r*.1,r*.72],[-r*.65,r*.5],[-r*.4,0]],boss?"#67345c":"#633a75","#160f25",2);
+  ctx.fillStyle=skin;ctx.beginPath();ctx.arc(r*.55,0,r*.46,0,TAU);ctx.fill();
+  ctx.strokeStyle="#1b142a";ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle="#ff426c";ctx.fillRect(r*.75,-r*.27,3,3);ctx.fillRect(r*.75,r*.1,3,3);
+  line(r*.84,-2,r*.84,2,"#271324",2);
+  if(e.elite||boss) {
+    ctx.fillStyle="#e3ff87";
+    for(const [x,y] of [[-5,-6],[-8,4],[0,8]]){ctx.beginPath();ctx.arc(x,y,boss?5:3,0,TAU);ctx.fill();}
+    line(-r*.5,-r*.7,0,-r*.85,"#fc4778",3);
+  }
+  ctx.restore();
+}
 function drawEnemies() {
-  for (const e of state.enemies) {
-    if (e.dead || e.delay > 0) continue;
-    ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(Math.atan2(state.train.y - e.y, state.train.x - e.x));
-    const r = e.r, shell = e.hit > .4 ? "#f2d8a1" : e.elite ? "#b87649" : e.hue > .5 ? "#849068" : "#5d7c6b";
-    ctx.fillStyle = "#091b1455"; ctx.beginPath(); ctx.ellipse(3, 5, r + 4, r, 0, 0, TAU); ctx.fill();
-    for (const side of [-1, 1]) {
-      for (let j = -1; j <= 1; j++) {
-        const gait = Math.sin((state.visualTime || 0) * 16 + j * 2 + e.hue * 9) * 2;
-        const x = j * r * .6;
-        line(x, side * r * .4, x - 4 + gait, side * (r + 4), "#172c21", 4);
-        line(x - 4 + gait, side * (r + 4), x + 2 + gait, side * (r + 5), "#b1a471", 2);
-      }
-    }
-    shape([[-r, -r * .45], [-r * .5, -r * .75], [r * .4, -r * .6], [r, 0], [r * .4, r * .6], [-r * .5, r * .75], [-r, r * .45]], shell, "#14231c", 2);
-    shape([[-r * .8, -r * .3], [-r * .3, -r * .5], [r * .3, -r * .4], [r * .5, 0], [-r * .7, 0]], "#c2c39555");
-    line(-r * .5, 2, r * .1, 2, "#24392a", 2);
-    ctx.fillStyle = e.elite ? "#ffe39c" : "#f4b47f"; ctx.fillRect(r * .45, -3, 4, 6);
-    if (e.elite) { line(-5, -r * .5, -1, -r * .5, "#f5cb7e", 2); line(-5, r * .5, -1, r * .5, "#f5cb7e", 2); }
-    ctx.restore();
-    if (e.hp < e.maxHp) {
-      ctx.fillStyle = "#15291f"; ctx.fillRect(e.x - 15, e.y + e.r + 10, 30, 3);
-      ctx.fillStyle = e.elite ? "#e8b772" : "#c2d095"; ctx.fillRect(e.x - 15, e.y + e.r + 10, 30 * Math.max(0, e.hp / e.maxHp), 2);
+  for(const e of state.enemies) {
+    if(e.dead||e.delay>0)continue;
+    drawZombie(e);
+    if(e.elite||e.hp<e.maxHp){
+      ctx.fillStyle="#25142e";ctx.fillRect(e.x-14,e.y+e.r+9,28,3);
+      ctx.fillStyle=e.elite?"#ff628d":"#b6ff65";ctx.fillRect(e.x-14,e.y+e.r+9,28*Math.max(0,e.hp/e.maxHp),2);
     }
   }
 }
 function drawBoss() {
-  const b = state.boss;
-  if (!b || b.dead) return;
-  ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(state.train.y - b.y, state.train.x - b.x));
-  ctx.fillStyle = "#11211988"; ctx.fillRect(-38, -29, 80, 66);
-  for (const side of [-1, 1]) {
-    ctx.fillStyle = "#1b251e"; ctx.fillRect(-32, side * 25 - 7, 62, 14);
-    for (let x = -29; x < 29; x += 7) line(x, side * 25 - 5, x, side * 25 + 5, "#8a7754", 3);
-  }
-  shape([[-34, -22], [20, -22], [34, -12], [34, 12], [20, 22], [-34, 22]], b.hit ? "#dfb071" : "#995d3e", "#17271f", 3);
-  ctx.fillStyle = "#423c2e"; ctx.fillRect(-27, -16, 27, 32);
-  for (let y = -12; y < 14; y += 5) line(-25, y, -2, y, "#a08b5b", 2);
-  shape([[24, -16], [49, 0], [24, 16]], "#aca581", "#243229", 2);
-  line(27, -10, 40, 1, "#e7ce8c", 2);
-  glow(13, 0, 22, "#ecb66b66"); ctx.fillStyle = "#ffe6a9"; ctx.fillRect(6, -7, 13, 14);
-  ctx.restore();
+  if(!state.boss||state.boss.dead)return;
+  drawZombie({...state.boss,hue:.5},true);
 }
 function droneSprite(x, y, scale, color) {
   ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
@@ -190,8 +186,8 @@ function droneSprite(x, y, scale, color) {
     line(side * 16 - 5, front * 12, side * 16 + 5, front * 12, "#c9e2c380", 1);
     ctx.fillStyle = "#e1e5be"; ctx.fillRect(side * 16 - 1, front * 12 - 1, 2, 2);
   }
-  shape([[-6, -12], [5, -12], [9, 4], [4, 12], [-5, 12], [-9, 4]], "#d2c9a2", "#213b30", 2);
-  ctx.fillStyle = "#345549"; ctx.fillRect(-4, -7, 8, 11);
+  shape([[-6, -12], [5, -12], [9, 4], [4, 12], [-5, 12], [-9, 4]], "#f3fcff", "#123b62", 2);
+  ctx.fillStyle = "#187cad"; ctx.fillRect(-4, -7, 8, 11);
   ctx.fillStyle = color; ctx.fillRect(-3, -5, 6, 5);
   line(-3, 7, 3, 7, "#716f4e", 2);
   glow(0, -3, 17, "#99ead733"); ctx.restore();
@@ -200,14 +196,85 @@ function drawDrone() {
   const time = state.visualTime || 0;
   for (const wingman of effects.wingmanPositions(state.drone, level("wingman"), state.railClock)) droneSprite(wingman.x, wingman.y, .58, "#ecc17b");
   ctx.save(); ctx.translate(state.drone.x, state.drone.y);
-  ctx.strokeStyle = "#93d6ba44"; ctx.lineWidth = 1;
+  ctx.strokeStyle = "#50dfff99"; ctx.lineWidth = 1;
   ctx.setLineDash([5, 10]); ctx.beginPath(); ctx.arc(0, 0, 29, 0, TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
-  droneSprite(state.drone.x, state.drone.y + Math.sin(time * 3) * 1.5, 1, "#a1e3d1");
+  droneSprite(state.drone.x, state.drone.y + Math.sin(time * 3) * 1.5, 1, "#50dfff");
 }
 function drawShots() {
   for (const shot of state.shots) {
+    if(shot.bounce){glow(shot.x,shot.y,19,"#ce84ff66");ctx.strokeStyle=shot.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(shot.x,shot.y,8,0,TAU);ctx.stroke();continue;}
     const trail = shot.missile ? .05 : .023;
     line(shot.x, shot.y, shot.x - shot.vx * trail, shot.y - shot.vy * trail, shot.color, shot.missile ? 4 : 2);
     ctx.fillStyle = "#f5efcf"; ctx.fillRect(shot.x - 1, shot.y - 1, 2, 2);
+  }
+}
+
+function drawStation() {
+  const c=stationCenter();
+  if(c.y < -380 || c.x>W+380)return;
+  ctx.save();ctx.translate(c.x,c.y);ctx.rotate(Math.atan2(motion.FORWARD.y,motion.FORWARD.x));
+  for(const side of [-1,1]){
+    ctx.fillStyle="#101f31";ctx.fillRect(-190,side>0?37:-111,300,74);
+    ctx.strokeStyle="#69c2f0";ctx.lineWidth=2;ctx.strokeRect(-190,side>0?37:-111,300,74);
+    ctx.fillStyle="#314960";ctx.fillRect(-177,side>0?48:-100,272,50);
+    for(let x=-180;x<110;x+=18)line(x,side*40,x+9,side*40,"#ffd364",4);
+    for(let x=-155;x<90;x+=42)line(x,side*54,x+22,side*54,"#8fe7ff66",2);
+  }
+  // Reinforced gate, illuminated landing corridor and supply crates.
+  line(107,-112,107,112,"#9ad5e4",7);
+  for(const side of [-1,1]){
+    ctx.fillStyle="#142c48";ctx.fillRect(-175,side>0?65:-94,38,28);
+    line(-168,side*80,-145,side*80,"#f5c558",3);
+    glow(107,side*116,18,"#79efff66");
+  }
+  ctx.restore();
+  const turrets=stationTurrets();
+  for(const t of turrets){
+    const target=state.enemies.find(e=>!e.dead),angle=target?Math.atan2(target.y-t.y,target.x-t.x):-.8;
+    ctx.save();ctx.translate(t.x,t.y);ctx.rotate(angle);
+    ctx.fillStyle="#122238";ctx.fillRect(-14,-14,28,28);
+    ctx.strokeStyle="#94e5ff";ctx.lineWidth=2;ctx.strokeRect(-14,-14,28,28);
+    ctx.fillStyle="#d7f4ff";ctx.fillRect(-7,-9,17,18);
+    line(4,-4,24,-4,"#64deff",4);line(4,4,24,4,"#64deff",4);ctx.restore();
+  }
+  ctx.save();ctx.font="bold 12px sans-serif";ctx.textAlign="center";ctx.fillStyle="#e0f8ff";
+  ctx.fillText("SAFE ZONE / "+String(state.station).padStart(2,"0"),c.x,c.y-130);
+  ctx.restore();
+}
+function drawZones() {
+  for(const z of state.zones){
+    if(z.flight>0) {
+      const t=1-z.flight/.65,x=z.sx+(z.x-z.sx)*t,y=z.sy+(z.y-z.sy)*t-Math.sin(t*Math.PI)*65;
+      glow(x,y,12,"#ffba6277");ctx.fillStyle="#ffdfa1";ctx.fillRect(x-4,y-4,8,8);
+      ctx.strokeStyle="#ffb85b66";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.8,0,0,TAU);ctx.stroke();
+    }else{
+      const fade=Math.min(1,z.life);
+      ctx.globalAlpha=fade;glow(z.x,z.y,z.r,"#ff70245c");
+      ctx.fillStyle="#f8772635";ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();
+      ctx.strokeStyle="#ff9b48bb";ctx.lineWidth=2;ctx.stroke();
+      for(let i=0;i<9;i++){
+        const a=i*2.4,r=z.r*(.25+(i%3)*.24),x=z.x+Math.cos(a)*r,y=z.y+Math.sin(a)*r;
+        const flicker=5+Math.sin(state.visualTime*15+i)*3;
+        shape([[x-4,y+3],[x,y-flicker-7],[x+5,y+3]],"#ffd36a");
+      }
+      ctx.globalAlpha=1;
+    }
+  }
+}
+function drawWeaponEffects() {
+  for(const b of bladePositions()){
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.a+Math.PI/2);
+    shape([[-6,-14],[7,-9],[4,13],[-7,7]],"#ecfaff","#57dfff",2);
+    line(-10,-18,-14,2,"#72e4ff99",3);ctx.restore();
+  }
+  for(const f of state.weaponFx){
+    ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
+    if(f.kind==="blast"){
+      ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1-f.life/f.maxLife),0,TAU);ctx.stroke();
+    }else{
+      line(f.x,f.y,f.tx,f.ty,f.kind==="stationBeam"?"#62dcff":"#c093ff",f.kind==="stationBeam"?6:3);
+      line(f.x,f.y,f.tx,f.ty,"#f2fdff",1.5);
+    }
+    ctx.globalAlpha=1;
   }
 }

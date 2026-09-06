@@ -32,16 +32,25 @@ const KILL_BLAST_RADIUS = 46;
 const KILL_BLAST_DAMAGE = 0.85;
 
 function initialWaveCount(station) {
-  return station === 5 ? 12 : 7 + station;
+  return 2 + (station - 1) * 2;
 }
 
-function enemyCap(station) {
-  return station === 5 ? BOSS_ENEMY_CAP : ENEMY_CAP;
+function difficultyAt(station, elapsed = 0, duration = 48) {
+  const stage = Math.max(0, Math.min(4, station - 1));
+  const progress = Math.max(0, Math.min(1, elapsed / duration));
+  return {
+    cap: Math.round(5 + stage * 8 + progress * (5 + stage)),
+    batch: stage < 2 ? 1 : stage < 4 ? 2 : 3,
+    interval: Math.max(.62, 2.4 - stage * .4 - progress * .85),
+    hp: 1.1 + stage * .65 + progress * .35,
+    speed: 62 + stage * 9 + progress * 12,
+    eliteChance: stage === 0 ? 0 : .035 * stage + progress * .025,
+  };
 }
 
-function spawnInterval(station) {
-  return Math.max(0.24, SPAWN_INTERVAL_BASE - station * SPAWN_INTERVAL_STEP);
-}
+function enemyCap(station, elapsed, duration) { return difficultyAt(station, elapsed, duration).cap; }
+function spawnInterval(station, elapsed, duration) { return difficultyAt(station, elapsed, duration).interval; }
+function routeDuration(station) { return 42 + station * 6; }
 
 const balanceApi = {
   START_TRAIN_LENGTH,
@@ -75,6 +84,8 @@ const balanceApi = {
   KILL_BLAST_RADIUS,
   KILL_BLAST_DAMAGE,
   initialWaveCount,
+  difficultyAt,
+  routeDuration,
   enemyCap,
   spawnInterval,
 };

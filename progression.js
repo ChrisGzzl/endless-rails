@@ -8,7 +8,7 @@ function createProgression(config = {}) {
     routeDistanceTotal,
     routeDistance: config.routeDistance ?? routeDistanceTotal,
     experience: config.experience ?? 0,
-    experienceToNext: config.experienceToNext ?? 10,
+    experienceToNext: config.experienceToNext ?? 4,
     level: config.level ?? 1,
     pendingLevelUps: config.pendingLevelUps ?? 0,
     drops: config.drops ? [...config.drops] : [],
@@ -28,7 +28,7 @@ function awardExperience(state, amount) {
     level += 1;
     pendingLevelUps += 1;
     levelsGained += 1;
-    experienceToNext = 10 + (level - 1) * 4;
+    experienceToNext = 4 + (level - 1) * 2;
   }
   return { state: { ...next, experience, experienceToNext, level, pendingLevelUps }, levelsGained };
 }
