@@ -39,12 +39,12 @@ function difficultyAt(station, elapsed = 0, duration = 48) {
   const stage = Math.max(0, Math.min(4, station - 1));
   const progress = Math.max(0, Math.min(1, elapsed / duration));
   return {
-    cap: Math.round(5 + stage * 8 + progress * (5 + stage)),
-    batch: stage < 2 ? 1 : stage < 4 ? 2 : 3,
-    interval: Math.max(.62, 2.4 - stage * .4 - progress * .85),
-    hp: 1.1 + stage * .65 + progress * .35,
+    cap: Math.round(5 + stage * 20 + stage * stage * 3 + progress * (5 + stage * 7)),
+    batch: 1 + stage * 2 + Math.floor(progress * stage),
+    interval: Math.max(.6, 2.4 - stage * .35 - progress * .85),
+    hp: 1.1 + stage * .22 + progress * .2,
     speed: 62 + stage * 9 + progress * 12,
-    eliteChance: stage === 0 ? 0 : .035 * stage + progress * .025,
+    eliteChance: stage === 0 ? 0 : .018 * stage + progress * .01,
   };
 }
 

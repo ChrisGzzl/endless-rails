@@ -1,17 +1,18 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null};
+const gameArt={atlas:null,ground:null,hover:null};
 if(typeof Image!=="undefined"){
-  for(const [key,path] of [["atlas","assets/sci-fi-atlas-v1.webp"],["ground","assets/slate-ground-v1.webp"]]){
+  for(const [key,path] of [["hover","assets/hover-drones-v2.webp"],["atlas","assets/sci-fi-atlas-v1.webp"],["ground","assets/slate-ground-v1.webp"]]){
     const picture=new Image();picture.onload=()=>{gameArt[key]=picture;};picture.src=path;
   }
 }
 const spriteCells={command:0,gun:1,missile:2,incendiary:3,blades:4,ricochet:5,chain:6,scatter:7,piercing:8};
 // Bounds ignore transparent atlas padding, keeping units readable at gameplay scale.
 const spriteFrames=[[15,18,299,295],[371,28,221,259],[658,36,253,252],[957,19,281,277],[21,336,292,266],[364,336,236,267],[665,321,239,288],[953,326,290,284],[73,630,188,292],[416,630,114,302],[725,628,118,305],[979,628,237,297],[89,983,148,195],[402,989,139,188],[656,951,246,242],[955,941,281,274]];
+const hoverFrames=[[30,45,378,351],[430,96,394,267],[876,64,334,316],[52,470,330,287],[447,437,352,346],[855,447,377,341],[39,851,361,340],[423,876,408,274],[869,855,350,321]];
 function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false){
-  const img=gameArt.atlas;if(!img)return false;
-  const [sx,sy,sw,sh]=spriteFrames[index];
+  const img=index<9?gameArt.hover:gameArt.atlas;if(!img)return false;
+  const [sx,sy,sw,sh]=(index<9?hoverFrames:spriteFrames)[index];
   const scale=Math.min(width/sw,height/sh),dw=stretch?width:sw*scale,dh=stretch?height:sh*scale;
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
@@ -220,36 +221,45 @@ function drawBoss() {
   drawZombie({...state.boss,hue:.5},true);
 }
 function droneSprite(x,y,scale,color) {
-  // Lightweight vectored-thrust fallback while the texture downloads.
+  // Compact lift-pod fallback remains readable before the sprite download finishes.
   ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
-  shape([[0,-22],[9,-4],[23,12],[8,8],[0,15],[-8,8],[-23,12],[-9,-4]],"#dceeff","#173d5e",2);
-  shape([[0,-15],[5,1],[0,7],[-5,1]],color);
-  line(-8,10,-8,17,color,3);line(8,10,8,17,color,3);ctx.restore();
+  shape([[-12,-12],[12,-12],[16,0],[12,12],[-12,12],[-16,0]],"#dceeff","#173d5e",2);
+  for(const px of [-16,16])for(const py of [-14,14]){
+    ctx.fillStyle="#18324a";ctx.strokeStyle=color;ctx.lineWidth=2;
+    ctx.beginPath();ctx.arc(px,py,8,0,TAU);ctx.fill();ctx.stroke();
+    line(px-4,py,px+4,py,color,2);
+  }
+  glow(0,0,7,color);ctx.restore();
 }
 function drawFlight(drone,command=false){
   const kind=command?"command":drone.id.startsWith("escort")?"gun":drone.id;
   const color=command?"#68e6ff":drone.color,angle=(drone.flightAngle??-Math.PI/2)+Math.PI/2;
   const width=command?70:44+Math.min(3,drone.level-1)*2;
   const thrust=drone.thrust||0,bank=drone.bank||0;
-  ctx.fillStyle="#030b1766";ctx.beginPath();ctx.ellipse(drone.x+5,drone.y+10,width*.3,width*.18,angle,0,TAU);ctx.fill();
-  ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(angle);
-  const flame=(command?12:8)+thrust*15+Math.sin(state.visualTime*27+drone.x)*2;
-  for(const side of [-1,1]){
-    const offset=width*.17;
-    const alpha=.3+thrust*.5;ctx.globalAlpha=alpha;
-    shape([[side*offset-3,width*.25],[side*offset,width*.25+flame],[side*offset+3,width*.25]],color);
-    ctx.globalAlpha=1;
+  const phase=state.visualTime*3+(drone.slot??0)*2.399,bob=Math.sin(phase)*1.7;
+  // Lift is directed toward the ground, so hovering never needs a forward jet trail.
+  ctx.fillStyle="#030b1766";ctx.beginPath();ctx.ellipse(drone.x+4,drone.y+11,width*.34,width*.23,0,0,TAU);ctx.fill();
+  glow(drone.x,drone.y+7,width*.48,color+"18");
+  ctx.strokeStyle=color;ctx.lineWidth=1;
+  const wash=(state.visualTime*1.4+(drone.slot??0)*.17)%1;
+  ctx.globalAlpha=(1-wash)*.18;ctx.beginPath();ctx.ellipse(drone.x,drone.y+9,width*(.24+wash*.26),width*(.12+wash*.13),0,0,TAU);ctx.stroke();ctx.globalAlpha=1;
+  // Short side RCS puffs oppose actual translation, independently of body heading.
+  const speed=Math.hypot(drone.vx||0,drone.vy||0);
+  if(speed>8){
+    const dx=drone.vx/speed,dy=drone.vy/speed,reach=width*.37;
+    ctx.globalAlpha=.25+thrust*.4;
+    line(drone.x-dx*reach,drone.y-dy*reach+bob,drone.x-dx*(reach+4+thrust*5),drone.y-dy*(reach+4+thrust*5)+bob,color,3);ctx.globalAlpha=1;
   }
-  ctx.restore();
-  // Eight heading sectors, eased turns, bank foreshortening and speed-responsive exhaust.
-  if(!paintSprite(spriteCells[kind],drone.x,drone.y,width,width,angle,bank)){
-    ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(angle);droneSprite(0,0,command?1.25:.8,color);ctx.restore();
+  // Eight eased headings with a small hover tilt; weapons keep independent aim.
+  if(!paintSprite(spriteCells[kind],drone.x,drone.y+bob,width,width,angle,bank)){
+    ctx.save();ctx.translate(drone.x,drone.y+bob);ctx.rotate(angle);droneSprite(0,0,command?1.25:.8,color);ctx.restore();
   }
   if(!command){
     for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=color;ctx.fillRect(drone.x-5+i*4,drone.y+width*.47,2,2);}
-    // Weapon aim is separate from flight attitude, so strafing remains possible.
-    if(drone.flash>0){const x=drone.x+Math.cos(drone.angle)*width*.35,y=drone.y+Math.sin(drone.angle)*width*.35;
-      glow(x,y,11,color+"88");line(x,y,x+Math.cos(drone.angle)*8,y+Math.sin(drone.angle)*8,"#f8fdff",2);}
+    if(drone.flash>0&&kind!=="blades"){
+      const x=drone.x+Math.cos(drone.angle)*width*.35,y=drone.y+Math.sin(drone.angle)*width*.35;
+      glow(x,y,11,color+"88");line(x,y,x+Math.cos(drone.angle)*8,y+Math.sin(drone.angle)*8,"#f8fdff",2);
+    }
   }
 }
 function drawSpecialist(drone){drawFlight(drone);}
@@ -329,6 +339,16 @@ function drawZones() {
   }
 }
 function drawWeaponEffects() {
+  const cutter=state.swarm.find(d=>d.id==="blades");
+  if(cutter){
+    const r=bladeRadius(),phase=state.visualTime*6;
+    ctx.fillStyle="#5cdeff09";ctx.strokeStyle="#8defff35";ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(cutter.x,cutter.y,r,0,TAU);ctx.fill();ctx.stroke();
+    for(let i=0;i<3;i++){
+      ctx.strokeStyle=cutter.flash>0?"#b7f6ff88":"#67dfff44";ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(cutter.x,cutter.y,r-8,phase+i*TAU/3,phase+i*TAU/3+1.1);ctx.stroke();
+    }
+  }
   for(const b of bladePositions()){
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.a+Math.PI/2);
     shape([[-3,-15],[4,-9],[7,3],[3,13],[-4,16],[-1,2],[-5,-7]],"#d4f4ff","#57dfff",1.5);

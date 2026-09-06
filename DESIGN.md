@@ -4,18 +4,18 @@ The run uses five routes (48 / 54 / 60 / 66 / 72 seconds before route modifiers)
 
 | Route | Opening / ending live cap | Spawn batch | Opening / ending interval | Regular base HP |
 | --- | --- | --- | --- | --- |
-| 1 | 5 / 10 | 1 | 2.40 / 1.55 s | 1.10 → 1.45 |
-| 2 | 13 / 19 | 1 | 2.00 / 1.15 s | 1.75 → 2.10 |
-| 3 | 21 / 28 | 2 | 1.60 / 0.75 s | 2.40 → 2.75 |
-| 4 | 29 / 37 | 2 | 1.20 / 0.62 s | 3.05 → 3.40 |
-| 5 | 37 / 46 | 3 | 0.80 / 0.62 s | 3.70 → 4.05 |
+| 1 | 5 / 10 | 1 | 2.40 / 1.55 s | 1.10 → 1.30 |
+| 2 | 28 / 40 | 3 → 4 | 2.05 / 1.20 s | 1.32 → 1.52 |
+| 3 | 57 / 76 | 5 → 7 | 1.70 / 0.85 s | 1.54 → 1.74 |
+| 4 | 92 / 118 | 7 → 10 | 1.35 / 0.60 s | 1.76 → 1.96 |
+| 5 | 133 / 166 | 9 → 13 | 1.00 / 0.60 s | 1.98 → 2.18 |
 
 Route one has no elites. Later routes gradually raise elite probability and movement speed. Contract and route modifiers apply after the base curve. The final mutant appears after 22 seconds; victory requires defeating it and reaching the protected terminal.
 
 ## Weapon roles
 
 - Basic gun: nearest-target direct fire; rapid / spread / piercing remain upgrades.
-- Orbiting blades: move with the drone and rotate, cutting nearby enemies on a capped tick.
+- Cutter: a continuous circular cutting field (72 px radius at level 1, +8 per level up to 112), hits all targets every 0.25 s for 0.75 + 0.3 × level damage. Three to six visible blades show the swept area. No gaps at the hub or between blade tips. A density grid selects nearby crowds every 0.3 s; the cutter may move 70 px from its patrol goal and returns when more than 115 px from its formation slot.
 - Incendiary grenade: arcing flight followed by a stationary burning area.
 - Ricochet energy ball: wall reflections, piercing targets; can hit again after bouncing.
 - Homing missile: limited turn rate, explodes on impact and damages a cluster.
@@ -47,4 +47,13 @@ Genre inspiration: [Vampire Survivors developer page](https://poncle.itch.io/vam
 
 The player controls a large, white/cyan command drone. A machine-gun aircraft starts in formation; missiles, incendiary grenades, ricochet balls, orbiting blades, chain lightning, scatter fire and piercing fire each unlock their own specialist. Weapon origins and rendering use the same persistent aircraft positions. Upgrading an existing type increases its weapon level and hull tier marks instead of duplicating its damage on the command craft. Up to three extra machine-gun escorts can join. Formation slots remain distinct near edges and followers have bounded movement speed.
 
-Ground features, railway sleepers, ground fire, core drops and station braking use a single integrated world-distance value. Burning areas stay attached to their landing site and leave the screen with the ground; moving the command drone cannot move them. The final station has a longer braking approach because it starts farther away. Combat animations use a separate clock. Small zombies have alternating jointed steps, shoulder sway and reaching hands; aircraft have spinning rotors and type-specific firing flashes.
+Ground features, railway sleepers, ground fire, core drops and station braking use a single integrated world-distance value. Burning areas stay attached to their landing site and leave the screen with the ground; moving the command drone cannot move them. The final station has a longer braking approach because it starts farther away. Combat animations use a separate clock. Small zombies have alternating jointed steps, shoulder sway and reaching hands; aircraft use hover bob, downward lift wash, short lateral RCS puffs and type-specific firing flashes.
+
+
+## Horde revision checks
+
+Ordinary enemy health grows by only 0.22 per route and 0.20 within each route. Elite probability ends at 8.2% on route five, so most enemies stay easy to kill. Boss HP remains a separate encounter value. Live caps are ceilings, not promised simultaneous enemy counts: a strong build can clear waves before they accumulate.
+
+Nearest-target selection is linear. Cosmetic particles are capped at 420 and floating labels at 24; combo animation restarts at most once every 0.15 s. Kill rewards and damage are never dropped by these visual budgets.
+
+`horde.test.js` covers 360-degree cutter coverage, inner and outer range, damage cadence, crowd seeking and leash, 166 simultaneous kill rewards under VFX budgets, and complete station clearing of the larger horde. All 12 regression files pass. Twelve seeded opening simulations still reach the first station with full repaired health and level 4. A sampled route-four build killed 398 enemies in about 60 s while retaining 170 train HP; this is a smoke check, not a guarantee for other builds. Native Canvas rendering of 160 zombies plus the specialist fleet measured 2.6 ms median / 4.1 ms p95 in the development environment, not a mobile browser benchmark.

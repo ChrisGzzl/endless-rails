@@ -285,13 +285,13 @@ body { background: radial-gradient(ellipse at 50% 38%,#1b3047,#09121e 55%,#050b1
 .upgrade-icon { background:#0a1a2b; border-color:#3e637e; }
 .reroll-button { color:#b8cfdf; border-color:#3a5974; }
 .train-strip { border-color:#304a60; }
-.upgrade-card[data-weapon] .upgrade-icon { font-size:0; width:46px; height:46px; border:0; background-color:transparent; background-image:url("assets/sci-fi-atlas-v1.webp"); background-size:400% 400%; background-repeat:no-repeat; }
-.upgrade-card[data-weapon="rapid"] .upgrade-icon, .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-position:33.333% 0%; }
-.upgrade-card[data-weapon="missile"] .upgrade-icon { background-position:66.667% 0%; }
-.upgrade-card[data-weapon="incendiary"] .upgrade-icon { background-position:100% 0%; }
-.upgrade-card[data-weapon="blades"] .upgrade-icon { background-position:0% 33.333%; }
-.upgrade-card[data-weapon="ricochet"] .upgrade-icon { background-position:33.333% 33.333%; }
-.upgrade-card[data-weapon="chain"] .upgrade-icon { background-position:66.667% 33.333%; }
-.upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:100% 33.333%; }
-.upgrade-card[data-weapon="piercing"] .upgrade-icon { background-position:0% 66.667%; }
+.upgrade-card[data-weapon] .upgrade-icon { font-size:0; width:46px; height:46px; border:0; background-color:transparent; background-image:url("assets/hover-drones-v2.webp"); background-size:300% 300%; background-repeat:no-repeat; }
+.upgrade-card[data-weapon="rapid"] .upgrade-icon, .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-position:50% 0%; }
+.upgrade-card[data-weapon="missile"] .upgrade-icon { background-position:100% 0%; }
+.upgrade-card[data-weapon="incendiary"] .upgrade-icon { background-position:0% 50%; }
+.upgrade-card[data-weapon="blades"] .upgrade-icon { background-position:50% 50%; }
+.upgrade-card[data-weapon="ricochet"] .upgrade-icon { background-position:100% 50%; }
+.upgrade-card[data-weapon="chain"] .upgrade-icon { background-position:0% 100%; }
+.upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:50% 100%; }
+.upgrade-card[data-weapon="piercing"] .upgrade-icon { background-position:100% 100%; }
 @media (max-height:650px) { .upgrade-card[data-weapon] .upgrade-icon { width:34px; height:34px; } }

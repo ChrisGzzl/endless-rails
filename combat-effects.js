@@ -59,10 +59,11 @@ function flightPose(previous, vx, vy, dt) {
 function autonomousGoal(center, drone, target, time, width, height, combat=true) {
   const base=formationPosition(center,drone.slot,time,width,height),phase=time*.95+drone.slot*2.399;
   let x=base.x+Math.sin(phase)*9,y=base.y+Math.cos(phase*.83)*7,behavior="patrol";
-  if(Math.hypot(drone.x-base.x,drone.y-base.y)>75)behavior="return";
+  if(Math.hypot(drone.x-base.x,drone.y-base.y)>(drone.id==="blades"?115:75))behavior="return";
   else if(combat&&target&&Math.hypot(target.x-center.x,target.y-center.y)<230){
     const dx=target.x-base.x,dy=target.y-base.y,length=Math.hypot(dx,dy)||1;
-    x+=dx/length*15;y+=dy/length*15;behavior="engage";
+    const reach=drone.id==="blades"?Math.min(70,Math.max(0,length-28)):15;
+    x+=dx/length*reach;y+=dy/length*reach;behavior="engage";
   }
   if(behavior==="return"){x=base.x;y=base.y;}
   return {x:Math.max(20,Math.min(width-20,x)),y:Math.max(20,Math.min(height-20,y)),behavior};
