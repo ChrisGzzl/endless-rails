@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260906-visual">
+  <link rel="stylesheet" href="styles.css?v=20260906-joystick">
 </head>
 <body>
   <main id="app">
@@ -28,13 +28,22 @@
       <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">荒原掘行者</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
       <div class="combo" id="comboText"></div>
       <div class="toast" id="toast"></div>
-      <div class="touch-hint" id="touchHint">点击战场，部署无人机<br><b>自动开火 · 守住列车</b></div>
+      <div class="touch-hint" id="touchHint">推动左下摇杆，调整护航位置<br><b>相对列车部署 · 松手保持位置</b></div>
     </section>
 
     <footer class="controls">
-      <div class="run-readout"><span id="phaseLabel">行驶中</span><strong id="timerValue">22.0</strong><small>秒</small></div>
+      <div class="joystick-wrap">
+        <div class="joystick-base" id="joystickBase" role="group" tabindex="0" aria-label="无人机虚拟摇杆" aria-describedby="joystickHelp" aria-disabled="true">
+          <span class="joystick-cross" aria-hidden="true"></span>
+          <span class="joystick-thumb" id="joystickThumb" aria-hidden="true"></span>
+        </div>
+        <span class="joystick-label" id="joystickHelp">相对列车 · 方向键可用</span>
+      </div>
+      <div class="control-readouts">
+        <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">20.0</strong><small>秒 / 下一站</small></div>
+        <div class="drone-readout"><span>无人机</span><strong id="droneLevel">MK-I</strong></div>
+      </div>
       <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
-      <div class="drone-readout"><span>无人机</span><strong id="droneLevel">MK-I</strong><small>自动火力</small></div>
     </footer>
   </main>
 
@@ -73,10 +82,10 @@
   <script src="motion.js"></script>
   <script src="progression.js"></script>
   <script src="combat-effects.js"></script>
-  <script src="control.js"></script>
+  <script src="control.js?v=20260906-joystick"></script>
   <script src="route-events.js"></script>
   <script src="run-record.js"></script>
   <script src="renderer.js?v=20260906-visual"></script>
-  <script src="game.js?v=20260906-visual"></script>
+  <script src="game.js?v=20260906-joystick"></script>
 </body>
 </html>

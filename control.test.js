@@ -49,4 +49,14 @@ assert.deepEqual(
 assert.deepEqual(ring, { target: { x: 261, y: 454 }, life: 0.5 }, "advancing does not mutate the input ring");
 assert.equal(control.advanceCommandRing(ring, 0.5), null, "a fully elapsed ring expires");
 
+assert.deepEqual(control.joystickVector({ x: 1, y: 1 }, { x: 0, y: 0 }, 40), { x: 0, y: 0, strength: 0 }, "stick center has a deadzone");
+assert.deepEqual(control.joystickVector({ x: 140, y: 100 }, { x: 100, y: 100 }, 40), { x: 1, y: 0, strength: 1 });
+const diagonal = control.joystickVector({ x: 100, y: -100 }, { x: 0, y: 0 }, 40);
+assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-10, "diagonal movement is radially clamped");
+assert.ok(diagonal.x > 0 && diagonal.y < 0);
+assert.deepEqual(control.joystickVector({ x: 0, y: 0 }, { x: 0, y: 0 }, 0), { x: 0, y: 0, strength: 0 });
+assert.deepEqual(control.joystickCommand({ x: .5, y: 0 }, train, bounds), { x: 261, y: 340, angle: 0, strength: .5 }, "stick displacement controls distance relative to the train");
+assert.deepEqual(control.joystickCommand({ x: .5, y: 0 }, { x: 215, y: 360 }, bounds), { x: 281, y: 360, angle: 0, strength: .5 }, "moving the train moves the relative target");
+assert.equal(control.joystickCommand({ x: 1, y: 0 }, { x: 300, y: 340 }, bounds).x, bounds.right, "deployment remains inside the battlefield");
+
 console.log("control tests passed");
