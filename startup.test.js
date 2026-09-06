@@ -40,11 +40,16 @@ function createElement(id) {
 }
 
 const elements = Object.fromEntries(ids.map(id => [id, createElement(id)]));
+Object.assign(elements.gameCanvas, { width: 390, height: 680 });
+let scheduledFrames = 0;
 const sandbox = {
   document: { getElementById: id => elements[id], createElement: tag => createElement(tag) },
   window: { addEventListener() {} },
   performance: { now: () => 0 },
-  requestAnimationFrame() {},
+  requestAnimationFrame(callback) {
+    sandbox.nextFrame = callback;
+    scheduledFrames++;
+  },
   console,
 };
 
@@ -58,6 +63,12 @@ vm.runInContext(fs.readFileSync(__dirname + "/route-events.js", "utf8"), sandbox
 vm.runInContext(fs.readFileSync(__dirname + "/run-record.js", "utf8"), sandbox);
 vm.runInContext(fs.readFileSync(__dirname + "/game.js", "utf8"), sandbox);
 
+assert.equal(scheduledFrames, 1, "startup must schedule its first animation frame");
+assert.doesNotThrow(() => {
+  vm.runInContext("nextFrame(16)", sandbox, { timeout: 1000 });
+}, "the first menu frame must finish without blocking the page");
+assert.equal(scheduledFrames, 2, "the menu frame must schedule the next frame");
+
 let clickError = null;
 try {
   elements.startButton.events.click();
@@ -65,7 +76,7 @@ try {
   clickError = error;
 }
 
-assert.equal(clickError, null, "clicking start must not fail when the optional motion script is unavailable");
+assert.equal(clickError, null, "clicking start must not fail");
 assert.equal(elements.startScreen.hidden, true, "clicking start must hide the start screen");
 assert.equal(elements.phaseLabel.textContent, "远征契约", "clicking start must open the contract choice");
 assert.equal(elements.contractScreen.hidden, false, "clicking start must show contract choices before combat");
@@ -79,8 +90,10 @@ assert.equal(elements.eventScreen.hidden, true, "choosing a route must close its
 assert.equal(elements.phaseLabel.textContent, "行驶中", "choosing a route must enter combat");
 
 assert.doesNotThrow(() => {
-  vm.runInContext("for (let i = 0; i < 1; i++) { console.log("before", i); update(0.016); console.log("after", i); } draw();", sandbox);
+  vm.runInContext("for (let i = 0; i < 60; i++) nextFrame(32 + i * 16);", sandbox, { timeout: 1000 });
 }, "the combat loop must remain responsive after route selection");
+assert.equal(scheduledFrames, 62, "each combat frame must schedule the next frame");
+assert.ok(vm.runInContext("state.routeDistance < state.routeDistanceTotal", sandbox), "combat frames must advance the route");
 
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const css = fs.readFileSync(__dirname + "/styles.css", "utf8");
