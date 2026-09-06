@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260906-joystick">
+  <link rel="stylesheet" href="styles.css?v=20260906-floating">
 </head>
 <body>
   <main id="app">
@@ -20,7 +20,8 @@
     </header>
 
     <section class="arena-wrap" aria-label="荒原战场">
-      <canvas id="gameCanvas" width="390" height="680"></canvas>
+      <canvas id="gameCanvas" width="390" height="680" tabindex="0" aria-label="无人机移动战场，按住任意位置滑动或使用方向键移动"></canvas>
+      <div class="joystick-base floating-joystick" id="joystickBase" hidden aria-hidden="true"><span class="joystick-cross"></span><span class="joystick-thumb" id="joystickThumb"></span></div>
       <button class="pause-button" id="pauseButton" aria-label="暂停游戏" type="button">Ⅱ</button>
       <div class="command-ring" id="commandRing" aria-hidden="true"></div>
       <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
@@ -28,17 +29,11 @@
       <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">荒原掘行者</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
       <div class="combo" id="comboText"></div>
       <div class="toast" id="toast"></div>
-      <div class="touch-hint" id="touchHint">推动左下摇杆，调整护航位置<br><b>相对列车部署 · 松手保持位置</b></div>
+      <div class="touch-hint" id="touchHint">按住战场任意位置，滑动移动<br><b>浮动摇杆 · 松手停止 · 自动开火</b></div>
     </section>
 
     <footer class="controls">
-      <div class="joystick-wrap">
-        <div class="joystick-base" id="joystickBase" role="group" tabindex="0" aria-label="无人机虚拟摇杆" aria-describedby="joystickHelp" aria-disabled="true">
-          <span class="joystick-cross" aria-hidden="true"></span>
-          <span class="joystick-thumb" id="joystickThumb" aria-hidden="true"></span>
-        </div>
-        <span class="joystick-label" id="joystickHelp">相对列车 · 方向键可用</span>
-      </div>
+      <div class="movement-readout"><span>无人机移速</span><strong id="moveSpeedValue">180 px/s</strong><small>滑动 / 方向键</small></div>
       <div class="control-readouts">
         <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">20.0</strong><small>秒 / 下一站</small></div>
         <div class="drone-readout"><span>无人机</span><strong id="droneLevel">MK-I</strong></div>
@@ -82,10 +77,10 @@
   <script src="motion.js"></script>
   <script src="progression.js"></script>
   <script src="combat-effects.js"></script>
-  <script src="control.js?v=20260906-joystick"></script>
+  <script src="control.js?v=20260906-floating"></script>
   <script src="route-events.js"></script>
   <script src="run-record.js"></script>
   <script src="renderer.js?v=20260906-visual"></script>
-  <script src="game.js?v=20260906-joystick"></script>
+  <script src="game.js?v=20260906-floating"></script>
 </body>
 </html>

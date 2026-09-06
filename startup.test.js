@@ -10,7 +10,7 @@ const ids = [
   "startScreen", "stationScreen", "stationTitle", "upgradeList", "continueButton", "resultScreen",
   "bossWrap", "bossText", "bossFill", "trainLengthLabel", "miniTrain", "startButton", "restartButton",
   "routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen", "levelUpList",
-  "pauseButton", "commandRing", "eventScreen", "eventList", "contractScreen", "contractList", "rerollButton", "resultBuild", "resultRecord", "joystickBase", "joystickThumb",
+  "pauseButton", "commandRing", "eventScreen", "eventList", "contractScreen", "contractList", "rerollButton", "resultBuild", "resultRecord", "joystickBase", "joystickThumb", "moveSpeedValue",
 ];
 
 function createElement(id) {
@@ -94,38 +94,57 @@ assert.doesNotThrow(() => {
 assert.equal(scheduledFrames, 62, "each combat frame must schedule the next frame");
 assert.ok(vm.runInContext("state.routeDistance < state.routeDistanceTotal", sandbox), "combat frames must advance the route");
 
-assert.equal(elements.gameCanvas.events.pointerdown, undefined, "battlefield taps must not deploy the drone");
-assert.equal(elements.gameCanvas.events.pointermove, undefined, "the drone cannot be dragged on the battlefield");
-elements.joystickBase.getBoundingClientRect = () => ({ left: 20, top: 600, width: 100, height: 100 });
+vm.runInContext("state.enemies=[]; state.shots=[]; state.spawnClock=Infinity; state.fireClock=Infinity;", sandbox);
 const stickEvent = (pointerId, clientX, clientY) => ({ pointerId, clientX, clientY, pointerType: "touch", button: 0, preventDefault() {} });
-elements.joystickBase.events.pointerdown(stickEvent(1, 70, 650));
-elements.joystickBase.events.pointermove(stickEvent(1, 170, 650));
-assert.equal(vm.runInContext("state.drone.tx - state.train.x", sandbox), 132, "full right stick deploys to the right of the train");
-elements.joystickBase.events.pointermove(stickEvent(2, -100, 650));
-assert.equal(vm.runInContext("state.drone.tx - state.train.x", sandbox), 132, "a second finger must not hijack the stick");
-elements.joystickBase.events.pointerup(stickEvent(1, 170, 650));
-assert.equal(elements.joystickThumb.style.transform, "translate(0px, 0px)", "release recenters the stick");
-assert.equal(vm.runInContext("state.drone.tx - state.train.x", sandbox), 132, "release keeps the deployment position");
-elements.joystickBase.events.pointerdown(stickEvent(3, 70, 610));
-elements.joystickBase.events.pointercancel(stickEvent(3, 70, 610));
-assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null, "touch cancellation releases the stick");
-elements.joystickBase.events.pointerdown(stickEvent(4, 70, 610));
+const dronePosition = () => vm.runInContext("JSON.stringify({x:state.drone.x,y:state.drone.y})", sandbox);
+const initialPosition = dronePosition();
+elements.gameCanvas.events.pointerdown(stickEvent(1, 70, 550));
+assert.equal(dronePosition(), initialPosition, "touch-down does not teleport the drone");
+assert.equal(elements.joystickBase.hidden, false);
+assert.equal(vm.runInContext("joystickState.center.x", sandbox), 70, "stick origin is the touch point");
+elements.gameCanvas.events.pointermove(stickEvent(1, 170, 550));
+assert.equal(dronePosition(), initialPosition, "moving the finger only changes input, not position");
+vm.runInContext("update(.1)", sandbox);
+assert.equal(vm.runInContext("state.drone.x", sandbox), JSON.parse(initialPosition).x + 18, "movement is capped by speed times dt");
+elements.gameCanvas.events.pointermove(stickEvent(2, -100, 550));
+assert.equal(vm.runInContext("state.moveInput.x", sandbox), 1, "second touch cannot hijack movement");
+vm.runInContext("update(1)", sandbox);
+assert.equal(vm.runInContext("state.drone.x", sandbox), 366, "drone can reach the screen edge beyond the old train radius");
+elements.gameCanvas.events.pointerup(stickEvent(1, 170, 550));
+assert.equal(elements.joystickBase.hidden, true, "release hides the floating joystick");
+const stoppedPosition = dronePosition();
+vm.runInContext("update(.1)", sandbox);
+assert.equal(dronePosition(), stoppedPosition, "release stops immediately without target chasing");
+elements.gameCanvas.events.pointerdown(stickEvent(3, 280, 300));
+assert.equal(vm.runInContext("joystickState.center.x", sandbox), 280, "next gesture gets a new origin");
+elements.gameCanvas.events.pointermove(stickEvent(3, 280, 200));
+vm.runInContext("update(2)", sandbox);
+assert.equal(vm.runInContext("state.drone.y", sandbox), 24, "drone can reach the top of the battlefield");
+elements.gameCanvas.events.pointercancel(stickEvent(3, 280, 200));
+assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null);
+assert.equal(vm.runInContext("state.moveInput.y", sandbox), 0);
+elements.gameCanvas.events.pointerdown(stickEvent(4, 100, 100));
+elements.gameCanvas.events.pointermove(stickEvent(4, 150, 100));
 elements.pauseButton.events.click();
-assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null, "pause clears active input");
-assert.equal(elements.pulseButton.disabled, true, "pulse is disabled while paused");
-const pausedTarget = vm.runInContext("state.drone.tx", sandbox);
-elements.joystickBase.events.pointermove(stickEvent(4, 170, 650));
-assert.equal(vm.runInContext("state.drone.tx", sandbox), pausedTarget);
+assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null, "pause releases movement input");
+assert.equal(elements.pulseButton.disabled, true);
+const pausedPosition = dronePosition();
+vm.runInContext("update(.1)", sandbox);
+assert.equal(dronePosition(), pausedPosition);
 elements.pauseButton.events.click();
 for (const handler of windowEvents.keydown) handler({ code: "ArrowLeft", preventDefault() {} });
-assert.equal(vm.runInContext("state.drone.tx - state.train.x", sandbox), -132, "keyboard directions use the virtual stick mapping");
+assert.equal(dronePosition(), pausedPosition, "keyboard input also cannot teleport");
+vm.runInContext("update(.1)", sandbox);
+assert.equal(vm.runInContext("state.drone.x", sandbox), JSON.parse(pausedPosition).x - 18);
 for (const handler of windowEvents.keyup) handler({ code: "ArrowLeft", preventDefault() {} });
-assert.equal(elements.joystickThumb.style.transform, "translate(0px, 0px)");
-vm.runInContext("state.train.x += 5; update(0.016);", sandbox);
-assert.equal(vm.runInContext("state.drone.tx - state.train.x", sandbox), -132, "the deployed offset follows a moving train");
-elements.joystickBase.events.pointerdown(stickEvent(5, 70, 610));
+const keyStopped = dronePosition();
+vm.runInContext("state.train.x += 5; update(.1)", sandbox);
+assert.equal(dronePosition(), keyStopped, "drone is no longer anchored to the train");
+elements.gameCanvas.events.pointerdown(stickEvent(5, 70, 610));
+elements.gameCanvas.events.pointermove(stickEvent(5, 170, 610));
 for (const handler of windowEvents.blur) handler();
-assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null, "losing focus releases the stick");
+assert.equal(vm.runInContext("state.moveInput.x", sandbox), 0, "blur clears velocity input");
+assert.equal(elements.joystickBase.hidden, true);
 
 const css = fs.readFileSync(__dirname + "/styles.css", "utf8");
 for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {
