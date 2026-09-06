@@ -78,6 +78,10 @@ elements.eventList.children[0].events.click();
 assert.equal(elements.eventScreen.hidden, true, "choosing a route must close its overlay");
 assert.equal(elements.phaseLabel.textContent, "行驶中", "choosing a route must enter combat");
 
+assert.doesNotThrow(() => {
+  vm.runInContext("for (let i = 0; i < 1; i++) { console.log("before", i); update(0.016); console.log("after", i); } draw();", sandbox);
+}, "the combat loop must remain responsive after route selection");
+
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const css = fs.readFileSync(__dirname + "/styles.css", "utf8");
 for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {

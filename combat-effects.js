@@ -42,7 +42,8 @@ function mainWeaponProfile({ baseDamage, baseInterval, modules = {}, cores = {} 
     interval,
     projectileCount,
     pierce: moduleLevel(modules, "piercing"),
-    chain: moduleLevel(modules, "chain") > 0 || moduleLevel(cores, "arc") > 0,
+    chain: moduleLevel(modules, "chain") > 0,
+    coreArc: moduleLevel(cores, "arc") > 0,
     dps: damage * projectileCount / interval,
   };
 }
