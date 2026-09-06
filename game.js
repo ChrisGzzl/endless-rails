@@ -22,7 +22,7 @@ const experiencePool=[
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train");
 const state={worldDistance:0,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:20,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:20,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:20})};
 const level=id=>state.modules[id]||0;
-function resetRun(){resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{worldDistance:0,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:20,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:20,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:20})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
+function resetRun(){resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{worldDistance:0,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:20,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:20,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:20})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
@@ -48,7 +48,9 @@ function update(dt) {
   state.railClock += dt;
   state.hurtFlash = Math.max(0, state.hurtFlash-dt);
   state.shake = Math.max(0, state.shake-dt*20);
+  const previousDrone={x:state.drone.x,y:state.drone.y};
   Object.assign(state.drone, control.stepDrone(state.drone, state.moveInput, state.drone.moveSpeed, dt, droneBounds()));
+  Object.assign(state.drone,effects.flightPose(state.drone,(state.drone.x-previousDrone.x)/Math.max(dt,.001),(state.drone.y-previousDrone.y)/Math.max(dt,.001),dt));
   updateSwarm(dt);
   state.commandRing = control.advanceCommandRing(state.commandRing, dt);
   state.drops = progression.expireDrops(state.drops, dt);
@@ -116,16 +118,30 @@ function syncSwarm() {
   const old=new Map(state.swarm.map(d=>[d.id,d]));
   state.swarm=effects.swarmRoster(state.modules).map(spec=>{
     const existing=old.get(spec.id);
-    return existing?Object.assign(existing,spec):{...spec,x:state.drone.x,y:state.drone.y,flash:0,angle:-Math.PI/2};
+    return existing?Object.assign(existing,spec):{...spec,x:state.drone.x,y:state.drone.y,flash:0,angle:-Math.PI/2,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0};
   });
 }
 function updateSwarm(dt) {
   syncSwarm();
+  // Read previous positions for all neighbors so separation does not depend on update order.
+  const positions=state.swarm.map(d=>({id:d.id,x:d.x,y:d.y}));
   for(const d of state.swarm){
-    const goal=effects.formationPosition(state.drone,d.slot,state.visualTime,W,H);
-    const dx=goal.x-d.x,dy=goal.y-d.y,length=Math.hypot(dx,dy)||1,step=Math.min(length,250*dt);
-    d.x+=dx/length*step;d.y+=dy/length*step;d.flash=Math.max(0,d.flash-dt);
     const target=nearestTarget(d);
+    const goal=effects.autonomousGoal(state.drone,d,target,state.visualTime,W,H,state.mode==="combat");
+    for(const other of positions){
+      if(other.id===d.id)continue;
+      const dx=d.x-other.x,dy=d.y-other.y,length=Math.hypot(dx,dy);
+      if(length>0&&length<25){goal.x+=dx/length*(25-length)*.45;goal.y+=dy/length*(25-length)*.45;}
+    }
+    const dx=goal.x-d.x,dy=goal.y-d.y,length=Math.hypot(dx,dy)||1;
+    const speed=Math.min(240,length*4),blend=1-Math.exp(-7*dt);
+    let vx=(d.vx||0)+(dx/length*speed-(d.vx||0))*blend;
+    let vy=(d.vy||0)+(dy/length*speed-(d.vy||0))*blend;
+    const travel=Math.hypot(vx,vy)*dt;
+    if(travel>length){vx*=length/travel;vy*=length/travel;}
+    const x=Math.max(18,Math.min(W-18,d.x+vx*dt)),y=Math.max(18,Math.min(H-18,d.y+vy*dt));
+    Object.assign(d,effects.flightPose(d,(x-d.x)/Math.max(dt,.001),(y-d.y)/Math.max(dt,.001),dt));
+    d.x=x;d.y=y;d.behavior=goal.behavior;d.flash=Math.max(0,d.flash-dt);
     if(target)d.angle=Math.atan2(target.y-d.y,target.x-d.x);
   }
 }
@@ -274,7 +290,7 @@ function openLevelUp() {
   const picks=novel?[novel,...pool.filter(u=>u!==novel).slice(0,2)]:pool.slice(0,3);
   picks.forEach(u=>{
     const card=document.createElement("button");card.className="upgrade-card";
-    card.dataset.scope=scopeLabel(effects.weaponOwnership(u.id));
+    card.dataset.scope=scopeLabel(effects.weaponOwnership(u.id));card.dataset.weapon=u.id;
     card.innerHTML=`<span class="upgrade-icon">${u.icon}</span><span><h3>${u.name} <small>Lv.${level(u.id)+1}</small></h3><p>${u.desc}</p></span>`;
     card.addEventListener("click",()=>chooseLevelUp(u));ui.levelUpList.append(card);
   });

@@ -1,14 +1,15 @@
 :root {
+
   color-scheme: dark;
   font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
-  --ink: #101413;
-  --panel: #1a211f;
-  --line: #38403a;
-  --paper: #f2ead8;
-  --muted: #9aa49a;
+  --ink: #091321;
+  --panel: #111f32;
+  --line: #30445c;
+  --paper: #eaf5ff;
+  --muted: #95abc1;
   --rust: #bf623d;
   --orange: #ecc17b;
-  --cyan: #8bd2c8;
+  --cyan: #67d9ff;
   --acid: #bdcb87;
   --danger: #f0836b;
   --frame-width: min(100vw, 480px);
@@ -251,3 +252,46 @@ button:disabled { cursor: default; }
   .station-screen .train-strip { display: none; }
   .station-screen { grid-template-rows: auto minmax(0,1fr) auto auto; }
 }
+
+/* Sci-fi art direction: cool navigation surfaces, warm train systems, generated fleet portraits. */
+body { background: radial-gradient(ellipse at 50% 38%,#1b3047,#09121e 55%,#050b13); }
+#app, .overlay { border-color:#344e67; }
+.hud, .controls { background:linear-gradient(125deg,#192b41,#0b1727); border-color:#385872; }
+.brand-mark { color:#78dcff; border-color:#557e99; background:#0b1929; }
+.brand small { color:#809fb9; }
+.progress-row { color:#adc9dc; }
+.progress-row i, .health-track { background:#233c51; }
+.objective, .health-label { color:#d1e5f2; }
+.pause-button { background:#12263bdd; border-color:#537b96; }
+.pause-button:hover { background:#24435c; }
+.controls .pulse-button { background:#173c54; border-color:#549bbc; box-shadow:inset 0 0 0 4px #102a40; }
+.floating-joystick { border-color:#88d2ef88; background:#0c28406b; box-shadow:inset 0 0 0 12px #5abbe515; }
+.joystick-cross { border-color:#84c4e877; }
+.joystick-thumb { border-color:#b8ecff; background:#3985b7cf; }
+.start-screen { background:#091421; }
+.poster-art img { object-position:center 25%; }
+.poster-art::after { background:linear-gradient(180deg,#07122222,transparent 35%,#07132355 57%,#071322eb 79%,#071322 100%); }
+.start-copy h1 { text-shadow:0 3px 25px #0008; }
+.start-copy h1 span, .start-masthead { color:#b5d7ec; }
+.lede { color:#d5e5f2; }
+.microcopy { color:#92acc2; }
+.primary-button { background:linear-gradient(115deg,#7bddfa,#4ca2d0); color:#071727; border-color:#9deaff; box-shadow:0 5px 22px #0a162955; }
+.choice-screen, .levelup-screen, .result-screen { background:radial-gradient(ellipse at top right,#284c7244,transparent 60%),#0d1b2c; }
+.station-screen { background:linear-gradient(180deg,#0b142000,#0b1420b8 12%,#0c1b2af5 28%,#0c1b2a); }
+.station-heading p:last-child, .levelup-heading p:last-child { color:#9cb9d0; }
+.upgrade-card { border-color:#3a5974; background:linear-gradient(115deg,#1d334b,#112238); }
+.upgrade-card:hover, .upgrade-card.selected { background:#25445e; border-color:#8cdbff; }
+.upgrade-card p { color:#b2c9dc; }
+.upgrade-icon { background:#0a1a2b; border-color:#3e637e; }
+.reroll-button { color:#b8cfdf; border-color:#3a5974; }
+.train-strip { border-color:#304a60; }
+.upgrade-card[data-weapon] .upgrade-icon { font-size:0; width:46px; height:46px; border:0; background-color:transparent; background-image:url("assets/sci-fi-atlas-v1.webp"); background-size:400% 400%; background-repeat:no-repeat; }
+.upgrade-card[data-weapon="rapid"] .upgrade-icon, .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-position:33.333% 0%; }
+.upgrade-card[data-weapon="missile"] .upgrade-icon { background-position:66.667% 0%; }
+.upgrade-card[data-weapon="incendiary"] .upgrade-icon { background-position:100% 0%; }
+.upgrade-card[data-weapon="blades"] .upgrade-icon { background-position:0% 33.333%; }
+.upgrade-card[data-weapon="ricochet"] .upgrade-icon { background-position:33.333% 33.333%; }
+.upgrade-card[data-weapon="chain"] .upgrade-icon { background-position:66.667% 33.333%; }
+.upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:100% 33.333%; }
+.upgrade-card[data-weapon="piercing"] .upgrade-icon { background-position:0% 66.667%; }
+@media (max-height:650px) { .upgrade-card[data-weapon] .upgrade-icon { width:34px; height:34px; } }

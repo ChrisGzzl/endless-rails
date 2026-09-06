@@ -1,5 +1,22 @@
 "use strict";
 
+const gameArt={atlas:null,ground:null};
+if(typeof Image!=="undefined"){
+  for(const [key,path] of [["atlas","assets/sci-fi-atlas-v1.webp"],["ground","assets/slate-ground-v1.webp"]]){
+    const picture=new Image();picture.onload=()=>{gameArt[key]=picture;};picture.src=path;
+  }
+}
+const spriteCells={command:0,gun:1,missile:2,incendiary:3,blades:4,ricochet:5,chain:6,scatter:7,piercing:8};
+// Bounds ignore transparent atlas padding, keeping units readable at gameplay scale.
+const spriteFrames=[[15,18,299,295],[371,28,221,259],[658,36,253,252],[957,19,281,277],[21,336,292,266],[364,336,236,267],[665,321,239,288],[953,326,290,284],[73,630,188,292],[416,630,114,302],[725,628,118,305],[979,628,237,297],[89,983,148,195],[402,989,139,188],[656,951,246,242],[955,941,281,274]];
+function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false){
+  const img=gameArt.atlas;if(!img)return false;
+  const [sx,sy,sw,sh]=spriteFrames[index];
+  const scale=Math.min(width/sw,height/sh),dw=stretch?width:sw*scale,dh=stretch?height:sh*scale;
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);
+  ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
+  ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
+}
 // Rendering stays independent of combat rules and uses the game's logical 390 × 680 canvas.
 const terrainPalettes = [
   { ground: "#454637", shade: "#292f28", stone: "#63604b", edge: "#888066", dust: "#bba178" },
@@ -32,6 +49,14 @@ function glow(x, y, radius, color) {
   ctx.fillStyle = gradient; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 }
 function drawBackground() {
+  if(gameArt.ground){
+    const tile=360,drift=motion.worldDrift(1,state.worldDistance);
+    const ox=((drift.x%tile)+tile)%tile-tile,oy=((drift.y%tile)+tile)%tile-tile;
+    for(let x=ox;x<W;x+=tile)for(let y=oy;y<H;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
+    ctx.fillStyle="#07132430";ctx.fillRect(0,0,W,H);
+    if(state.routeModifiers.weather==="dust"){ctx.fillStyle="#c3a16915";ctx.fillRect(0,0,W,H);}
+    return;
+  }
   const index = Math.max(0, Math.min(4, state.station - 1));
   const palette = terrainPalettes[index];
   if (!terrainPaint.has(index)) {
@@ -76,24 +101,28 @@ function drawRails() {
   const { x: fx, y: fy } = motion.FORWARD;
   const nx = -fy, ny = fx, length = balance.RAIL_HALF_LENGTH;
   const track = (offset, color, width) => line(state.train.x + nx * offset - fx * length, state.train.y + ny * offset - fy * length, state.train.x + nx * offset + fx * length, state.train.y + ny * offset + fy * length, color, width);
-  track(0, "#161d1866", 77); track(0, "#33372c", 63); track(0, "#65604455", 51);
+  track(0, "#161d1866", 77); track(0, "#1c293a", 63); track(0, "#65604455", 51);
   const scroll = state.worldDistance % 26;
   for (let t = -length - scroll; t < length; t += 26) {
     const x = state.train.x + fx * t, y = state.train.y + fy * t;
     line(x - nx * 27 + 1, y - ny * 27 + 3, x + nx * 27 + 1, y + ny * 27 + 3, "#151e19", 7);
-    line(x - nx * 26, y - ny * 26, x + nx * 26, y + ny * 26, "#796747", 5);
-    line(x - nx * 24 - fx * 2, y - ny * 24 - fy * 2, x + nx * 24 - fx * 2, y + ny * 24 - fy * 2, "#ab8a58", 1);
+    line(x - nx * 26, y - ny * 26, x + nx * 26, y + ny * 26, "#50627a", 5);
+    line(x - nx * 24 - fx * 2, y - ny * 24 - fy * 2, x + nx * 24 - fx * 2, y + ny * 24 - fy * 2, "#8b9bab", 1);
   }
   for (const side of [-1, 1]) {
     track(side * 16 + 2, "#151d19", 8);
-    track(side * 16, "#786c51", 5);
-    track(side * 16 - 1, "#b9b293", 1.5);
+    track(side * 16, "#63798b", 5);
+    track(side * 16 - 1, "#b2d3dd", 1.5);
   }
 }
 function drawTrain() {
   const angle = Math.atan2(motion.FORWARD.y, motion.FORWARD.x);
   for (let i = state.trainLength - 1; i >= 0; i--) {
     const p = carPosition(i), half = balance.CAR_LENGTH / 2, height = balance.CAR_HEIGHT / 2;
+    if(gameArt.atlas){
+      const next=carPosition(i+1);if(i<state.trainLength-1)line(p.x,p.y,next.x,next.y,"#8195a6",4);
+      paintSprite(i===0?9:10,p.x,p.y,34,54,angle+Math.PI/2,0,true);continue;
+    }
     ctx.save(); ctx.translate(p.x + 5, p.y + 8); ctx.rotate(angle);
     ctx.fillStyle = "#08141088"; ctx.fillRect(-half - 3, -height - 2, half * 2 + 7, height * 2 + 5); ctx.restore();
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(angle);
@@ -137,6 +166,14 @@ function drawTrain() {
   }
 }
 function drawZombie(e, boss=false) {
+  if(gameArt.atlas){
+    const gait=state.visualTime*(7+(e.speed||60)*.045)+(e.hue||0)*TAU;
+    const index=boss?15:e.elite?14:12+(Math.sin(gait)>0?0:1);
+    const size=boss?e.r*2.8:e.elite?e.r*2.8:e.r*3.1;
+    ctx.save();ctx.globalAlpha=e.hit>.4?.65:1;
+    paintSprite(index,e.x,e.y,size,size,Math.atan2(state.train.y-e.y,state.train.x-e.x)-Math.PI/2+Math.sin(gait)*.055);
+    ctx.restore();return;
+  }
   const phase=state.visualTime*(7+(e.speed||60)*.045)+(e.hue||0)*TAU;
   const stride=Math.sin(phase),sway=Math.sin(phase*.5)*.08,r=e.r;
   ctx.save();ctx.translate(e.x,e.y);ctx.rotate(Math.atan2(state.train.y-e.y,state.train.x-e.x)+sway);
@@ -182,72 +219,52 @@ function drawBoss() {
   if(!state.boss||state.boss.dead)return;
   drawZombie({...state.boss,hue:.5},true);
 }
-function droneSprite(x, y, scale, color) {
-  ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-  ctx.fillStyle = "#091b1644"; ctx.beginPath(); ctx.ellipse(4, 11, 19, 9, 0, 0, TAU); ctx.fill();
-  for (const side of [-1, 1]) for (const front of [-1, 1]) {
-    line(side * 3, front * 5, side * 15, front * 11, "#192f29", 5);
-    line(side * 3, front * 5 - 1, side * 15, front * 11 - 1, "#b3be9f", 2);
-    ctx.fillStyle = "#16332d"; ctx.beginPath(); ctx.ellipse(side * 16, front * 12, 7, 5, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke();
-    const spin=state.visualTime*35+side+front,rx=Math.cos(spin)*6,ry=Math.sin(spin)*4;
-    line(side*16-rx,front*12-ry,side*16+rx,front*12+ry,"#e5f8ffbb",1.5);
-    ctx.fillStyle = "#e1e5be"; ctx.fillRect(side * 16 - 1, front * 12 - 1, 2, 2);
-  }
-  shape([[-6, -12], [5, -12], [9, 4], [4, 12], [-5, 12], [-9, 4]], "#f3fcff", "#123b62", 2);
-  ctx.fillStyle = "#187cad"; ctx.fillRect(-4, -7, 8, 11);
-  ctx.fillStyle = color; ctx.fillRect(-3, -5, 6, 5);
-  line(-3, 7, 3, 7, "#716f4e", 2);
-  glow(0, -3, 17, "#99ead733"); ctx.restore();
+function droneSprite(x,y,scale,color) {
+  // Lightweight vectored-thrust fallback while the texture downloads.
+  ctx.save();ctx.translate(x,y);ctx.scale(scale,scale);
+  shape([[0,-22],[9,-4],[23,12],[8,8],[0,15],[-8,8],[-23,12],[-9,-4]],"#dceeff","#173d5e",2);
+  shape([[0,-15],[5,1],[0,7],[-5,1]],color);
+  line(-8,10,-8,17,color,3);line(8,10,8,17,color,3);ctx.restore();
 }
-function drawSpecialist(drone) {
-  const kind=drone.id.startsWith("escort")?"gun":drone.id;
-  const scale=.69+Math.min(3,drone.level-1)*.035;
-  ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(drone.angle+Math.PI/2);
-  droneSprite(0,0,scale,drone.color);
-  ctx.scale(scale,scale);
-  ctx.fillStyle=drone.color;
-  if(kind==="missile") {
-    for(const side of [-1,1]){
-      ctx.fillStyle="#334450";ctx.fillRect(side*10-4,-14,8,23);
-      shape([[side*10-3,-13],[side*10,-20],[side*10+3,-13]],drone.color);
-      line(side*10,-10,side*10,5,"#effaff",2);
-    }
-  }else if(kind==="incendiary"){
-    ctx.fillStyle="#674628";ctx.fillRect(-10,-5,20,14);
-    ctx.fillStyle=drone.color;ctx.beginPath();ctx.arc(0,1,7,0,TAU);ctx.fill();
-    line(-4,-12,4,-12,"#ff7948",4);
-  }else if(kind==="ricochet"){
-    glow(0,-5,20,"#ba75ff66");ctx.strokeStyle=drone.color;ctx.lineWidth=3;
-    ctx.beginPath();ctx.arc(0,-5,9,0,TAU);ctx.stroke();
-  }else if(kind==="blades"){
-    ctx.strokeStyle=drone.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,20,0,TAU);ctx.stroke();
-    shape([[-22,-4],[-29,5],[-16,4]],"#effcff");shape([[22,4],[29,-5],[16,-4]],"#effcff");
-  }else if(kind==="chain"){
-    line(-8,0,-8,-22,drone.color,3);line(8,0,8,-22,drone.color,3);
-    line(-8,-22,8,-22,"#e2eaff",1);
-  }else{
-    const barrels=kind==="scatter"?[-9,0,9]:[0];
-    for(const x of barrels)line(x,-6,x,kind==="piercing"?-29:-21,drone.color,3);
+function drawFlight(drone,command=false){
+  const kind=command?"command":drone.id.startsWith("escort")?"gun":drone.id;
+  const color=command?"#68e6ff":drone.color,angle=(drone.flightAngle??-Math.PI/2)+Math.PI/2;
+  const width=command?70:44+Math.min(3,drone.level-1)*2;
+  const thrust=drone.thrust||0,bank=drone.bank||0;
+  ctx.fillStyle="#030b1766";ctx.beginPath();ctx.ellipse(drone.x+5,drone.y+10,width*.3,width*.18,angle,0,TAU);ctx.fill();
+  ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(angle);
+  const flame=(command?12:8)+thrust*15+Math.sin(state.visualTime*27+drone.x)*2;
+  for(const side of [-1,1]){
+    const offset=width*.17;
+    const alpha=.3+thrust*.5;ctx.globalAlpha=alpha;
+    shape([[side*offset-3,width*.25],[side*offset,width*.25+flame],[side*offset+3,width*.25]],color);
+    ctx.globalAlpha=1;
   }
-  // Hardware tier marks remain visible between attacks.
-  for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=drone.color;ctx.fillRect(-7+i*6,11,3,2);}
-  if(drone.flash>0){glow(0,-24,17,drone.color+"88");shape([[-4,-23],[0,-34],[4,-23]],"#ffffff");}
   ctx.restore();
+  // Eight heading sectors, eased turns, bank foreshortening and speed-responsive exhaust.
+  if(!paintSprite(spriteCells[kind],drone.x,drone.y,width,width,angle,bank)){
+    ctx.save();ctx.translate(drone.x,drone.y);ctx.rotate(angle);droneSprite(0,0,command?1.25:.8,color);ctx.restore();
+  }
+  if(!command){
+    for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=color;ctx.fillRect(drone.x-5+i*4,drone.y+width*.47,2,2);}
+    // Weapon aim is separate from flight attitude, so strafing remains possible.
+    if(drone.flash>0){const x=drone.x+Math.cos(drone.angle)*width*.35,y=drone.y+Math.sin(drone.angle)*width*.35;
+      glow(x,y,11,color+"88");line(x,y,x+Math.cos(drone.angle)*8,y+Math.sin(drone.angle)*8,"#f8fdff",2);}
+  }
 }
-function drawDrone() {
+function drawSpecialist(drone){drawFlight(drone);}
+function drawDrone(){
   for(const specialist of state.swarm)drawSpecialist(specialist);
   const x=state.drone.x,y=state.drone.y;
-  glow(x,y,46,"#37bfff35");
-  ctx.strokeStyle="#63dfff";ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(x,y,34,0,TAU);ctx.stroke();
+  glow(x,y,42,"#31a7ff25");
+  ctx.strokeStyle="#67dfff88";ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(x,y,37,0,TAU);ctx.stroke();
+  drawFlight(state.drone,true);
   for(const side of [-1,1]){
-    line(x+side*39,y-9,x+side*44,y,"#ffffff",2.5);
-    line(x+side*44,y,x+side*39,y+9,"#ffffff",2.5);
+    line(x+side*41,y-5,x+side*45,y,"#e1faff",2);
+    line(x+side*45,y,x+side*41,y+5,"#e1faff",2);
   }
-  droneSprite(x,y,1.38,"#43d8ff");
-  ctx.fillStyle="#f3fdff";ctx.font="bold 10px sans-serif";ctx.textAlign="center";
-  ctx.fillText("主控",x,Math.min(H-7,y+47));
+  ctx.fillStyle="#edfaff";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText("主控",x,Math.min(H-7,y+47));
 }
 function drawShots() {
   for (const shot of state.shots) {
@@ -280,6 +297,7 @@ function drawStation() {
   const turrets=stationTurrets();
   for(const t of turrets){
     const target=state.enemies.find(e=>!e.dead),angle=target?Math.atan2(target.y-t.y,target.x-t.x):-.8;
+    if(paintSprite(11,t.x,t.y,37,42,angle+Math.PI/2))continue;
     ctx.save();ctx.translate(t.x,t.y);ctx.rotate(angle);
     ctx.fillStyle="#122238";ctx.fillRect(-14,-14,28,28);
     ctx.strokeStyle="#94e5ff";ctx.lineWidth=2;ctx.strokeRect(-14,-14,28,28);
@@ -313,7 +331,7 @@ function drawZones() {
 function drawWeaponEffects() {
   for(const b of bladePositions()){
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.a+Math.PI/2);
-    shape([[-6,-14],[7,-9],[4,13],[-7,7]],"#ecfaff","#57dfff",2);
+    shape([[-3,-15],[4,-9],[7,3],[3,13],[-4,16],[-1,2],[-5,-7]],"#d4f4ff","#57dfff",1.5);
     line(-10,-18,-14,2,"#72e4ff99",3);ctx.restore();
   }
   for(const f of state.weaponFx){

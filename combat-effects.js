@@ -45,6 +45,29 @@ function formationPosition(center, slot, time, width, height) {
   return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
 }
 
+function flightPose(previous, vx, vy, dt) {
+  const speed=Math.hypot(vx,vy),oldAngle=previous.flightAngle??-Math.PI/2;
+  const direction=speed>5?((Math.round((Math.atan2(vy,vx)+Math.PI/2)/(Math.PI/4))%8)+8)%8:(previous.direction??0);
+  const target=direction*Math.PI/4-Math.PI/2;
+  const delta=Math.atan2(Math.sin(target-oldAngle),Math.cos(target-oldAngle));
+  const flightAngle=oldAngle+Math.max(-5*dt,Math.min(5*dt,delta));
+  const blend=1-Math.exp(-8*Math.max(0,dt));
+  return {direction,flightAngle,bank:(previous.bank||0)+(Math.sin(delta)*.3-(previous.bank||0))*blend,
+    thrust:(previous.thrust||0)+(Math.min(1,speed/180)-(previous.thrust||0))*blend,vx,vy};
+}
+
+function autonomousGoal(center, drone, target, time, width, height, combat=true) {
+  const base=formationPosition(center,drone.slot,time,width,height),phase=time*.95+drone.slot*2.399;
+  let x=base.x+Math.sin(phase)*9,y=base.y+Math.cos(phase*.83)*7,behavior="patrol";
+  if(Math.hypot(drone.x-base.x,drone.y-base.y)>75)behavior="return";
+  else if(combat&&target&&Math.hypot(target.x-center.x,target.y-center.y)<230){
+    const dx=target.x-base.x,dy=target.y-base.y,length=Math.hypot(dx,dy)||1;
+    x+=dx/length*15;y+=dy/length*15;behavior="engage";
+  }
+  if(behavior==="return"){x=base.x;y=base.y;}
+  return {x:Math.max(20,Math.min(width-20,x)),y:Math.max(20,Math.min(height-20,y)),behavior};
+}
+
 function moduleLevel(map, id) {
   return Math.max(0, Number(map?.[id]) || 0);
 }
@@ -124,6 +147,8 @@ function applyAreaDamage(targets, center, radius, damage) {
 }
 
 const combatEffects = {
+  flightPose,
+  autonomousGoal,
   DRONE_TYPES,
   swarmRoster,
   formationPosition,
