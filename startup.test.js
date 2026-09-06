@@ -54,14 +54,10 @@ const sandbox = {
 };
 
 vm.createContext(sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/balance.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/motion.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/progression.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/combat-effects.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/control.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/route-events.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/run-record.js", "utf8"), sandbox);
-vm.runInContext(fs.readFileSync(__dirname + "/game.js", "utf8"), sandbox);
+const html = fs.readFileSync(__dirname + "/index.html", "utf8");
+const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
+assert.deepEqual(scriptNames, ["balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "renderer.js", "game.js"], "all runtime modules must load in dependency order");
+for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 assert.equal(scheduledFrames, 1, "startup must schedule its first animation frame");
 assert.doesNotThrow(() => {
@@ -95,17 +91,14 @@ assert.doesNotThrow(() => {
 assert.equal(scheduledFrames, 62, "each combat frame must schedule the next frame");
 assert.ok(vm.runInContext("state.routeDistance < state.routeDistanceTotal", sandbox), "combat frames must advance the route");
 
-const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const css = fs.readFileSync(__dirname + "/styles.css", "utf8");
 for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {
   assert.match(html, new RegExp(`id=\\"${id}\\"`), `${id} must exist in the HUD`);
 }
-assert.match(html, /src="control\.js"[\s\S]*src="route-events\.js"[\s\S]*src="run-record\.js"[\s\S]*src="game\.js"/, "new modules must load before game.js");
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, "reduced-motion styling must exist");
 assert.match(css, /\.pause-button/, "pause control must be styled");
 assert.match(css, /\.command-ring/, "command ring must be styled");
 assert.match(css, /\.event-card/, "route and contract cards must be styled");
 assert.match(css, /\.upgrade-card\[data-scope/, "upgrade scope must be styled");
 
-assert.match(html, /src="balance\.js"[\s\S]*src="motion\.js"[\s\S]*src="progression\.js"[\s\S]*src="combat-effects\.js"[\s\S]*src="control\.js"[\s\S]*src="route-events\.js"[\s\S]*src="run-record\.js"[\s\S]*src="game\.js"/, "all runtime modules must load in dependency order");
 console.log("startup test passed");

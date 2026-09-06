@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260906-visual">
 </head>
 <body>
   <main id="app">
     <header class="hud" aria-label="战斗状态">
-      <div class="brand"><span class="brand-mark">◆</span><div><small>OUTLAND EXPRESS</small><strong>荒原轨道</strong></div></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">ER</span><div><small>OUTLAND EXPRESS</small><strong>荒原轨道</strong></div></div>
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
       <div class="progress-strip" aria-label="路线与经验进度">
@@ -28,7 +28,7 @@
       <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">荒原掘行者</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
       <div class="combo" id="comboText"></div>
       <div class="toast" id="toast"></div>
-      <div class="touch-hint" id="touchHint">点击战场部署无人机<br><b>守住列车</b></div>
+      <div class="touch-hint" id="touchHint">点击战场，部署无人机<br><b>自动开火 · 守住列车</b></div>
     </section>
 
     <footer class="controls">
@@ -39,23 +39,30 @@
   </main>
 
   <section class="overlay start-screen" id="startScreen">
-    <div class="poster-art" aria-hidden="true"><div class="poster-sun"></div><div class="poster-track"></div><div class="poster-train"></div><div class="poster-drone"></div></div>
-    <div class="start-copy"><p class="eyebrow">A SHORT MOBILE PROTOTYPE · V0.4</p><h1>荒原轨道</h1><p class="subtitle">无人机守卫</p><p class="lede">列车不停，荒原不睡。<br>点击战场，部署无人机，护送最后一班车。</p><button class="primary-button" id="startButton">出发</button><p class="microcopy">5 个车站 · 远征契约 · 路线事件 · 原创试玩版</p></div>
+    <div class="poster-art" aria-hidden="true"><img src="assets/wasteland-poster.webp" alt="" fetchpriority="high" width="900" height="1125"></div>
+    <div class="start-masthead"><span>ENDLESS RAILS</span><span>远征 / 01—05</span></div>
+    <div class="start-copy">
+      <p class="eyebrow">OUTLAND EXPRESS</p>
+      <h1>荒原轨道<span>无人机守卫</span></h1>
+      <p class="lede">最后一班列车，穿越无尽荒原。<br>部署无人机，护送它抵达黎明。</p>
+      <button class="primary-button" id="startButton"><span>开始远征</span><span aria-hidden="true">↗</span></button>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p>
+    </div>
   </section>
 
   <section class="overlay station-screen" id="stationScreen" hidden>
-    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span> / 04</p><h2>给列车装上<br><em>下一种可能</em></h2><p>飞机负责主动火力，列车负责被动生存。</p></div>
+    <div class="station-heading"><p class="eyebrow">到达补给站 <span id="stationTitle">01</span> / 04</p><h2>整备列车<em>继续向前</em></h2><p>飞机负责主动火力，列车负责被动生存。</p></div>
     <div class="upgrade-list" id="upgradeList"></div>
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
     <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
   </section>
 
-  <section class="overlay choice-screen" id="contractScreen" hidden><div class="station-heading"><p class="eyebrow">远征契约</p><h2>选择本局规则</h2><p>更高风险，换取更高回报。</p></div><div class="upgrade-list" id="contractList"></div></section>
-  <section class="overlay choice-screen" id="eventScreen" hidden><div class="station-heading"><p class="eyebrow">路线事件</p><h2>下一段驶入哪里</h2><p>路线会改变地面、敌群和掉落。</p></div><div class="upgrade-list" id="eventList"></div></section>
+  <section class="overlay choice-screen" id="contractScreen" hidden><div class="station-heading"><p class="eyebrow">远征契约</p><h2>签订远征契约</h2><p>更高风险，换取更高回报。</p></div><div class="upgrade-list" id="contractList"></div></section>
+  <section class="overlay choice-screen" id="eventScreen" hidden><div class="station-heading"><p class="eyebrow">路线事件</p><h2>选择前方路线</h2><p>路线会改变地面、敌群和掉落。</p></div><div class="upgrade-list" id="eventList"></div></section>
 
   <section class="overlay levelup-screen" id="levelUpScreen" hidden>
-    <div class="levelup-heading"><p class="eyebrow">战斗升级</p><h2>选择你的火力</h2><p>列车仍在冲刺，升级后继续清场。</p></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级</p><h2>火力升级</h2><p>列车仍在冲刺，升级后继续清场。</p></div>
     <div class="upgrade-list" id="levelUpList"></div>
   </section>
 
@@ -69,6 +76,7 @@
   <script src="control.js"></script>
   <script src="route-events.js"></script>
   <script src="run-record.js"></script>
-  <script src="game.js"></script>
+  <script src="renderer.js?v=20260906-visual"></script>
+  <script src="game.js?v=20260906-visual"></script>
 </body>
 </html>
