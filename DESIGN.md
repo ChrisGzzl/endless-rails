@@ -14,7 +14,7 @@ Route one has no elites. Later routes gradually raise elite probability and move
 
 ## Weapon roles
 
-- Basic gun: nearest-target direct fire; rapid / spread / piercing remain upgrades.
+- Basic gun: short-range, low-damage, high-frequency point fire. Scatter and piercing are separate specialist aircraft.
 - Cutter: a continuous circular cutting field (72 px radius at level 1, +8 per level up to 112), hits all targets every 0.25 s for 0.75 + 0.3 × level damage. Three to six visible blades show the swept area. No gaps at the hub or between blade tips. A density grid selects nearby crowds every 0.3 s; the cutter may move 70 px from its patrol goal and returns when more than 115 px from its formation slot.
 - Incendiary grenade: arcing flight followed by a stationary burning area.
 - Ricochet energy ball: wall reflections, piercing targets; can hit again after bouncing.
@@ -57,3 +57,28 @@ Ordinary enemy health grows by only 0.22 per route and 0.20 within each route. E
 Nearest-target selection is linear. Cosmetic particles are capped at 420 and floating labels at 24; combo animation restarts at most once every 0.15 s. Kill rewards and damage are never dropped by these visual budgets.
 
 `horde.test.js` covers 360-degree cutter coverage, inner and outer range, damage cadence, crowd seeking and leash, 166 simultaneous kill rewards under VFX budgets, and complete station clearing of the larger horde. All 12 regression files pass. Twelve seeded opening simulations still reach the first station with full repaired health and level 4. A sampled route-four build killed 398 enemies in about 60 s while retaining 170 train HP; this is a smoke check, not a guarantee for other builds. Native Canvas rendering of 160 zombies plus the specialist fleet measured 2.6 ms median / 4.1 ms p95 in the development environment, not a mobile browser benchmark.
+
+
+## Weapon roles and tactical pause — 2026-09-07
+
+`combat-effects.weaponProfile(id, level, cores)` now supplies both the combat simulation and the inspector. All specialist acquisition respects distance from its own hull to the target edge. Straight bullets expire at their maximum travel range. Missiles continue homing after a valid launch until their lifetime expires; ricochet balls can continue beyond acquisition range until lifetime or bounce count is exhausted. Swept projectile collision avoids skipping small enemies at high speed.
+
+| Lv.1 aircraft | Single hit damage | Interval | Lock range | Distinct effect |
+| --- | --- | --- | --- | --- |
+| Gun | 0.65 | 0.15 s | 155 px | Single target, 6.67 rounds/s |
+| Gun escort | 0.50 | 0.22 s | 145 px | Separate auxiliary gun, up to 3 escorts |
+| Missile | 5.00 | 4.20 s | 340 px | Homing; 68 px blast; 4 s lifetime |
+| Arc | 1.65 | 1.05 s | 205 px | Up to 3 targets; 100 px jumps |
+| Scatter | 0.65 / pellet | 0.80 s | 135 px | 5 pellets in a fan |
+| Piercing | 2.80 | 1.25 s | 300 px | Up to 3 targets along the shot |
+| Incendiary | 0.50 / tick | 3.60 s | 250 px | 55 px ground fire; ticks every 0.4 s for 3.8 s |
+| Ricochet | 1.30 | 1.90 s | 230 px | 3 wall rebounds; 4.8 s lifetime; piercing |
+| Cutter | 1.05 / tick | 0.25 s | 72 px | Continuous cutting disc and autonomous crowd seeking |
+
+Upgrades increase damage and, where appropriate, improve intervals, radii, pellet counts, chain counts or penetration. Gun core effects are explicit: scatter adds bullets, overdrive speeds up the gun by 8% per layer (up to five layers), arc triggers a 65%-damage jump every fourth gun hit. Cores never give other specialist weapon families to the command craft.
+
+The pause button and P/Escape open `armory.js`. Combat, projectiles, route motion, cooldowns and docking freeze, while joystick state is cleared. Losing window focus automatically pauses combat/docking. Inspection from upgrade or station selection returns to the same pending choice. Four tabs show weapon parameters, live movement/cooldown and credited damage/kills, actual next-level changes, and the team's train/modules/core modifiers. Unowned aircraft can be previewed at their level-one values. Theoretical DPS is explicitly one target and one projectile, without splash/chain/core bonuses. Damage totals exclude overkill; direct kill counts exclude train/pulse/volatile-protocol kills.
+
+The terminal uses 12 items per page on tall screens, 9 below 700 px and 6 below 450 px. CSS and interaction handlers disable text selection, image dragging, long-press menus and page overscroll on game surfaces; the canvas keeps its own pointer capture and touch-action:none, while menu buttons and the native aircraft selector keep normal interaction.
+
+Validation: 14 Node regression files pass, including range gating for all eight weapon families, actual cooldown enforcement, short bullet travel, swept high-speed collision, blast/chain limits, core profiles, non-overkill attribution, pause freeze/resume, docking freeze, pending-upgrade preservation, short-screen pagination and gesture cancellation. Twelve deterministic opening runs still reach station one with repaired 100 HP and level 4.

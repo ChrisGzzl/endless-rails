@@ -32,6 +32,35 @@ const DRONE_TYPES = Object.freeze([
   {id:"scatter", module:"scatter", name:"散射机", color:"#ff83b7", icon:"✣"},
   {id:"piercing", module:"piercing", name:"穿透机", color:"#f4f8ff", icon:"↠"},
 ]);
+// One source of truth for firing rules, upgrade previews and the pause inspector.
+function weaponProfile(id, level=1, cores={}) {
+  const n=Math.max(1,Math.floor(Number(level)||1)),t=n-1;
+  const kind=id.startsWith("escort")?"escort":id;
+  const common={id,kind,level:n,projectileCount:1,pierce:0,spread:0,speed:410,range:0,radius:0,chain:false};
+  const specs={
+    gun:{role:"近程 · 高频点射",damage:.65+t*.09,interval:Math.max(.085,.15-t*.008),range:155+Math.min(t,5)*4},
+    escort:{role:"近程 · 辅助点射",damage:.5,interval:.22,range:145},
+    missile:{role:"远程 · 追踪爆破",damage:5+t*1.4,interval:Math.max(2.4,4.2-t*.25),range:340,radius:68+Math.min(t,6)*5,speed:220,life:4,turnRate:3},
+    chain:{role:"中程 · 连锁清群",damage:1.65+t*.35,interval:Math.max(.55,1.05-t*.06),range:205,chainRange:100+Math.min(t,5)*5,targets:3+Math.min(t,3),speed:0},
+    scatter:{role:"近程 · 扇形霰弹",damage:.65+t*.18,interval:Math.max(.45,.8-t*.04),range:135,projectileCount:5+Math.min(t,3)*2,spread:.16,speed:370},
+    piercing:{role:"远程 · 直线贯穿",damage:2.8+t*.65,interval:Math.max(.65,1.25-t*.07),range:300,pierce:2+Math.min(t,5),speed:560},
+    incendiary:{role:"中远程 · 地面封锁",damage:.5+t*.2,interval:Math.max(2.4,3.6-t*.15),range:250,radius:55+Math.min(t,6)*5,tick:.4,duration:3.8,flight:.65,speed:0},
+    ricochet:{role:"中程 · 弹跳穿群",damage:1.3+t*.3,interval:Math.max(1,1.9-t*.1),range:230,speed:270,life:4.8,bounces:3+Math.min(t,3)},
+    blades:{role:"近战 · 持续切割",damage:.75+n*.3,interval:.25,range:72+Math.min(t,5)*8,radius:72+Math.min(t,5)*8,blades:Math.min(6,n+2),speed:0},
+  };
+  const p={...common,...specs[kind]};
+  if(!specs[kind])throw new Error("Unknown drone weapon: "+id);
+  if(kind==="gun"){
+    p.projectileCount+=moduleLevel(cores,"scatter");p.spread=.12;
+    p.interval/=1+Math.min(5,moduleLevel(cores,"overdrive"))*.08;
+    p.coreArc=moduleLevel(cores,"arc")>0;
+  }
+  p.life??=p.speed?p.range/p.speed:0;
+  p.frequency=1/p.interval;
+  // One target, one projectile, no splash/chain bonus; never a promise of real DPS.
+  p.singleTargetDps=p.damage/(p.tick||p.interval);
+  return p;
+}
 function swarmRoster(modules={}) {
   const fleet=DRONE_TYPES.flatMap((type,slot)=>type.id==="gun"||moduleLevel(modules,type.module)>0
     ? [{...type,slot,level:type.id==="gun"?1+moduleLevel(modules,"rapid"):moduleLevel(modules,type.module)}] : []);
@@ -148,6 +177,7 @@ function applyAreaDamage(targets, center, radius, damage) {
 }
 
 const combatEffects = {
+  weaponProfile,
   flightPose,
   autonomousGoal,
   DRONE_TYPES,

@@ -41,7 +41,7 @@ function createElement(id) {
   };
 }
 
-const elements = Object.fromEntries(ids.map(id => [id, createElement(id)]));
+const elements = Object.fromEntries([...fs.readFileSync(__dirname + "/index.html", "utf8").matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
 Object.assign(elements.gameCanvas, { width: 390, height: 680 });
 let scheduledFrames = 0;
 const windowEvents = {};
@@ -59,7 +59,7 @@ const sandbox = {
 vm.createContext(sandbox);
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.deepEqual(scriptNames, ["balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "renderer.js", "game.js"], "all runtime modules must load in dependency order");
+assert.deepEqual(scriptNames, ["balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "renderer.js", "game.js", "armory.js"], "all runtime modules must load in dependency order");
 for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 assert.equal(scheduledFrames, 1, "startup must schedule its first animation frame");

@@ -17,7 +17,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { width: 100%; min-height: 100%; margin: 0; background: #0a0d0c; }
+html, body { overscroll-behavior:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; width: 100%; min-height: 100%; margin: 0; background: #0a0d0c; }
 body { min-height: 100dvh; display: grid; place-items: center; overflow: hidden; color: var(--paper); background-image: radial-gradient(ellipse at 50% 38%, #293029 0, #101613 40%, #090d0c 80%); }
 button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
@@ -295,3 +295,44 @@ body { background: radial-gradient(ellipse at 50% 38%,#1b3047,#09121e 55%,#050b1
 .upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:50% 100%; }
 .upgrade-card[data-weapon="piercing"] .upgrade-icon { background-position:100% 100%; }
 @media (max-height:650px) { .upgrade-card[data-weapon] .upgrade-icon { width:34px; height:34px; } }
+
+/* The tactical terminal uses pages rather than nested scrolling on small screens. */
+.pause-screen { z-index:40; padding:clamp(12px,3vh,26px) 18px; display:flex; flex-direction:column; gap:12px; overflow:hidden; background:linear-gradient(145deg,#112a40f8,#071321fc); }
+.pause-heading h2 { margin:4px 0 6px; font-size:27px; }
+.pause-heading p { margin:0; color:#9eb9ce; font-size:12px; }
+.pause-heading .eyebrow { color:#70dfff; font-size:10px; letter-spacing:.14em; }
+.inspect-unit { display:flex; align-items:center; gap:10px; padding:12px 0; border-block:1px solid #3b617c88; }
+.inspect-unit>div:not(.inspect-arrows) { flex:1; min-width:0; }
+.inspect-unit label { font-size:10px; color:#8faec6; display:block; margin-bottom:3px; }
+.inspect-unit select { display:block; width:100%; background:#10283c; color:#eef9ff; border:0; font-family:inherit; font-size:15px; font-weight:600; padding:4px 0; }
+.inspect-unit p { margin:6px 0 0; font-size:11px; color:#6cddff; }
+.inspect-portrait { flex:0 0 62px; height:62px; background:url("assets/hover-drones-v2.webp") 0 0/300% 300% no-repeat; }
+.inspect-portrait[data-kind="gun"] { background-position:50% 0; }
+.inspect-portrait[data-kind="missile"] { background-position:100% 0; }
+.inspect-portrait[data-kind="incendiary"] { background-position:0 50%; }
+.inspect-portrait[data-kind="blades"] { background-position:50% 50%; }
+.inspect-portrait[data-kind="ricochet"] { background-position:100% 50%; }
+.inspect-portrait[data-kind="chain"] { background-position:0 100%; }
+.inspect-portrait[data-kind="scatter"] { background-position:50% 100%; }
+.inspect-portrait[data-kind="piercing"] { background-position:100% 100%; }
+.inspect-arrows { display:flex; gap:5px; }
+.inspect-arrows button,.inspect-page-nav button { width:32px; height:34px; border:1px solid #3b617c; background:#163349; color:#c7f2ff; border-radius:6px; font-size:22px; }
+.inspect-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+.inspect-tabs button { padding:9px 1px; border:1px solid #2e506a; border-radius:5px; background:#0c2032; color:#9bb7ca; font-size:11px; }
+.inspect-tabs button.active { background:#1d4b64; color:#d6f8ff; border-color:#65d8f4; }
+.inspect-stats { margin:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; align-content:start; flex:1; min-height:0; }
+.inspect-stat { margin:0; min-width:0; padding:10px 8px; border:1px solid #2b4b63; border-radius:6px; background:#0b1d2e; }
+.inspect-stat dt { font-size:10px; color:#95b3c8; margin-bottom:7px; }
+.inspect-stat dd { margin:0; font-size:13px; font-weight:650; line-height:1.3; overflow-wrap:anywhere; color:#e6f7ff; }
+.inspect-note { font-size:10px; line-height:1.6; color:#93afc2; margin:0; }
+.inspect-page-nav { display:flex; align-items:center; justify-content:center; gap:16px; font-size:12px; color:#a5c8db; }
+.inspect-page-nav button:disabled { opacity:.25; }
+.pause-screen .primary-button { flex-shrink:0; min-height:44px; margin:0; width:100%; }
+.pause-shortcut { text-align:center; color:#7797ae; font-size:10px; }
+.inspect-entry { background:transparent; border:0; color:#92daf2; font-size:11px; padding:7px; text-decoration:underline; }
+@media(max-height:720px) { .pause-screen { gap:8px; padding:12px 14px; } .inspect-stat { padding:8px 6px; } .inspect-stat dt { margin-bottom:4px; } .pause-heading h2 { font-size:23px; } .inspect-unit { padding:8px 0; } }
+@media(max-height:590px) { .pause-screen { gap:5px; padding:9px 12px; } .pause-heading .eyebrow,.pause-shortcut { display:none; } .pause-heading h2 { font-size:20px; margin:0 0 3px; } .inspect-portrait { flex-basis:43px; height:43px; } .inspect-unit { padding:5px 0; } .inspect-tabs button { padding:6px 1px; } .inspect-stat { padding:6px; } .inspect-stats { gap:4px; } .inspect-stat dd { font-size:11px; } .inspect-stat dt { font-size:9px; } .inspect-note { font-size:9px; line-height:1.4; } .pause-screen .primary-button { min-height:36px; padding:7px; } .inspect-page-nav button { height:24px; } }
+
+#app, .overlay { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-touch-callout:none; }
+.poster-art, .inspect-portrait, .upgrade-icon { pointer-events:none; }

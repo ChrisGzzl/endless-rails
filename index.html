@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css??v=20260906-hover-horde">
+  <link rel="stylesheet" href="styles.css?v=20260907-arsenal">
 </head>
 <body>
   <main id="app">
@@ -43,7 +43,7 @@
   </main>
 
   <section class="overlay start-screen" id="startScreen">
-    <div class="poster-art" aria-hidden="true"><img src="assets/hover-poster-v2.webp" alt="" fetchpriority="high" width="1024" height="1536"></div>
+    <div class="poster-art" aria-hidden="true"><img draggable="false" src="assets/hover-poster-v2.webp" alt="" fetchpriority="high" width="1024" height="1536"></div>
     <div class="start-masthead"><span>ENDLESS RAILS</span><span>远征 / 01—05</span></div>
     <div class="start-copy">
       <p class="eyebrow">OUTLAND EXPRESS</p>
@@ -55,7 +55,7 @@
   </section>
 
   <section class="overlay station-screen" id="stationScreen" hidden>
-    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>防卫炮台已清场 · 免费选择一项 · 完整度已修复</p></div>
+    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>防卫炮台已清场 · 免费选择一项 · 完整度已修复</p><button class="inspect-entry" id="stationInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="upgradeList"></div>
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
@@ -66,21 +66,32 @@
   <section class="overlay choice-screen" id="eventScreen" hidden><div class="station-heading"><p class="eyebrow">路线事件</p><h2>选择前方路线</h2><p>路线会改变地面、敌群和掉落。</p></div><div class="upgrade-list" id="eventList"></div></section>
 
   <section class="overlay levelup-screen" id="levelUpScreen" hidden>
-    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>战斗已暂停。选择武器，升级后继续护送。</p></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>战斗已暂停。选择武器，升级后继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="levelUpList"></div>
+  </section>
+
+  <section class="overlay pause-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+    <header class="pause-heading"><p class="eyebrow">PAUSED / FLEET TELEMETRY</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
+    <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
+    <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
+    <dl class="inspect-stats" id="inspectStats"></dl>
+    <div class="inspect-page-nav" id="inspectPageNav"><button id="inspectPrevPage" aria-label="上一页数据">‹</button><span id="inspectPage"></span><button id="inspectNextPage" aria-label="下一页数据">›</button></div>
+    <p class="inspect-note" id="inspectNote"></p>
+    <button class="primary-button" id="resumeButton" type="button">继续护送</button><small class="pause-shortcut">P / Esc 暂停或继续 · 切换窗口自动暂停</small>
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
-  <script src="balance.js?v=20260906-hover-horde"></script>
-  <script src="motion.js?v=20260906-hover-horde"></script>
-  <script src="progression.js?v=20260906-hover-horde"></script>
-  <script src="combat-effects.js?v=20260906-hover-horde"></script>
-  <script src="control.js??v=20260906-hover-horde"></script>
-  <script src="route-events.js?v=20260906-hover-horde"></script>
-  <script src="run-record.js?v=20260906-hover-horde"></script>
-  <script src="renderer.js??v=20260906-hover-horde"></script>
-  <script src="game.js??v=20260906-hover-horde"></script>
+  <script src="balance.js?v=20260907-arsenal"></script>
+  <script src="motion.js?v=20260907-arsenal"></script>
+  <script src="progression.js?v=20260907-arsenal"></script>
+  <script src="combat-effects.js?v=20260907-arsenal"></script>
+  <script src="control.js?v=20260907-arsenal"></script>
+  <script src="route-events.js?v=20260907-arsenal"></script>
+  <script src="run-record.js?v=20260907-arsenal"></script>
+  <script src="renderer.js?v=20260907-arsenal"></script>
+  <script src="game.js?v=20260907-arsenal"></script>
+  <script src="armory.js?v=20260907-arsenal"></script>
 </body>
 </html>
