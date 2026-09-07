@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260907-mobile-flow">
+  <link rel="stylesheet" href="styles.css?v=20260907-art-recovery">
 </head>
 <body>
   <main id="app">
@@ -57,6 +57,8 @@
       <h1>荒原轨道<span>无人机守卫</span></h1>
       <p class="lede">最后一班列车，穿越无尽荒原。<br>集结专机蜂群，护送它抵达黎明。</p>
       <button class="primary-button" id="startButton"><span>开始远征</span><span aria-hidden="true">↗</span></button>
+      <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
+      <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
       <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p>
     </div>
@@ -93,16 +95,16 @@
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
   <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
-  <script src="balance.js?v=20260907-mobile-flow"></script>
-  <script src="motion.js?v=20260907-mobile-flow"></script>
-  <script src="progression.js?v=20260907-mobile-flow"></script>
-  <script src="combat-effects.js?v=20260907-mobile-flow"></script>
-  <script src="control.js?v=20260907-mobile-flow"></script>
-  <script src="route-events.js?v=20260907-mobile-flow"></script>
-  <script src="run-record.js?v=20260907-mobile-flow"></script>
-  <script src="renderer.js?v=20260907-mobile-flow"></script>
-  <script src="game.js?v=20260907-mobile-flow"></script>
-  <script src="armory.js?v=20260907-mobile-flow"></script>
-  <script src="display.js?v=20260907-mobile-flow"></script>
+  <script src="balance.js?v=20260907-art-recovery"></script>
+  <script src="motion.js?v=20260907-art-recovery"></script>
+  <script src="progression.js?v=20260907-art-recovery"></script>
+  <script src="combat-effects.js?v=20260907-art-recovery"></script>
+  <script src="control.js?v=20260907-art-recovery"></script>
+  <script src="route-events.js?v=20260907-art-recovery"></script>
+  <script src="run-record.js?v=20260907-art-recovery"></script>
+  <script src="renderer.js?v=20260907-art-recovery"></script>
+  <script src="game.js?v=20260907-art-recovery"></script>
+  <script src="armory.js?v=20260907-art-recovery"></script>
+  <script src="display.js?v=20260907-art-recovery"></script>
 </body>
 </html>

@@ -369,3 +369,6 @@ img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-
 .immersive #app,.immersive .overlay { border-radius:0; border:0; box-shadow:none; }
 @media (min-width:800px) and (pointer:fine) { :root.immersive { --frame-width:min(640px,100vw); } }
 @media(max-height:590px) { .pause-display button { min-height:26px; padding:4px; } }
+.art-status { margin:8px 0 0; color:#e0edf5; font-size:12px; line-height:1.4; }
+.art-retry { margin-top:8px; padding:8px 16px; border:1px solid #76dff1; background:#10283d; color:#e0f8ff; font:inherit; font-size:13px; }
+#startButton:disabled { opacity:.6; cursor:wait; }

@@ -2,9 +2,40 @@
 
 const gameArt={atlas:null,ground:null,hover:null};
 if(typeof Image!=="undefined"){
-  for(const [key,path] of [["hover","assets/hover-drones-v2.webp"],["atlas","assets/sci-fi-atlas-v1.webp"],["ground","assets/slate-ground-v1.webp"]]){
-    const picture=new Image();picture.onload=()=>{gameArt[key]=picture;};picture.src=path;
+  const assets=[
+    {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
+    {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
+    {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
+  ];
+  const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
+  function updateArtStatus(){
+    const ready=assets.filter(asset=>gameArt[asset.key]).length;
+    const failed=assets.filter(asset=>asset.failed);
+    start.disabled=ready!==assets.length;
+    status.hidden=ready===assets.length;
+    status.textContent=failed.length?`${failed.map(asset=>asset.name).join("、")}素材加载失败，请重试。`:`正在加载美术素材 ${ready} / ${assets.length}…`;
+    retry.hidden=failed.length===0;
   }
+  function loadArt(asset,attempt=0){
+    asset.failed=false;
+    updateArtStatus();
+    const picture=new Image();
+    let settled=false;
+    const timeout=setTimeout(()=>finish(false),15000);
+    function finish(ok){
+      if(settled)return;
+      settled=true;clearTimeout(timeout);
+      picture.onload=picture.onerror=null;
+      if(ok){gameArt[asset.key]=picture;updateArtStatus();}
+      else if(attempt<2)loadArt(asset,attempt+1);
+      else{asset.failed=true;updateArtStatus();}
+    }
+    picture.onload=()=>finish(picture.naturalWidth>0);
+    picture.onerror=()=>finish(false);
+    picture.src=asset.path+"?v=20260907-art-recovery"+(attempt?`&retry=${Date.now()}-${attempt}`:"");
+  }
+  retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
+  for(const asset of assets)loadArt(asset);
 }
 const spriteCells={command:0,gun:1,missile:2,incendiary:3,blades:4,ricochet:5,chain:6,scatter:7,piercing:8};
 // Bounds ignore transparent atlas padding, keeping units readable at gameplay scale.
