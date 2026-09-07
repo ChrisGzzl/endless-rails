@@ -1,11 +1,12 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null,hover:null};
+const gameArt={atlas:null,ground:null,hover:null,vfx:null};
 if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
     {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
     {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
+    {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
   ];
   const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
   function updateArtStatus(){
@@ -32,7 +33,7 @@ if(typeof Image!=="undefined"){
     }
     picture.onload=()=>finish(picture.naturalWidth>0);
     picture.onerror=()=>finish(false);
-    picture.src=asset.path+"?v=20260907-art-recovery"+(attempt?`&retry=${Date.now()}-${attempt}`:"");
+    picture.src=asset.path+"?v=20260907-weapon-art"+(attempt?`&retry=${Date.now()}-${attempt}`:"");
   }
   retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
   for(const asset of assets)loadArt(asset);
@@ -48,6 +49,21 @@ function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false){
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
   ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
+}
+// Imagegen's 4 x 4 atlas has black padding; additive blending removes the black
+// without discarding the soft light. Frames crossfade instead of visibly popping.
+function paintWeaponVfx(row,phase,x,y,size,opacity=1,angle=0,loop=true){
+  const img=gameArt.vfx;if(!img)return false;
+  const frame=loop?((phase%4)+4)%4:Math.max(0,Math.min(3,phase));
+  const current=Math.floor(frame),mix=frame-current,next=loop?(current+1)%4:Math.min(3,current+1);
+  const cellW=img.naturalWidth/4,cellH=img.naturalHeight/4;
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.globalCompositeOperation="lighter";
+  for(const [col,weight] of [[current,1-mix],[next,mix]]){
+    if(weight<.01)continue;
+    ctx.globalAlpha=opacity*weight;
+    ctx.drawImage(img,col*cellW,row*cellH,cellW,cellH,-size/2,-size/2,size,size);
+  }
+  ctx.restore();return true;
 }
 // Rendering stays independent of combat rules and uses the game's logical 390 × 680 canvas.
 const terrainPalettes = [
@@ -305,11 +321,19 @@ function drawDrone(){
     line(x+side*41,y-5,x+side*45,y,"#e1faff",2);
     line(x+side*45,y,x+side*41,y+5,"#e1faff",2);
   }
-  ctx.fillStyle="#edfaff";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText("主控",x,Math.min(H-7,y+47));
+  ctx.fillStyle="#edfaff";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText(effects.droneIdentity("command").name,x,Math.min(H-7,y+47));
 }
 function drawShots() {
   for (const shot of state.shots) {
-    if(shot.bounce){glow(shot.x,shot.y,19,"#ce84ff66");ctx.strokeStyle=shot.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(shot.x,shot.y,8,0,TAU);ctx.stroke();continue;}
+    if(shot.bounce){
+      const phase=state.visualTime*10+shot.life,angle=Math.atan2(shot.vy,shot.vx);
+      if(gameArt.vfx){
+        paintWeaponVfx(0,phase-1,shot.x-shot.vx*.065,shot.y-shot.vy*.065,22,.16,angle);
+        paintWeaponVfx(0,phase-.5,shot.x-shot.vx*.03,shot.y-shot.vy*.03,28,.3,angle);
+        paintWeaponVfx(0,phase,shot.x,shot.y,36,.9,angle);
+      }else{glow(shot.x,shot.y,19,"#ce84ff66");ctx.strokeStyle=shot.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(shot.x,shot.y,8,0,TAU);ctx.stroke();}
+      continue;
+    }
     const trail = shot.missile ? .05 : .023;
     line(shot.x, shot.y, shot.x - shot.vx * trail, shot.y - shot.vy * trail, shot.color, shot.missile ? 4 : 2);
     ctx.fillStyle = "#f5efcf"; ctx.fillRect(shot.x - 1, shot.y - 1, 2, 2);
@@ -352,11 +376,21 @@ function drawStation() {
 function drawZones() {
   for(const z of state.zones){
     if(z.flight>0) {
-      const t=1-z.flight/.65,x=z.sx+(z.x-z.sx)*t,y=z.sy+(z.y-z.sy)*t-Math.sin(t*Math.PI)*65;
-      glow(x,y,12,"#ffba6277");ctx.fillStyle="#ffdfa1";ctx.fillRect(x-4,y-4,8,8);
+      const t=1-z.flight/(z.flightDuration||.65),x=z.sx+(z.x-z.sx)*t,y=z.sy+(z.y-z.sy)*t-Math.sin(t*Math.PI)*65;
+      if(!paintWeaponVfx(3,0,x,y,38,.95,state.visualTime*2,false)){
+        glow(x,y,12,"#ffba6277");ctx.fillStyle="#ffdfa1";ctx.fillRect(x-4,y-4,8,8);
+      }
       ctx.strokeStyle="#ffb85b66";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.8,0,0,TAU);ctx.stroke();
     }else{
       const fade=Math.min(1,z.life);
+      if(gameArt.vfx){
+        const age=(z.duration||3.8)-z.life;
+        ctx.save();ctx.globalAlpha=fade*.24;ctx.fillStyle="#1a0c09";
+        ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.restore();
+        paintWeaponVfx(2,state.visualTime*7+(z.phase||0),z.x,z.y,z.r*2.35,fade*.72);
+        if(age<.55)paintWeaponVfx(3,age/.55*3,z.x,z.y,z.r*2.5,(1-age/.55)*.85,0,false);
+        continue;
+      }
       ctx.globalAlpha=fade;glow(z.x,z.y,z.r,"#ff70245c");
       ctx.fillStyle="#f8772635";ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();
       ctx.strokeStyle="#ff9b48bb";ctx.lineWidth=2;ctx.stroke();
@@ -386,6 +420,11 @@ function drawWeaponEffects() {
     line(-10,-18,-14,2,"#72e4ff99",3);ctx.restore();
   }
   for(const f of state.weaponFx){
+    if(f.kind==="ricochetBurst"){
+      const age=1-f.life/f.maxLife;
+      paintWeaponVfx(1,age*3,f.x,f.y,f.r*2,(1-age)*.8,0,false);
+      continue;
+    }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
     if(f.kind==="blast"){
       ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1-f.life/f.maxLife),0,TAU);ctx.stroke();

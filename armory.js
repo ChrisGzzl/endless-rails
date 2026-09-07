@@ -3,7 +3,7 @@ const inspector={id:"gun",tab:"weapon",page:0};
 const numberText=value=>Number.isFinite(value)?Number(value.toFixed(2)).toString():"—";
 const withUnit=(value,unit)=>numberText(value)+" "+unit;
 function inspectFleet(){
-  return [{id:"command",name:"主控无人机",level:1,owned:true},...effects.DRONE_TYPES.map(type=>{
+  return [{id:"command",...effects.droneIdentity("command"),level:1,owned:true},...effects.DRONE_TYPES.map(type=>{
     const owned=type.id==="gun"||level(type.module)>0;
     return {...type,owned,level:type.id==="gun"?1+level("rapid"):Math.max(1,level(type.module))};
   }),...state.swarm.filter(d=>d.id.startsWith("escort")).map(d=>({...d,owned:true}))];
@@ -62,7 +62,7 @@ function levelInCores(id){return state.coreStacks[id]||0;}
 function renderPause(){
   syncSwarm();
   const fleet=inspectFleet(),unit=fleet.find(d=>d.id===inspector.id)||fleet[1];inspector.id=unit.id;
-  $("inspectSelect").innerHTML=fleet.map(d=>`<option value="${d.id}">${d.name}${d.id==="command"?"":" · Lv."+d.level}${d.owned?"":" · 未解锁"}</option>`).join("");
+  $("inspectSelect").innerHTML=fleet.map(d=>`<option value="${d.id}">${effects.droneLabel(d.id)}${d.id.startsWith("escort")?" "+(Number(d.id.slice(6))+1):""}${d.id==="command"?"":" · Lv."+d.level}${d.owned?"":" · 未解锁"}</option>`).join("");
   $("inspectSelect").value=unit.id;
   $("pauseSummary").textContent=`第 ${state.station} 站 · Lv.${state.level} · ${state.swarm.length+1} 架 · 列车 ${Math.ceil(state.trainHp)}/${state.maxTrainHp}`;
   const portrait=$("inspectPortrait");portrait.dataset.kind=unit.id.startsWith("escort")?"gun":unit.id;

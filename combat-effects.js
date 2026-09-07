@@ -23,15 +23,21 @@ const OWNERSHIP = Object.freeze({
 });
 
 const DRONE_TYPES = Object.freeze([
-  {id:"gun", module:"rapid", name:"机枪机", color:"#65e5ff", icon:"ϟ"},
-  {id:"missile", module:"missile", name:"导弹机", color:"#ff9c58", icon:"➤"},
-  {id:"incendiary", module:"incendiary", name:"燃烧机", color:"#ffcf5c", icon:"♨"},
-  {id:"ricochet", module:"ricochet", name:"弹跳机", color:"#d6a0ff", icon:"◉"},
-  {id:"blades", module:"blades", name:"刀刃机", color:"#a5f1ff", icon:"✺"},
-  {id:"chain", module:"chain", name:"电弧机", color:"#8b9dff", icon:"∿"},
-  {id:"scatter", module:"scatter", name:"散射机", color:"#ff83b7", icon:"✣"},
-  {id:"piercing", module:"piercing", name:"穿透机", color:"#f4f8ff", icon:"↠"},
+  {id:"gun", module:"rapid", name:"雨燕", weapon:"机枪", color:"#65e5ff", icon:"ϟ"},
+  {id:"missile", module:"missile", name:"天隼", weapon:"导弹", color:"#ff9c58", icon:"➤"},
+  {id:"incendiary", module:"incendiary", name:"烛龙", weapon:"燃烧", color:"#ffcf5c", icon:"♨"},
+  {id:"ricochet", module:"ricochet", name:"回响", weapon:"跳弹", color:"#d6a0ff", icon:"◉"},
+  {id:"blades", module:"blades", name:"弦月", weapon:"旋刃", color:"#a5f1ff", icon:"✺"},
+  {id:"chain", module:"chain", name:"惊蛰", weapon:"电弧", color:"#8b9dff", icon:"∿"},
+  {id:"scatter", module:"scatter", name:"繁星", weapon:"霰弹", color:"#ff83b7", icon:"✣"},
+  {id:"piercing", module:"piercing", name:"白虹", weapon:"磁轨", color:"#f4f8ff", icon:"↠"},
 ]);
+function droneIdentity(id){
+  if(id==="command")return {name:"北辰",weapon:"指挥"};
+  if(id==="wingman"||id.startsWith("escort"))return {name:"雨燕僚机",weapon:"机枪支援"};
+  return DRONE_TYPES.find(type=>type.id===id||type.module===id);
+}
+function droneLabel(id){const type=droneIdentity(id);return type?`${type.name} · ${type.weapon}`:id;}
 // One source of truth for firing rules, upgrade previews and the pause inspector.
 function weaponProfile(id, level=1, cores={}) {
   const n=Math.max(1,Math.floor(Number(level)||1)),t=n-1;
@@ -64,7 +70,7 @@ function weaponProfile(id, level=1, cores={}) {
 function swarmRoster(modules={}) {
   const fleet=DRONE_TYPES.flatMap((type,slot)=>type.id==="gun"||moduleLevel(modules,type.module)>0
     ? [{...type,slot,level:type.id==="gun"?1+moduleLevel(modules,"rapid"):moduleLevel(modules,type.module)}] : []);
-  for(let i=0;i<Math.min(3,moduleLevel(modules,"wingman"));i++)fleet.push({...DRONE_TYPES[0],id:"escort"+i,slot:8+i,level:1,name:"机枪僚机"});
+  for(let i=0;i<Math.min(3,moduleLevel(modules,"wingman"));i++)fleet.push({...DRONE_TYPES[0],id:"escort"+i,slot:8+i,level:1,...droneIdentity("wingman")});
   return fleet;
 }
 function formationPosition(center, slot, time, width, height) {
@@ -177,6 +183,8 @@ function applyAreaDamage(targets, center, radius, damage) {
 }
 
 const combatEffects = {
+  droneIdentity,
+  droneLabel,
   weaponProfile,
   flightPose,
   autonomousGoal,

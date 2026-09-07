@@ -20,15 +20,15 @@ function boot(){
 // A missing atlas must never silently leave a whole run using line-art turrets.
 const app=boot();
 assert.equal(app.elements.startButton.disabled,true);
-assert.equal(app.requests.length,3);
-const [hover,atlas,ground]=app.requests;
-hover.onload();ground.onload();
+assert.equal(app.requests.length,4);
+const [hover,atlas,ground,vfx]=app.requests;
+hover.onload();ground.onload();vfx.onload();
 assert.equal(app.elements.startButton.disabled,true,"wait for the train/turret atlas too");
 atlas.onerror();
 const retry1=app.requests.at(-1);
 assert.match(retry1.url,/sci-fi-atlas-v1.webp\?v=.*&retry=/,"bypass a stale failed cache entry");
 retry1.onerror();app.requests.at(-1).onerror();
-assert.equal(app.requests.length,5,"automatic retries are bounded");
+assert.equal(app.requests.length,6,"automatic retries are bounded");
 assert.equal(app.elements.retryArtButton.hidden,false);
 assert.match(app.elements.artStatus.textContent,/列车与防御塔/);
 app.elements.retryArtButton.events.click();
@@ -48,7 +48,7 @@ const stalled=boot(),oldLoad=stalled.requests[0].onload;
 const timeout=stalled.timers.values().next().value;timeout();
 const replacement=stalled.requests.at(-1);replacement.onload();oldLoad();
 assert.equal(stalled.run("gameArt.hover") ,replacement);
-stalled.requests[1].onload();stalled.requests[2].onload();
+stalled.requests[1].onload();stalled.requests[2].onload();stalled.requests[3].onload();
 assert.equal(stalled.elements.startButton.disabled,false);
 assert.equal(stalled.timers.size,0);
 console.log("Art loading: gating, cache recovery, retry limits, timeout and sprite restoration passed.");
