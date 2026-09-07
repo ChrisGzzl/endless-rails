@@ -1,16 +1,16 @@
 # Survival pacing and stations
 
-The run uses five routes (48 / 54 / 60 / 66 / 72 seconds before route modifiers). Experience stays across stations. The first two levels require 4 and 6 kills' worth of experience. Difficulty is controlled by `balance.difficultyAt(station, elapsed, duration)`, independently of the player's level.
+The run uses five routes of exactly 60 seconds of combat travel each. Experience stays across stations. The first two levels require 4 and 6 kills' worth of experience. Difficulty is controlled by `balance.difficultyAt(station, elapsed, duration)`, independently of the player's level.
 
 | Route | Opening / ending live cap | Spawn batch | Opening / ending interval | Regular base HP |
 | --- | --- | --- | --- | --- |
-| 1 | 5 / 10 | 1 | 2.40 / 1.55 s | 1.10 → 1.30 |
-| 2 | 28 / 40 | 3 → 4 | 2.05 / 1.20 s | 1.32 → 1.52 |
-| 3 | 57 / 76 | 5 → 7 | 1.70 / 0.85 s | 1.54 → 1.74 |
-| 4 | 92 / 118 | 7 → 10 | 1.35 / 0.60 s | 1.76 → 1.96 |
-| 5 | 133 / 166 | 9 → 13 | 1.00 / 0.60 s | 1.98 → 2.18 |
+| 1 | 5 / 14 | 1 → 2 | 2.30 / 1.50 s | 0.90 → 1.04 |
+| 2 | 35 / 53 | 4 → 6 | 1.95 / 1.15 s | 1.06 → 1.20 |
+| 3 | 73 / 100 | 7 → 10 | 1.60 / 0.80 s | 1.22 → 1.36 |
+| 4 | 119 / 155 | 10 → 14 | 1.25 / 0.48 s | 1.38 → 1.52 |
+| 5 | 173 / 218 | 13 → 18 | 0.90 / 0.48 s | 1.54 → 1.68 |
 
-Route one has no elites. Later routes gradually raise elite probability and movement speed. Contract and route modifiers apply after the base curve. The final mutant appears after 22 seconds; victory requires defeating it and reaching the protected terminal.
+Route one has no elites. Later routes gradually raise elite probability and movement speed. Contract and route modifiers apply after the base curve. The final mutant appears after 22 seconds; the final route also lasts the full 60 seconds. Defeating it early reduces pressure; terminal turrets finish any surviving pursuer during the arrival sequence.
 
 ## Weapon roles
 
@@ -82,3 +82,20 @@ The pause button and P/Escape open `armory.js`. Combat, projectiles, route motio
 The terminal uses 12 items per page on tall screens, 9 below 700 px and 6 below 450 px. CSS and interaction handlers disable text selection, image dragging, long-press menus and page overscroll on game surfaces; the canvas keeps its own pointer capture and touch-action:none, while menu buttons and the native aircraft selector keep normal interaction.
 
 Validation: 14 Node regression files pass, including range gating for all eight weapon families, actual cooldown enforcement, short bullet travel, swept high-speed collision, blast/chain limits, core profiles, non-overkill attribution, pause freeze/resume, docking freeze, pending-upgrade preservation, short-screen pagination and gesture cancellation. Twelve deterministic opening runs still reach station one with repaired 100 HP and level 4.
+
+
+## Mobile display and flow revision — 2026-09-07
+
+The fullscreen buttons request fullscreen on the document root so that all sibling overlays remain visible. Unsupported or rejected calls present add-to-home-screen instructions. The manifest provides standalone/fullscreen launch, portrait preference, scoped URLs, and 192/512 px mask-safe PNG icons rendered from the existing ER monogram's SVG. iOS web-app metadata and safe-area padding are included. No service worker or offline capability is claimed: the game still loads current resources online, avoiding stale script caches during rapid iteration.
+
+Phone HUD/footer shrink to 72/58 px plus safe areas. The canvas logical dimensions follow the available battle area's aspect ratio with its shorter edge at 390 units, so circles and aircraft never become flattened. Resize shifts all entities and both ends of effects together, preserves relative world positions, and resets the joystick. Desktop fullscreen retains a readable maximum width; touch devices use the viewport.
+
+Kill XP, not the XP threshold, is reduced. Before level 3, ordinary kills still give 1 XP to establish the fleet. Afterwards ordinary kills give 0.65 / (1 + 0.15 × (route − 1)), rounded to hundredths. Runners/crawlers give 80% of that; elites start from 2 instead of the old 4. Thresholds remain 4, 6, 8, … . After the first two upgrades, automatic prompts are at least 15 combat seconds apart. Pending upgrades are grouped into the same visit, with a manual claim button for earlier use. The last five seconds defer automatic prompts until the safe station. Arrival preserves pending upgrades and returns to the major station choice after they are claimed.
+
+Six infection variants share the game's animated sprite language: ordinary walkers; fragile fast runners (introduced after 28 s in route one); low crawling zigzag enemies; acid spitters that hold medium distance and launch slow visible projectiles; bloated spore carriers whose deaths damage nearby enemies; and slow elite brutes. Acid projectiles are capped at 32 and clear on arrival. Crowd caps increase to 218, while ordinary base HP tops out at 1.68 before type and contract modifiers.
+
+`mobile-flow.test.js` checks all 15 route/event combinations for 60-second travel, lower XP, six variants, upgrade cadence and station preservation, portrait/landscape aspect matching, relative-coordinate preservation, terminal cleanup of a surviving boss, acid attacks, and fullscreen success/exit/fallback paths. Fifteen Node regression files pass; the 12 seeded opening runs reach station one at level 4 with repaired 100 HP and 26–33 kills (previously 18–25).
+
+Platform references: [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen), [Apple's home-screen web-app instructions](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios), [Chrome install criteria](https://web.dev/articles/install-criteria).
+
+Three seeded full-run smoke simulations, with a balanced specialist build and automatic pulse use, reached the terminal with 2,453–2,466 kills and 18–19 grouped upgrade visits. These runs validate feasibility and cadence, not difficulty for every player/build.

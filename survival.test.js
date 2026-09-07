@@ -59,7 +59,7 @@ const openings=[];
 for(let seed=1;seed<=12;seed++){
  const g=createGame();
  g.run(`let rngState=${seed};Math.random=()=>{rngState=(Math.imul(rngState,1664525)+1013904223)>>>0;return rngState/4294967296;};state.activeContract=routeEvents.CONTRACTS[2];beginRoute(routeEvents.ROUTE_EVENTS[seed%3]);`.replace('seed%3',String(seed%3)));
- g.run('for(let i=0;i<3800&&state.mode!=="station"&&state.mode!=="result";i++){if(state.mode==="levelup")chooseLevelUp(experiencePool.find(u=>u.id==="blades"));else update(1/60);}');
+ g.run('for(let i=0;i<4300&&state.mode!=="station"&&state.mode!=="result";i++){if(state.mode==="levelup")chooseLevelUp(experiencePool.find(u=>u.id==="blades"));else update(1/60);}');
  const result=JSON.parse(g.run('JSON.stringify({mode:state.mode,hp:state.trainHp,level:state.level,kills:state.kills})'));
  assert.equal(result.mode,"station","opening must be survivable with basic automatic play");
  assert.ok(result.level>=3,"opening gives at least two upgrades");

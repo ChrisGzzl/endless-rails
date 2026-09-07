@@ -55,6 +55,17 @@ function expireDrops(drops, dt) {
   return drops.map(drop => ({ ...drop, life: drop.life - Math.max(0, dt) })).filter(drop => drop.life > 0);
 }
 
-const progressionApi = { CORE_TYPES, createProgression, awardExperience, advanceRoute, rollCoreDrop, collectCore, expireDrops };
+function experienceForEnemy(enemy,station,level){
+  const opening=level<3;
+  const base=enemy.elite?2:opening?1:.65;
+  const densityDiscount=opening?1:1+Math.max(0,station-1)*.15;
+  const light=enemy.kind==="runner"||enemy.kind==="crawler"?.8:1;
+  return Math.round(base/densityDiscount*light*100)/100;
+}
+function shouldOfferUpgrade(state){
+  return state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0&&state.routeDistance>5&&
+    (state.level<=3||state.visualTime>=(state.nextUpgradeAt||0));
+}
+const progressionApi = { experienceForEnemy,shouldOfferUpgrade, CORE_TYPES, createProgression, awardExperience, advanceRoute, rollCoreDrop, collectCore, expireDrops };
 if (typeof module !== "undefined" && module.exports) module.exports = progressionApi;
 if (typeof window !== "undefined") window.EndlessRailsProgression = progressionApi;

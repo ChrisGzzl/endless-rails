@@ -1,10 +1,11 @@
 "use strict";
-const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),W=canvas.width,H=canvas.height,TAU=Math.PI*2,$=id=>document.getElementById(id),motion=window.EndlessRailsMotion||{FORWARD:{x:.5,y:-Math.sqrt(3)/2},spawnPoint(side,width,height,margin,random=Math.random){const along=random()*(side==="top"||side==="bottom"?width+margin*2:height+margin*2)-margin;if(side==="top")return{x:along,y:-margin};if(side==="right")return{x:width+margin,y:along};if(side==="bottom")return{x:along,y:height+margin};return{x:-margin,y:along}},stepChaser(entity,dt,center,driftSpeed){const dx=center.x-entity.x,dy=center.y-entity.y,d=Math.hypot(dx,dy)||1;return{x:entity.x-motion.FORWARD.x*driftSpeed*dt+dx/d*entity.speed*dt,y:entity.y-motion.FORWARD.y*driftSpeed*dt+dy/d*entity.speed*dt}}};
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,$=id=>document.getElementById(id),motion=window.EndlessRailsMotion||{FORWARD:{x:.5,y:-Math.sqrt(3)/2},spawnPoint(side,width,height,margin,random=Math.random){const along=random()*(side==="top"||side==="bottom"?width+margin*2:height+margin*2)-margin;if(side==="top")return{x:along,y:-margin};if(side==="right")return{x:width+margin,y:along};if(side==="bottom")return{x:along,y:height+margin};return{x:-margin,y:along}},stepChaser(entity,dt,center,driftSpeed){const dx=center.x-entity.x,dy=center.y-entity.y,d=Math.hypot(dx,dy)||1;return{x:entity.x-motion.FORWARD.x*driftSpeed*dt+dx/d*entity.speed*dt,y:entity.y-motion.FORWARD.y*driftSpeed*dt+dy/d*entity.speed*dt}}};
+let W=canvas.width,H=canvas.height;
 const WORLD_SPEED=88;
 if(!motion.scrollOffset)motion.scrollOffset=(time,speed,multiplier=1)=>Math.max(0,time)*Math.max(0,speed)*Math.max(0,multiplier);
 if(!motion.projectLandmark)motion.projectLandmark=(seed,index,width,height,offset,layer)=>{const value=Math.abs(Math.sin((Number(seed)||1)*12.9898+index*78.233)),multiplier=layer==="far"?.16:layer==="mid"?.48:1;return{x:(value*width-motion.FORWARD.x*offset*multiplier)%width,y:(value*height-motion.FORWARD.y*offset*multiplier)%height}};
 const balance=window.EndlessRailsBalance||{START_TRAIN_LENGTH:3,REGULAR_ENEMY_HP_BASE:1.3,REGULAR_ENEMY_HP_STEP:.16,ELITE_ENEMY_HP_BASE:4,ELITE_ENEMY_HP_STEP:.4,REGULAR_ENEMY_SPEED_BASE:88,REGULAR_ENEMY_SPEED_JITTER:16,REGULAR_ENEMY_SPEED_STEP:4,ELITE_ENEMY_SPEED_BASE:108,ELITE_ENEMY_SPEED_STEP:4,RAIL_HALF_LENGTH:1100,RAIL_WIDTH:8,RAIL_EDGE_WIDTH:2.5,SLEEPER_WIDTH:4,CAR_LENGTH:50,CAR_HEIGHT:34,CAR_SPACING:58,SPAWN_BATCH_SIZE:3,ENEMY_CAP:26,BOSS_ENEMY_CAP:30,SPAWN_INTERVAL_BASE:.34,SPAWN_INTERVAL_STEP:.02,DRONE_BASE_DAMAGE:1.55,HIT_PARTICLE_COUNT:8,KILL_BLAST_RADIUS:46,KILL_BLAST_DAMAGE:.85,initialWaveCount:station=>station===5?12:7+station,enemyCap:station=>station===5?30:26,spawnInterval:station=>Math.max(.24,.34-station*.02)};
-const progression=window.EndlessRailsProgression||{createProgression:()=>({routeDistance:20,routeDistanceTotal:20,experience:0,experienceToNext:10,level:1,pendingLevelUps:0,drops:[],coreStacks:{}}),awardExperience:(s,a)=>({...s,experience:s.experience+a}),advanceRoute:(s,dt)=>({...s,routeDistance:Math.max(0,s.routeDistance-dt)}),rollCoreDrop:()=>null,collectCore:(s)=>({state:s,collected:false,scrap:0}),expireDrops:(drops,dt)=>drops.map(d=>({...d,life:d.life-dt})).filter(d=>d.life>0)};
+const progression=window.EndlessRailsProgression||{createProgression:()=>({routeDistance:60,routeDistanceTotal:60,experience:0,experienceToNext:10,level:1,pendingLevelUps:0,drops:[],coreStacks:{}}),awardExperience:(s,a)=>({...s,experience:s.experience+a}),advanceRoute:(s,dt)=>({...s,routeDistance:Math.max(0,s.routeDistance-dt)}),rollCoreDrop:()=>null,collectCore:(s)=>({state:s,collected:false,scrap:0}),expireDrops:(drops,dt)=>drops.map(d=>({...d,life:d.life-dt})).filter(d=>d.life>0)};
 const effects=window.EndlessRailsCombatEffects||{wingmanPositions:(center)=>[{x:center.x,y:center.y}],applyAreaDamage:()=>({hitCount:0,defeated:[]}),mainWeaponProfile:({baseDamage,baseInterval,modules={}})=>{const rapid=Math.max(0,Number(modules.rapid)||0),scatter=Math.max(0,Number(modules.scatter)||0)*2,damage=baseDamage+rapid*.12,interval=Math.max(.14,baseInterval-rapid*.07);return{baseDamage,baseInterval,damage,interval,projectileCount:1+scatter,pierce:Math.max(0,Number(modules.piercing)||0),chain:Math.max(0,Number(modules.chain)||0)>0,coreArc:false,dps:damage*(1+scatter)/interval}},escortWeaponProfile:({main,escortCount})=>{const count=Math.max(0,Number(escortCount)||0);if(!count)return{damage:0,interval:0,projectileCount:0,pierce:0,chain:false,totalDps:0};const interval=main.baseInterval*1.35,damage=main.baseDamage*.4/count;return{damage,interval,projectileCount:1,pierce:0,chain:false,totalDps:damage*count/interval}},weaponOwnership:id=>["wingman","escort"].includes(id)?"escort-only":["railgun","armor","repair","shield"].includes(id)?"train-only":["cargo","magnet","overclock"].includes(id)?"team-utility":"main-only",trainWeaponProfile:({modules={}})=>{const railgun=Math.max(0,Number(modules.railgun)||0);return{railgunDamage:railgun?2.6+railgun*.35:0,railgunInterval:railgun?Math.max(.7,1.2-railgun*.08):Infinity}}};
 const control=window.EndlessRailsControl||{relativeCommand:(point,train,bounds)=>({x:point.x,y:point.y,angle:0,strength:1}),directCommand:(point,bounds)=>({x:Math.max(bounds.left,Math.min(bounds.right,point.x)),y:Math.max(bounds.top,Math.min(bounds.bottom,point.y))}),createCommandRing:(target,life)=>({target,life}),advanceCommandRing:ring=>ring};
 const routeEvents=window.EndlessRailsRouteEvents||{ROUTE_EVENTS:[{id:"default",name:"标准线路",description:"稳定推进。",weather:"clear",routeDistanceMultiplier:1,enemySpeedMultiplier:1,eliteChanceMultiplier:1,coreChanceMultiplier:1}],CONTRACTS:[{id:"default",name:"标准契约",description:"按基础规则推进。",rewardMultiplier:1,enemyHpMultiplier:1,scrapMultiplier:1}],createSeed:()=>1,pickRouteEvents:()=>[],pickContracts:()=>[],applyRouteModifiers:base=>({...base})};
@@ -20,18 +21,19 @@ const experiencePool=[
  {id:"ricochet",icon:"◉",name:"弹跳机",desc:"中程低频能量球，反弹并贯穿尸群。"},
  {id:"rapid",icon:"ϟ",name:"机枪机强化",desc:"强化近程高频机枪的射速与单弹伤害。"},{id:"scatter",icon:"✣",name:"散射机",desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:"穿透机",desc:"远程低频磁轨弹，贯穿一线敌人。"},{id:"chain",icon:"∿",name:"电弧机",desc:"中程中频电弧，连续跳击附近敌人。"},{id:"missile",icon:"➤",name:"导弹机",desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:"机枪僚机",desc:"增派一架机枪僚机，最多三架。"}];
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train");
-const state={weaponStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:20,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:20,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:20})};
+const state={nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
-function resetRun(){$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{weaponStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:20,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:20,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:20})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
+function resetRun(){$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
   const sides = ["top", "right", "bottom", "left"], side = sides[Math.floor(Math.random()*4)];
   const point = motion.spawnPoint(side, W, H, 28);
   const elite = Math.random() < curve.eliteChance * (state.activeEvent?.eliteChanceMultiplier || 1);
-  const hp = curve.hp * (elite ? 3.4 : 1) * state.routeModifiers.enemyHp;
-  state.enemies.push({ ...point, r: elite ? 17 : 9, hp, maxHp: hp,
-    speed: curve.speed * (elite ? 1.12 : 1) * state.routeModifiers.enemySpeed,
+  const kind=balance.enemyTypeAt(state.station,state.routeElapsed,elite),type=balance.ENEMY_TYPES[kind];
+  const hp = curve.hp * type.hp * state.routeModifiers.enemyHp;
+  state.enemies.push({ ...point,kind,spitClock:1.5+Math.random(),r:type.r,hp,maxHp:hp,
+    speed: curve.speed * type.speed * state.routeModifiers.enemySpeed,
     hue: Math.random(), elite, side, delay, hit: 0, dead: false });
 }
 function update(dt) {
@@ -72,7 +74,7 @@ function update(dt) {
   for (const e of state.enemies) {
     if(e.dead)continue;
     if(e.delay>0){e.delay-=dt;continue;}
-    Object.assign(e,motion.stepChaser(e,dt,state.train,WORLD_SPEED*.3));
+    stepEnemy(e,dt);
     e.hit=Math.max(0,e.hit-dt*5);
     if(Math.hypot(state.train.x-e.x,state.train.y-e.y)<42)collideTrain(e);
   }
@@ -91,15 +93,15 @@ function update(dt) {
       state.trainHp=Math.max(0,state.trainHp-7*dt); state.hurtFlash=.1;
     }
   }
+  updateHostileShots(dt);
   const trainProfile=effects.trainWeaponProfile({modules:state.modules});
   if(trainProfile.railgunDamage&&state.railClock>trainProfile.railgunInterval){fireRailgun(trainProfile);state.railClock=0;}
   updateArsenal(dt);
   updateShots(dt); updateParticles(dt);
   if(state.trainHp<=0){finish(false);return;}
-  if(state.station===5&&state.boss?.dead){startDocking(true);return;}
-  if(state.pendingLevelUps>0)openLevelUp();
-  else if(state.routeDistance<=0&&state.station<5)startDocking(false);
-  // Final route holds at zero until the boss is defeated.
+  if(state.routeDistance<=0)startDocking(state.station===5);
+  else if(progression.shouldOfferUpgrade(state))openLevelUp();
+  // Every route reaches the defense perimeter after exactly 60 seconds.
   updateHud();
 }
 function collideTrain(e){e.dead=true;if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
@@ -316,11 +318,11 @@ function updateArsenal(dt) {
   state.zones=state.zones.filter(z=>z.life>0&&z.x>-z.r&&z.x<W+z.r&&z.y>-z.r&&z.y<H+z.r);
   state.weaponFx=state.weaponFx.map(f=>({...f,life:f.life-dt})).filter(f=>f.life>0);
 }
-function killEnemy(e, fromBlast=false){if(e.rewarded)return;e.dead=true;e.rewarded=true;state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);const gain=Math.ceil((e.elite?14:6)*(1+level("cargo")*.3+level("magnet")*.5)*state.routeModifiers.scrapMultiplier);state.scrap+=gain;state.score+=Math.ceil((e.elite?130:50)*Math.max(1,state.combo)*state.routeModifiers.rewardMultiplier);const xp=progression.awardExperience(state,e.elite?4:1);Object.assign(state,xp.state);let firstDropRoll=true;const coreType=progression.rollCoreDrop({elite:e.elite,combo:state.combo,random:()=>{const value=Math.random();if(firstDropRoll){firstDropRoll=false;return value/Math.max(.01,state.routeModifiers.coreChance)}return value}});if(coreType)state.drops.push({type:coreType,x:e.x,y:e.y,life:8});if(level("volatile")&&!fromBlast){const blast=effects.applyAreaDamage(state.enemies.filter(target=>target!==e),e,balance.KILL_BLAST_RADIUS,balance.KILL_BLAST_DAMAGE);for(const target of blast.defeated)killEnemy(target,true);if(blast.hitCount)burst(e.x,e.y,"#ffb45f",18,100)}state.shake=e.elite?7:3;addText("+"+gain,e.x,e.y-15,"#ffb45f");burst(e.x,e.y,e.elite?"#ffb45f":"#b6e36b",e.elite?26:16,e.elite?125:90);showCombo()}
+function killEnemy(e, fromBlast=false){if(e.rewarded)return;e.dead=true;e.rewarded=true;state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);const gain=Math.ceil((e.elite?14:6)*(1+level("cargo")*.3+level("magnet")*.5)*state.routeModifiers.scrapMultiplier);state.scrap+=gain;state.score+=Math.ceil((e.elite?130:50)*Math.max(1,state.combo)*state.routeModifiers.rewardMultiplier);const xp=progression.awardExperience(state,progression.experienceForEnemy(e,state.station,state.level));Object.assign(state,xp.state);let firstDropRoll=true;const coreType=progression.rollCoreDrop({elite:e.elite,combo:state.combo,random:()=>{const value=Math.random();if(firstDropRoll){firstDropRoll=false;return value/Math.max(.01,state.routeModifiers.coreChance)}return value}});if(coreType)state.drops.push({type:coreType,x:e.x,y:e.y,life:8});if((level("volatile")||e.kind==="bloater")&&!fromBlast){const blast=effects.applyAreaDamage(state.enemies.filter(target=>target!==e),e,e.kind==="bloater"?54:balance.KILL_BLAST_RADIUS,e.kind==="bloater"?1.2:balance.KILL_BLAST_DAMAGE);for(const target of blast.defeated)killEnemy(target,true);if(blast.hitCount)burst(e.x,e.y,"#ffb45f",18,100)}state.shake=e.elite?7:3;addText("+"+gain,e.x,e.y-15,"#ffb45f");burst(e.x,e.y,e.elite?"#ffb45f":"#b6e36b",e.elite?26:16,e.elite?125:90);showCombo()}
 function scopeLabel(scope){return scope==="main-only"?"主机":scope==="escort-only"?"伴飞":scope==="train-only"?"列车":scope==="team-utility"?"全队":"主机"}
 function openLevelUp() {
   if(state.mode==="levelup"||state.pendingLevelUps<=0)return;
-  state.mode="levelup";resetJoystick();ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
+  state.upgradeReturnMode=state.mode==="station"?"station":"combat";state.mode="levelup";resetJoystick();ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const pool=experiencePool.filter(u=>u.id!=="wingman"||level("wingman")<3).sort(()=>Math.random()-.5);
   // Always offer a distinct trajectory while one remains unlearned.
   const novel=pool.find(u=>u.id!=="rapid"&&u.id!=="wingman"&&!level(u.id));
@@ -334,7 +336,8 @@ function openLevelUp() {
 }
 function chooseLevelUp(u) {
   state.modules[u.id]=level(u.id)+1;state.pendingLevelUps=Math.max(0,state.pendingLevelUps-1);
-  ui.levelUp.hidden=true;state.mode="combat";
+  ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";
+  state.nextUpgradeAt=state.visualTime+15;
   syncSwarm();if(state.pendingLevelUps>0)openLevelUp();else showToast(level(u.id)===1&&u.id!=="rapid"?"新机加入蜂群":"专机武器升级");
   updateHud();
 }
@@ -353,7 +356,7 @@ function startDocking(final=false) {
   const offset=final?420:WORLD_SPEED*1.2;
   state.mode="docking";state.docking={time:0,clock:0,offset,startOffset:offset,duration:2*offset/WORLD_SPEED,final};
   state.routeDistance=0;state.timer=0;state.shots=[];state.weaponFx=[];
-  state.pendingLevelUps=0;ui.levelUp.hidden=true;resetJoystick();
+  state.hostileShots=[];ui.levelUp.hidden=true;resetJoystick();
   showToast("进入车站防区 · 炮台接管");
   updateHud();
 }
@@ -377,10 +380,15 @@ function updateDocking(dt) {
       state.weaponFx.push({kind:"stationBeam",x:turret.x,y:turret.y,tx:e.x,ty:e.y,life:.24,maxLife:.24});
       e.dead=true;burst(e.x,e.y,"#b8ff4e",10,90);
     });
+    if(d.final&&state.boss&&!state.boss.dead){
+      const turret=turrets[0],boss=state.boss;
+      state.weaponFx.push({kind:"stationBeam",x:turret.x,y:turret.y,tx:boss.x,ty:boss.y,life:.24,maxLife:.24});
+      boss.hp-=boss.maxHp*.3;if(boss.hp<=0)killBoss();
+    }
     d.clock=.16;
   }
   updateParticles(dt);
-  if(d.time>=Math.max(3.4,d.duration+.6)&&!state.enemies.some(e=>!e.dead)) {
+  if(d.time>=Math.max(3.4,d.duration+.6)&&!state.enemies.some(e=>!e.dead)&&(!d.final||!state.boss||state.boss.dead)) {
     if(d.final)finish(true);else arriveStation();
   }
 }
@@ -392,7 +400,7 @@ function arriveStation() {
   ui.stationScreen.hidden=false;ui.stationTitle.textContent=String(state.station).padStart(2,"0");
   ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";
   ui.upgrades.innerHTML="";state.rerollUsed=false;ui.reroll.disabled=state.scrap<15;
-  renderUpgradeChoices();renderTrainPreview();updateHud();
+  renderUpgradeChoices();renderTrainPreview();updateHud();if(state.pendingLevelUps>0)openLevelUp();
 }
 function renderUpgradeChoices() {
   state.selectedUpgrade=null;ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";
@@ -422,18 +430,18 @@ function beginRoute(event) {
   state.routeModifiers=routeEvents.applyRouteModifiers({routeDistance:balance.routeDuration(state.station),enemySpeed:1,enemyHp:1,eliteChance:1,coreChance:1,rewardMultiplier:1,scrapMultiplier:1},state.activeEvent,state.activeContract);
   state.mode="combat";state.routeElapsed=0;state.docking=null;
   state.routeDistanceTotal=state.routeModifiers.routeDistance;state.routeDistance=state.routeDistanceTotal;
-  state.timer=state.routeDistance;state.enemies=[];state.shots=[];state.zones=[];state.weaponFx=[];
+  state.timer=state.routeDistance;state.enemies=[];state.hostileShots=[];state.shots=[];state.zones=[];state.weaponFx=[];
   state.spawnClock=balance.spawnInterval(state.station);state.fireClock=0;state.shieldReady=!!level("shield");
   syncSwarm();spawnWave();showToast(state.station===1?"稀疏尸群 · 先积累火力":state.activeEvent?.name||"模块在线");updateHud();
 }
 function rerollUpgrades(){if(state.rerollUsed||state.scrap<15||state.mode!=="station")return;state.scrap-=15;state.rerollUsed=true;ui.reroll.disabled=true;ui.upgrades.innerHTML="";renderUpgradeChoices();showToast("补给重新编排");updateHud()}
 function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
 function finish(win){state.mode="result";state.outcome=win?"won":"lost";state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(typeof localStorage!=="undefined"?localStorage:null,state.record);ui.result.hidden=false;$("resultBadge").textContent=win?"◆":"×";$("resultEyebrow").textContent=win?"护送完成":"列车失守";$("resultTitle").textContent=win?"列车穿过了黑夜":"铁轨被荒原吞没";$("resultCopy").textContent=win?"你让最后一班车抵达了安全区。":"再多一架无人机，也许就能撑过下一站。";$("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).join(" · ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀"}
-function updateHud(){syncJoystick();ui.station.textContent=String(Math.min(state.station,5)).padStart(2,"0")+" / 05";ui.scrap.textContent=String(state.scrap).padStart(3,"0");ui.health.textContent=Math.ceil(state.trainHp)+"/"+state.maxTrainHp;ui.healthFill.style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";ui.timer.textContent=Math.max(0,state.timer).toFixed(1);ui.phase.textContent=state.paused?"暂停中":state.mode==="combat"?"行驶中":state.mode==="levelup"?"战斗升级":state.mode==="routeChoice"?"路线选择":state.mode==="contractChoice"?"远征契约":state.mode==="docking"?"进站清场":state.mode==="station"?"安全停靠":"待命";$("moveSpeedValue").textContent=state.drone.moveSpeed+" px/s";ui.drone.textContent=(1+effects.swarmRoster(state.modules).length)+" 架";ui.pulseCooldown.style.height=state.pulseClock?state.pulseClock/7*100+"%":"0%";ui.pulse.classList.toggle("cooling",state.pulseClock>0);ui.objective.textContent=state.mode==="docking"?"防卫炮台清场 · 列车减速进站":state.mode==="station"?"安全区 · 列车已停稳":state.station===5?"击破感染巨兽，护送列车":"护送列车抵达下一站";ui.routeLabel.textContent=state.mode==="docking"||state.mode==="station"?"车站防区 · 安全停靠":"距下一站 "+Math.max(0,state.routeDistance).toFixed(1)+" s";ui.routeFill.style.width=Math.max(0,state.routeDistance/state.routeDistanceTotal*100)+"%";ui.xpLabel.textContent="Lv."+state.level+" · "+Math.floor(state.experience)+" / "+state.experienceToNext;ui.xpFill.style.width=Math.min(100,state.experience/state.experienceToNext*100)+"%";if(state.boss){ui.bossText.textContent=Math.max(0,Math.ceil(state.boss.hp/state.boss.maxHp*100))+"%";ui.bossFill.style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+"%"}}
+function updateHud(){syncJoystick();$("claimUpgradeButton").hidden=state.pendingLevelUps<=0||state.mode!=="combat"||state.paused;$("claimUpgradeButton").textContent="强化 ×"+state.pendingLevelUps;ui.station.textContent=String(Math.min(state.station,5)).padStart(2,"0")+" / 05";ui.scrap.textContent=String(state.scrap).padStart(3,"0");ui.health.textContent=Math.ceil(state.trainHp)+"/"+state.maxTrainHp;ui.healthFill.style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";ui.timer.textContent=Math.max(0,state.timer).toFixed(1);ui.phase.textContent=state.paused?"暂停中":state.mode==="combat"?"行驶中":state.mode==="levelup"?"战斗升级":state.mode==="routeChoice"?"路线选择":state.mode==="contractChoice"?"远征契约":state.mode==="docking"?"进站清场":state.mode==="station"?"安全停靠":"待命";$("moveSpeedValue").textContent=state.drone.moveSpeed+" px/s";ui.drone.textContent=(1+effects.swarmRoster(state.modules).length)+" 架";ui.pulseCooldown.style.height=state.pulseClock?state.pulseClock/7*100+"%":"0%";ui.pulse.classList.toggle("cooling",state.pulseClock>0);ui.objective.textContent=state.mode==="docking"?"防卫炮台清场 · 列车减速进站":state.mode==="station"?"安全区 · 列车已停稳":state.station===5?"守住列车，抵达终点防区":"护送列车抵达下一站";ui.routeLabel.textContent=state.mode==="docking"||state.mode==="station"?"车站防区 · 安全停靠":"距下一站 "+Math.max(0,state.routeDistance).toFixed(1)+" s";ui.routeFill.style.width=Math.max(0,state.routeDistance/state.routeDistanceTotal*100)+"%";ui.xpLabel.textContent="Lv."+state.level+" · "+Math.floor(state.experience)+" / "+state.experienceToNext;ui.xpFill.style.width=Math.min(100,state.experience/state.experienceToNext*100)+"%";if(state.boss){ui.bossText.textContent=Math.max(0,Math.ceil(state.boss.hp/state.boss.maxHp*100))+"%";ui.bossFill.style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+"%"}}
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
 function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
-function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);drawBackground();drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
+function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);drawBackground();drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
 function drawDrops(){for(const drop of state.drops){const pulse=1+Math.sin(performance.now()/140)*.14;ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(Math.PI/4);ctx.scale(pulse,pulse);ctx.fillStyle=drop.type==="overdrive"?"#ffb45f":drop.type==="scatter"?"#b6e36b":"#5de1df";ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(-8,-8,16,16);ctx.restore();ctx.strokeStyle="rgba(237,245,231,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(drop.x,drop.y,14,0,TAU*(drop.life/8));ctx.stroke()}}
 
 function drawParticles(){for(const p of state.particles){ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;ctx.font="bold 12px ui-monospace,monospace";ctx.textAlign="center";for(const t of state.texts){ctx.globalAlpha=Math.min(1,t.life*2);ctx.fillStyle=t.color;ctx.fillText(t.text,t.x,t.y)}ctx.globalAlpha=1}
@@ -520,7 +528,7 @@ window.addEventListener("resize", resetJoystick);
 document.addEventListener?.("visibilitychange", () => { if(document.hidden){resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();} });
 function drawCommandRing(){const ring=state.commandRing;if(!ring)return;const alpha=Math.min(1,ring.life/.45);ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle="#5de1df";ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(ring.target.x,ring.target.y,17+(1-alpha)*13,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(ring.target.x-6,ring.target.y);ctx.lineTo(ring.target.x+6,ring.target.y);ctx.moveTo(ring.target.x,ring.target.y-6);ctx.lineTo(ring.target.x,ring.target.y+6);ctx.stroke();ctx.restore()}
 function togglePause(){
-  if(!["combat","docking","station","levelup"].includes(state.mode))return;
+  if(!["combat","docking","station","levelup"].includes(state.mode)||!$("displayHelp").hidden)return;
   state.paused=!state.paused;resetJoystick();
   $("pauseScreen").hidden=!state.paused;
   ui.pause.textContent=state.paused?"▶":"Ⅱ";
@@ -533,4 +541,42 @@ ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",toggl
 // Gesture surfaces belong to the game; do not start text/image drags or long-press menus.
 for(const surface of [$("app"),$("startScreen"),$("pauseScreen"),ui.stationScreen,ui.levelUp,ui.eventScreen,ui.contractScreen,ui.result]){
   for(const type of ["dragstart","selectstart","contextmenu"])surface.addEventListener(type,event=>event.preventDefault());
+}
+
+function stepEnemy(e,dt){
+  const distance=Math.hypot(e.x-state.train.x,e.y-state.train.y);
+  if(e.kind==="spitter"&&distance>90&&distance<190){
+    e.spitClock-=dt;
+    if(e.spitClock<=0&&state.hostileShots.length<32){
+      const a=Math.atan2(state.train.y-e.y,state.train.x-e.x);
+      state.hostileShots.push({x:e.x,y:e.y,vx:Math.cos(a)*150,vy:Math.sin(a)*150,life:2.5,damage:2.5});
+      e.spitClock=2.8;e.spitFlash=.25;
+    }
+  }else{
+    const target=e.kind==="crawler"?{x:state.train.x+Math.sin(state.visualTime*2.2+e.hue*TAU)*32,y:state.train.y}:state.train;
+    Object.assign(e,motion.stepChaser(e,dt,target,WORLD_SPEED*.3));
+  }
+  e.spitFlash=Math.max(0,(e.spitFlash||0)-dt);
+}
+function updateHostileShots(dt){
+  for(const s of state.hostileShots){
+    s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
+    if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
+      state.trainHp=Math.max(0,state.trainHp-s.damage*(1-Math.min(.36,level("armor")*.12)));
+      state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
+    }
+  }
+  state.hostileShots=state.hostileShots.filter(s=>s.life>0);
+}
+$("claimUpgradeButton").addEventListener("click",()=>{if(state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0)openLevelUp();});
+function resizeBattlefield(){
+  const box=canvas.getBoundingClientRect();if(!box.width||!box.height)return;
+  const scale=390/Math.min(box.width,box.height),nextWidth=Math.round(box.width*scale),nextHeight=Math.round(box.height*scale);if(nextHeight===H&&nextWidth===W)return;
+  const dx=(nextWidth-W)/2,dy=(nextHeight-H)/2;W=nextWidth;H=nextHeight;canvas.width=W;canvas.height=H;resetJoystick();
+  const objects=[state.train,state.drone,...state.swarm,...state.enemies,...state.shots,...state.hostileShots,...state.zones,...state.drops,...state.particles,...state.texts,...state.weaponFx];
+  if(state.boss)objects.push(state.boss);
+  for(const item of objects){if(Number.isFinite(item.x))item.x+=dx;if(Number.isFinite(item.sx))item.sx+=dx;if(Number.isFinite(item.tx))item.tx+=dx;if(Number.isFinite(item.y))item.y+=dy;if(Number.isFinite(item.sy))item.sy+=dy;if(Number.isFinite(item.ty))item.ty+=dy;}
+  state.drone.x=Math.max(24,Math.min(W-24,state.drone.x));state.drone.y=Math.max(24,Math.min(H-24,state.drone.y));
+  for(const d of state.swarm){d.x=Math.max(18,Math.min(W-18,d.x));d.y=Math.max(18,Math.min(H-18,d.y));d.huntTarget=null;d.huntClock=0;}
+  if(state.paused)draw();
 }

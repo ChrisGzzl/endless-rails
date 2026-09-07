@@ -35,14 +35,14 @@ function initialWaveCount(station) {
   return 2 + (station - 1) * 2;
 }
 
-function difficultyAt(station, elapsed = 0, duration = 48) {
+function difficultyAt(station, elapsed = 0, duration = 60) {
   const stage = Math.max(0, Math.min(4, station - 1));
   const progress = Math.max(0, Math.min(1, elapsed / duration));
   return {
-    cap: Math.round(5 + stage * 20 + stage * stage * 3 + progress * (5 + stage * 7)),
-    batch: 1 + stage * 2 + Math.floor(progress * stage),
-    interval: Math.max(.6, 2.4 - stage * .35 - progress * .85),
-    hp: 1.1 + stage * .22 + progress * .2,
+    cap: Math.round(5 + stage * 26 + stage * stage * 4 + progress * (9 + stage * 9)),
+    batch: 1 + stage * 3 + Math.floor(progress * (1 + stage)),
+    interval: Math.max(.48, 2.3 - stage * .35 - progress * .8),
+    hp: .9 + stage * .16 + progress * .14,
     speed: 62 + stage * 9 + progress * 12,
     eliteChance: stage === 0 ? 0 : .018 * stage + progress * .01,
   };
@@ -50,9 +50,29 @@ function difficultyAt(station, elapsed = 0, duration = 48) {
 
 function enemyCap(station, elapsed, duration) { return difficultyAt(station, elapsed, duration).cap; }
 function spawnInterval(station, elapsed, duration) { return difficultyAt(station, elapsed, duration).interval; }
-function routeDuration(station) { return 42 + station * 6; }
+function routeDuration() { return 60; }
+
+
+const ENEMY_TYPES=Object.freeze({
+  walker:{name:"游荡丧尸",hp:1,speed:1,r:9,color:"#9bdc65"},
+  runner:{name:"疾行感染者",hp:.62,speed:1.32,r:7,color:"#ffa76c"},
+  crawler:{name:"匍匐感染者",hp:.5,speed:.95,r:7,color:"#68c99e"},
+  spitter:{name:"酸液喷吐者",hp:.85,speed:.8,r:10,color:"#e2f565"},
+  bloater:{name:"孢囊感染者",hp:1.2,speed:.78,r:12,color:"#d38acf"},
+  brute:{name:"变异重尸",hp:2.4,speed:.78,r:15,color:"#e2ff73"},
+});
+function enemyTypeAt(station,elapsed,elite=false,random=Math.random){
+  if(elite)return "brute";
+  const roll=random();
+  if(station>=4&&roll<.1)return "bloater";
+  if(station>=3&&roll<.19)return "spitter";
+  if(station>=2&&roll<.34)return "crawler";
+  if((station>=2||elapsed>=28)&&roll<.55)return "runner";
+  return "walker";
+}
 
 const balanceApi = {
+  ENEMY_TYPES,enemyTypeAt,
   START_TRAIN_LENGTH,
   REGULAR_ENEMY_HP_BASE,
   REGULAR_ENEMY_HP_STEP,

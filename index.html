@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260907-arsenal">
+  <link rel="stylesheet" href="styles.css?v=20260907-mobile-flow">
 </head>
 <body>
   <main id="app">
@@ -14,7 +19,7 @@
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
       <div class="progress-strip" aria-label="路线与经验进度">
-        <div class="progress-row"><span id="routeProgressLabel">距下一站 48.0 s</span><i><b id="routeProgressFill"></b></i></div>
+        <div class="progress-row"><span id="routeProgressLabel">距下一站 60.0 s</span><i><b id="routeProgressFill"></b></i></div>
         <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">Lv.1 · 0 / 4</span><i><b id="experienceProgressFill"></b></i></div>
       </div>
     </header>
@@ -22,6 +27,8 @@
     <section class="arena-wrap" aria-label="荒原战场">
       <canvas id="gameCanvas" width="390" height="680" tabindex="0" aria-label="无人机移动战场，按住任意位置滑动或使用方向键移动"></canvas>
       <div class="joystick-base floating-joystick" id="joystickBase" hidden aria-hidden="true"><span class="joystick-cross"></span><span class="joystick-thumb" id="joystickThumb"></span></div>
+      <button class="fullscreen-button" id="gameFullscreenButton" aria-label="进入全屏" type="button">⛶</button>
+      <button class="claim-upgrade" id="claimUpgradeButton" type="button" hidden>强化</button>
       <button class="pause-button" id="pauseButton" aria-label="暂停游戏" type="button">Ⅱ</button>
       <div class="command-ring" id="commandRing" aria-hidden="true"></div>
       <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
@@ -35,7 +42,7 @@
     <footer class="controls">
       <div class="movement-readout"><span>无人机移速</span><strong id="moveSpeedValue">180 px/s</strong><small>滑动 / 方向键</small></div>
       <div class="control-readouts">
-        <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">20.0</strong><small>秒 / 下一站</small></div>
+        <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">60.0</strong><small>秒 / 下一站</small></div>
         <div class="drone-readout"><span>蜂群</span><strong id="droneLevel">2 架</strong></div>
       </div>
       <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
@@ -50,6 +57,7 @@
       <h1>荒原轨道<span>无人机守卫</span></h1>
       <p class="lede">最后一班列车，穿越无尽荒原。<br>集结专机蜂群，护送它抵达黎明。</p>
       <button class="primary-button" id="startButton"><span>开始远征</span><span aria-hidden="true">↗</span></button>
+      <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
       <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p>
     </div>
   </section>
@@ -72,6 +80,7 @@
 
   <section class="overlay pause-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
     <header class="pause-heading"><p class="eyebrow">PAUSED / FLEET TELEMETRY</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
+    <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button></div>
     <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
     <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
     <dl class="inspect-stats" id="inspectStats"></dl>
@@ -83,15 +92,17 @@
   <section class="overlay result-screen" id="resultScreen" hidden>
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
-  <script src="balance.js?v=20260907-arsenal"></script>
-  <script src="motion.js?v=20260907-arsenal"></script>
-  <script src="progression.js?v=20260907-arsenal"></script>
-  <script src="combat-effects.js?v=20260907-arsenal"></script>
-  <script src="control.js?v=20260907-arsenal"></script>
-  <script src="route-events.js?v=20260907-arsenal"></script>
-  <script src="run-record.js?v=20260907-arsenal"></script>
-  <script src="renderer.js?v=20260907-arsenal"></script>
-  <script src="game.js?v=20260907-arsenal"></script>
-  <script src="armory.js?v=20260907-arsenal"></script>
+  <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
+  <script src="balance.js?v=20260907-mobile-flow"></script>
+  <script src="motion.js?v=20260907-mobile-flow"></script>
+  <script src="progression.js?v=20260907-mobile-flow"></script>
+  <script src="combat-effects.js?v=20260907-mobile-flow"></script>
+  <script src="control.js?v=20260907-mobile-flow"></script>
+  <script src="route-events.js?v=20260907-mobile-flow"></script>
+  <script src="run-record.js?v=20260907-mobile-flow"></script>
+  <script src="renderer.js?v=20260907-mobile-flow"></script>
+  <script src="game.js?v=20260907-mobile-flow"></script>
+  <script src="armory.js?v=20260907-mobile-flow"></script>
+  <script src="display.js?v=20260907-mobile-flow"></script>
 </body>
 </html>

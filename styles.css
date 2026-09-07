@@ -336,3 +336,36 @@ body { background: radial-gradient(ellipse at 50% 38%,#1b3047,#09121e 55%,#050b1
 #app, .overlay { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
 img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-touch-callout:none; }
 .poster-art, .inspect-portrait, .upgrade-icon { pointer-events:none; }
+
+/* Phone-first controls preserve battle space instead of stretching a fixed canvas. */
+.display-actions { display:flex; gap:8px; margin-top:12px; }
+.display-actions button { flex:1; min-height:34px; padding:7px 9px; border:1px solid #45677c; background:#10273ae8; color:#bfeaff; border-radius:5px; font-size:11px; }
+.pause-display { margin:0; }
+.fullscreen-button { position:absolute; z-index:6; right:60px; top:12px; width:36px; height:40px; border:1px solid #537b96; color:#e1f9ff; background:#12263bdd; font-size:23px; }
+.objective { right:106px; }
+.claim-upgrade { position:absolute; z-index:6; right:14px; top:61px; background:#dbbc66; color:#18232b; border:1px solid #fff1ad; border-radius:5px; padding:8px 10px; font-weight:700; }
+.display-help { position:fixed; z-index:60; inset:0; display:grid; place-items:center; padding:24px; background:#030b16cc; }
+.display-help>div { width:min(100%,380px); border:1px solid #426b87; background:#10263a; border-radius:12px; padding:22px; }
+.display-help h2 { font-size:20px; margin-top:0; }
+.display-help p { font-size:13px; line-height:1.7; color:#b8d2e2; }
+@media (max-width:599px), (pointer:coarse) {
+  :root { --frame-width:100vw; --frame-height:100dvh; }
+  #app,.overlay { border-radius:0; border:0; box-shadow:none; }
+  #app { grid-template-rows:calc(72px + env(safe-area-inset-top)) minmax(0,1fr) calc(58px + env(safe-area-inset-bottom)); }
+  .hud { padding:calc(7px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left)); gap:4px 9px; }
+  .brand small,.brand-mark,.movement-readout small,.run-readout small,.controls .pulse-ring { display:none; }
+  .brand strong { font-size:14px; }
+  .hud-stat strong { font-size:17px; }
+  .hud-stat span,.progress-row { font-size:10px; }
+  .progress-strip { gap:3px; }
+  .controls { padding:5px max(12px,env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); gap:9px; }
+  .controls .pulse-button { height:43px; min-height:0; }
+  .movement-readout strong { font-size:14px; }
+  .control-readouts { gap:6px; }
+  .drone-readout strong,.run-readout strong { font-size:17px; }
+  .pause-screen { padding-top:max(10px,env(safe-area-inset-top)); padding-bottom:max(10px,env(safe-area-inset-bottom)); }
+}
+:root.immersive { --frame-height:100dvh; --frame-width:100vw; }
+.immersive #app,.immersive .overlay { border-radius:0; border:0; box-shadow:none; }
+@media (min-width:800px) and (pointer:fine) { :root.immersive { --frame-width:min(640px,100vw); } }
+@media(max-height:590px) { .pause-display button { min-height:26px; padding:4px; } }
