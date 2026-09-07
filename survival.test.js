@@ -21,7 +21,7 @@ assert.equal(run('state.zones.length'),1);
 const before=run('state.enemies[0].hp');
 run('updateArsenal(.65);updateArsenal(.4);');
 assert.ok(run('state.enemies[0].hp')<before,"grenade lands and burns without a bullet collision");
-run('state.modules={ricochet:1};state.weaponClocks={gun:Infinity};state.shots=[];updateArsenal(.1);state.shots[0].x=389;state.shots[0].vx=270;updateShots(.1);');
+run('state.modules={ricochet:1};state.weaponClocks={gun:Infinity};state.shots=[];updateArsenal(.1);const ball=state.shots.find(s=>s.bounce);ball.x=389;ball.vx=270;updateShots(.1);');
 assert.ok(run('state.shots.find(s=>s.bounce).vx')<0,"energy ball bounces from the wall");
 run('state.modules={missile:1};state.shots=[];fireMissile();state.enemies[0].y+=100;updateShots(.1);');
 assert.ok(run('state.shots[0].vy')>0,"missile steers towards moving target");

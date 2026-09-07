@@ -27,7 +27,7 @@ function weaponRows(p){
   return rows;
 }
 function inspectRows(unit){
-  const p=unit.id==="command"?null:effects.weaponProfile(unit.id,unit.level,state.coreStacks);
+  const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
   const drone=unit.id==="command"?state.drone:state.swarm.find(d=>d.id===unit.id);
   if(inspector.tab==="global"){
     const train=effects.trainWeaponProfile({modules:state.modules});
@@ -49,9 +49,9 @@ function inspectRows(unit){
       ["当前移速",drone?withUnit(Math.hypot(drone.vx||0,drone.vy||0),"px/s"):"—"],["最大移速",withUnit(unit.id==="command"?state.drone.moveSpeed:240,"px/s")],
       ["朝向",drone?facing[drone.direction||0]:"—"],["战场位置",drone?numberText(drone.x)+", "+numberText(drone.y):"—"],["机体耐久","敌人只攻击列车"]];
   }
-  if(!p)return [["主机职责","移动 / 编队指挥"],["移动速度",withUnit(state.drone.moveSpeed,"px/s")],["飞行方向","8 向平滑转身"],["主机攻击","由各专机负责"],["机队规模",state.swarm.length+1+" 架"],["控制方式","浮动摇杆 / 方向键"]];
   if(inspector.tab==="upgrade"){
     if(!unit.owned)return weaponRows(p);
+    if(unit.id==="command")return [["武器系统","星脉炮"],["强化方式","北辰固定武装"],["职责","补充稳定点伤害"]];
     if(unit.id.startsWith("escort"))return [["僚机强化方式","增加数量"],["每架武器","独立机枪"],["数量上限","3 架"],["已部署",level("wingman")+" 架"]];
     const next=effects.weaponProfile(unit.id,unit.level+1,state.coreStacks),before=weaponRows(p),after=new Map(weaponRows(next));
     return before.filter(([label,value])=>String(value)!==String(after.get(label))).map(([label,value])=>[label,String(value)+" → "+after.get(label)]);
@@ -66,8 +66,8 @@ function renderPause(){
   $("inspectSelect").value=unit.id;
   $("pauseSummary").textContent=`第 ${state.station} 站 · Lv.${state.level} · ${state.swarm.length+1} 架 · 列车 ${Math.ceil(state.trainHp)}/${state.maxTrainHp}`;
   const portrait=$("inspectPortrait");portrait.dataset.kind=unit.id.startsWith("escort")?"gun":unit.id;
-  const p=unit.id==="command"?null:effects.weaponProfile(unit.id,unit.level,state.coreStacks);
-  $("inspectRole").textContent=inspector.tab==="global"?"列车 · 构筑 · 路线修正":p?p.role:"主控 · 编队指挥";
+  const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
+  $("inspectRole").textContent=inspector.tab==="global"?"列车 · 构筑 · 路线修正":p.role;
   const pageSize=window.innerHeight<450?6:window.innerHeight<700?9:12;
   const rows=inspectRows(unit),pages=Math.max(1,Math.ceil(rows.length/pageSize));inspector.page=Math.min(inspector.page,pages-1);
   $("inspectStats").innerHTML=rows.slice(inspector.page*pageSize,inspector.page*pageSize+pageSize).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("");

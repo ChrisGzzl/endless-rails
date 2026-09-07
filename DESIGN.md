@@ -99,3 +99,11 @@ Six infection variants share the game's animated sprite language: ordinary walke
 Platform references: [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen), [Apple's home-screen web-app instructions](https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios), [Chrome install criteria](https://web.dev/articles/install-criteria).
 
 Three seeded full-run smoke simulations, with a balanced specialist build and automatic pulse use, reached the terminal with 2,453–2,466 kills and 18–19 grouped upgrade visits. These runs validate feasibility and cadence, not difficulty for every player/build.
+
+## Standalone art and command weapon revision — 2026-09-08
+
+iOS home-screen mode can keep a separate WebKit image cache from the Safari tab. In standalone mode, the five required art sheets are now fetched with `cache: "reload"`, versioned nonces and Blob URLs before image decoding. Direct image requests remain the fallback, followed by the existing bounded retries and manual retry control. Blob URLs live for the page session and are released on `pagehide`. The manifest start URL and all entry script/style URLs carry the same release version.
+
+北辰 now carries the fixed 星脉炮: 0.9 damage, 0.72-second interval, 220 px range and 480 px/s projectile speed. It targets independently, records its own volleys/damage/kills and appears as a weapon in the tactical terminal.
+
+The Imagegen-produced `missile-arc-vfx-v1.webp` is a 4 × 4 atlas for 天隼 missile flight/explosions and 惊蛰 electrical links/impacts. Additive frame crossfades replace the simple projectile and arc lines, with the original geometry retained as a loading fallback. Eighteen regression files pass, including standalone Blob loading, command fire ownership, atlas row selection and the existing full-route survival checks.

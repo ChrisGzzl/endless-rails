@@ -28,9 +28,10 @@ assert.equal(run('state.shots[0].owner'),"missile");
 assert.equal(run('state.shots[0].x'),after.x);
 assert.equal(run('state.shots[0].y'),after.y);
 
-// Each aircraft fires only its own weapon. Main command craft produces no duplicates.
+// Each aircraft fires only its own weapon; 北辰 adds exactly its independent pulse shot.
 run('state.modules={rapid:2,scatter:1,piercing:1,chain:1,missile:1,blades:1,incendiary:1,ricochet:1};state.shots=[];state.zones=[];state.weaponClocks={};updateSwarm(.1);updateArsenal(.01);');
 assert.equal(run('state.shots.filter(s=>s.owner==="gun").length'),1);
+assert.equal(run('state.shots.filter(s=>s.owner==="command").length'),1);
 assert.equal(run('state.shots.find(s=>s.owner==="gun").pierce'),0);
 assert.ok(run('state.shots.filter(s=>s.owner==="missile").every(s=>s.missile)'));
 assert.equal(run('state.shots.filter(s=>s.owner==="chain"||s.owner==="incendiary"||s.owner==="blades").length'),0);

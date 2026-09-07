@@ -1,13 +1,17 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null,hover:null,vfx:null};
+const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null};
 if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
     {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
     {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
     {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
+    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},
   ];
+  const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
+    (typeof navigator!=="undefined"&&navigator.standalone===true);
+  const artObjectUrls=[];
   const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
   function updateArtStatus(){
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
@@ -33,8 +37,19 @@ if(typeof Image!=="undefined"){
     }
     picture.onload=()=>finish(picture.naturalWidth>0);
     picture.onerror=()=>finish(false);
-    picture.src=asset.path+"?v=20260907-weapon-art"+(attempt?`&retry=${Date.now()}-${attempt}`:"");
+    const version="20260908-standalone-art",nonce=standaloneArt?`&standalone=${Date.now()}-${attempt}`:attempt?`&retry=${Date.now()}-${attempt}`:"";
+    const requestUrl=asset.path+`?v=${version}${nonce}`;
+    if(standaloneArt&&typeof fetch==="function"&&typeof URL!=="undefined"&&URL.createObjectURL){
+      fetch(requestUrl,{cache:"reload"}).then(response=>{
+        if(!response.ok)throw new Error("HTTP "+response.status);
+        return response.blob();
+      }).then(blob=>{
+        if(settled)return;
+        const objectUrl=URL.createObjectURL(blob);artObjectUrls.push(objectUrl);picture.src=objectUrl;
+      }).catch(()=>{if(!settled)picture.src=requestUrl+"&direct=1";});
+    }else picture.src=requestUrl;
   }
+  if(typeof window!=="undefined")window.addEventListener?.("pagehide",()=>{for(const url of artObjectUrls)URL.revokeObjectURL?.(url);});
   retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
   for(const asset of assets)loadArt(asset);
 }
@@ -62,6 +77,18 @@ function paintWeaponVfx(row,phase,x,y,size,opacity=1,angle=0,loop=true){
     if(weight<.01)continue;
     ctx.globalAlpha=opacity*weight;
     ctx.drawImage(img,col*cellW,row*cellH,cellW,cellH,-size/2,-size/2,size,size);
+  }
+  ctx.restore();return true;
+}
+function paintCombatVfx(row,phase,x,y,width,height=width,opacity=1,angle=0,loop=true){
+  const img=gameArt.combatVfx;if(!img)return false;
+  const frame=loop?((phase%4)+4)%4:Math.max(0,Math.min(3,phase));
+  const current=Math.floor(frame),mix=frame-current,next=loop?(current+1)%4:Math.min(3,current+1);
+  const cellW=img.naturalWidth/4,cellH=img.naturalHeight/4;
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.globalCompositeOperation="lighter";
+  for(const [col,weight] of [[current,1-mix],[next,mix]]){
+    if(weight<.01)continue;ctx.globalAlpha=opacity*weight;
+    ctx.drawImage(img,col*cellW,row*cellH,cellW,cellH,-width/2,-height/2,width,height);
   }
   ctx.restore();return true;
 }
@@ -317,6 +344,10 @@ function drawDrone(){
   ctx.strokeStyle="#67dfff88";ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(x,y,37,0,TAU);ctx.stroke();
   drawFlight(state.drone,true);
+  if(state.drone.flash>0){
+    const angle=state.drone.angle??-Math.PI/2,xm=x+Math.cos(angle)*31,ym=y+Math.sin(angle)*31;
+    glow(xm,ym,13,"#a9f8ff99");line(xm,ym,xm+Math.cos(angle)*12,ym+Math.sin(angle)*12,"#f7ffff",3);
+  }
   for(const side of [-1,1]){
     line(x+side*41,y-5,x+side*45,y,"#e1faff",2);
     line(x+side*45,y,x+side*41,y+5,"#e1faff",2);
@@ -332,6 +363,10 @@ function drawShots() {
         paintWeaponVfx(0,phase-.5,shot.x-shot.vx*.03,shot.y-shot.vy*.03,28,.3,angle);
         paintWeaponVfx(0,phase,shot.x,shot.y,36,.9,angle);
       }else{glow(shot.x,shot.y,19,"#ce84ff66");ctx.strokeStyle=shot.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(shot.x,shot.y,8,0,TAU);ctx.stroke();}
+      continue;
+    }
+    if(shot.missile&&gameArt.combatVfx){
+      paintCombatVfx(0,state.visualTime*9,shot.x,shot.y,50,34,.9,Math.atan2(shot.vy,shot.vx));
       continue;
     }
     const trail = shot.missile ? .05 : .023;
@@ -427,7 +462,16 @@ function drawWeaponEffects() {
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
     if(f.kind==="blast"){
-      ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1-f.life/f.maxLife),0,TAU);ctx.stroke();
+      const age=1-f.life/f.maxLife;
+      if(!paintCombatVfx(1,age*3,f.x,f.y,f.r*2.25,f.r*2.25,(1-age)*.95,0,false)){
+        ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*age,0,TAU);ctx.stroke();
+      }
+    }else if(f.kind==="arc"){
+      const dx=f.tx-f.x,dy=f.ty-f.y,length=Math.hypot(dx,dy),age=1-f.life/f.maxLife;
+      if(gameArt.combatVfx){
+        paintCombatVfx(2,state.visualTime*18+(f.seed||0),(f.x+f.tx)/2,(f.y+f.ty)/2,length+18,34,Math.min(1,f.life/.08),Math.atan2(dy,dx));
+        paintCombatVfx(3,age*3,f.tx,f.ty,42,42,(1-age)*.9,0,false);
+      }else{line(f.x,f.y,f.tx,f.ty,"#c093ff",3);line(f.x,f.y,f.tx,f.ty,"#f2fdff",1.5);}
     }else{
       line(f.x,f.y,f.tx,f.ty,f.kind==="stationBeam"?"#62dcff":"#c093ff",f.kind==="stationBeam"?6:3);
       line(f.x,f.y,f.tx,f.ty,"#f2fdff",1.5);

@@ -33,7 +33,7 @@ const DRONE_TYPES = Object.freeze([
   {id:"piercing", module:"piercing", name:"白虹", weapon:"磁轨", color:"#f4f8ff", icon:"↠"},
 ]);
 function droneIdentity(id){
-  if(id==="command")return {name:"北辰",weapon:"指挥"};
+  if(id==="command")return {name:"北辰",weapon:"星脉炮"};
   if(id==="wingman"||id.startsWith("escort"))return {name:"雨燕僚机",weapon:"机枪支援"};
   return DRONE_TYPES.find(type=>type.id===id||type.module===id);
 }
@@ -44,6 +44,7 @@ function weaponProfile(id, level=1, cores={}) {
   const kind=id.startsWith("escort")?"escort":id;
   const common={id,kind,level:n,projectileCount:1,pierce:0,spread:0,speed:410,range:0,radius:0,chain:false};
   const specs={
+    command:{role:"中程 · 稳定脉冲",damage:.9,interval:.72,range:220,speed:480},
     gun:{role:"近程 · 高频点射",damage:.65+t*.09,interval:Math.max(.085,.15-t*.008),range:155+Math.min(t,5)*4},
     escort:{role:"近程 · 辅助点射",damage:.5,interval:.22,range:145},
     missile:{role:"远程 · 追踪爆破",damage:5+t*1.4,interval:Math.max(2.4,4.2-t*.25),range:340,radius:68+Math.min(t,6)*5,speed:220,life:4,turnRate:3},

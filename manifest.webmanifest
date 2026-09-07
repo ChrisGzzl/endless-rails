@@ -4,7 +4,7 @@
   "short_name": "荒原轨道",
   "description": "指挥专机蜂群，在六类感染者的尸潮中护送列车。每段行驶 60 秒。",
   "lang": "zh-CN",
-  "start_url": "./",
+  "start_url": "./?source=homescreen&v=20260908-standalone-art",
   "scope": "./",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],
