@@ -63,6 +63,7 @@ function weaponProfile(id, level=1, cores={}) {
     p.coreArc=moduleLevel(cores,"arc")>0;
   }
   p.life??=p.speed?p.range/p.speed:0;
+  if(n>=10){p.ultimate=true;p.damage*=1.35;p.range*=1.25;if(p.radius)p.radius*=1.25;p.ultimateBonus="终极形态";}
   p.frequency=1/p.interval;
   // One target, one projectile, no splash/chain bonus; never a promise of real DPS.
   p.singleTargetDps=p.damage/(p.tick||p.interval);
