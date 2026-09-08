@@ -1,13 +1,13 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null};
+const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null,bond:null};
 if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
     {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
     {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
     {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
-    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},
+    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/bond-vfx-v1.png",name:"羁绊组合技"},
   ];
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
@@ -455,6 +455,7 @@ function drawWeaponEffects() {
       continue;
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
+    if(f.kind==="bond"&&gameArt.bond){const age=1-f.life/f.maxLife,row={"紫色共振":0,"红色灼杀号":1,"蓝色穿透":2,"青色近卫":3}[f.bond]??0,fw=gameArt.bond.width/6,fh=gameArt.bond.height/4;ctx.save();ctx.globalCompositeOperation="lighter";ctx.drawImage(gameArt.bond,Math.min(5,Math.floor(age*6))*fw,row*fh,fw,fh,f.x-110,f.y-70,220,140);ctx.restore();continue;}
     if(f.kind==="ultimate"){
       const age=1-f.life/f.maxLife, radius=22+age*70;
       ctx.save();
