@@ -461,7 +461,17 @@ function drawWeaponEffects() {
       continue;
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
-    if(f.kind==="blast"){
+    if(f.kind==="ultimate"){
+      const age=1-f.life/f.maxLife, radius=22+age*70;
+      ctx.save();
+      ctx.globalCompositeOperation="lighter";
+      ctx.strokeStyle=f.color||"#ffe06b"; ctx.lineWidth=5*(1-age); ctx.shadowBlur=18; ctx.shadowColor=f.color||"#ffe06b";
+      ctx.beginPath(); ctx.arc(f.x,f.y,radius,0,TAU); ctx.stroke();
+      ctx.strokeStyle="#ffffff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,radius*.58,-Math.PI*.7,Math.PI*.7); ctx.stroke();
+      ctx.fillStyle="#fff7c2"; ctx.beginPath(); ctx.arc(f.x,f.y,8+10*(1-age),0,TAU); ctx.fill();
+      for(let i=0;i<8;i++){const a=i*TAU/8+age*2; line(f.x+Math.cos(a)*12,f.y+Math.sin(a)*12,f.x+Math.cos(a)*(radius+12),f.y+Math.sin(a)*(radius+12),f.color||"#ffe06b",3*(1-age));}
+      ctx.restore();
+    }else if(f.kind==="blast"){
       const age=1-f.life/f.maxLife;
       if(!paintCombatVfx(1,age*3,f.x,f.y,f.r*2.25,f.r*2.25,(1-age)*.95,0,false)){
         ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*age,0,TAU);ctx.stroke();
