@@ -330,10 +330,7 @@ function drawFlight(drone,command=false){
   }
   if(!command){
     for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=color;ctx.fillRect(drone.x-5+i*4,drone.y+width*.47,2,2);}
-    if(drone.flash>0&&kind!=="blades"){
-      const x=drone.x+Math.cos(drone.angle)*width*.35,y=drone.y+Math.sin(drone.angle)*width*.35;
-      glow(x,y,11,color+"88");line(x,y,x+Math.cos(drone.angle)*8,y+Math.sin(drone.angle)*8,"#f8fdff",2);
-    }
+    if(drone.level>=10){ctx.save();ctx.translate(drone.x,drone.y+bob);ctx.strokeStyle="#ffe06b";ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(0,0,width*.58,0,TAU);ctx.stroke();for(let i=0;i<4;i++){const a=i*Math.PI/2+state.visualTime*.35;line(Math.cos(a)*width*.42,Math.sin(a)*width*.42,Math.cos(a)*width*.7,Math.sin(a)*width*.7,"#ffe06b",2);}ctx.restore();}
   }
 }
 function drawSpecialist(drone){drawFlight(drone);}
@@ -344,10 +341,7 @@ function drawDrone(){
   ctx.strokeStyle="#67dfff88";ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(x,y,37,0,TAU);ctx.stroke();
   drawFlight(state.drone,true);
-  if(state.drone.flash>0){
-    const angle=state.drone.angle??-Math.PI/2,xm=x+Math.cos(angle)*31,ym=y+Math.sin(angle)*31;
-    glow(xm,ym,13,"#a9f8ff99");line(xm,ym,xm+Math.cos(angle)*12,ym+Math.sin(angle)*12,"#f7ffff",3);
-  }
+
   for(const side of [-1,1]){
     line(x+side*41,y-5,x+side*45,y,"#e1faff",2);
     line(x+side*45,y,x+side*41,y+5,"#e1faff",2);
