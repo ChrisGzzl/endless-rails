@@ -294,6 +294,7 @@ function updateArsenal(dt) {
     if(state.weaponClocks[id]>0)continue;
     const p=effects.weaponProfile(id,drone.level,state.coreStacks);
     const target=nearestTarget(drone,p.range);if(!target)continue;
+    if(p.ultimate){burst(drone.x,drone.y,"#ffe06b",24,160);state.weaponFx.push({kind:"ultimate",x:drone.x,y:drone.y,life:.5,maxLife:.5,color:"#ffe06b"});}
     if(id==="gun"||id.startsWith("escort")||id==="scatter"||id==="piercing"){
       fireProfile(drone,p,drone.color);
     }else if(id==="missile"){
