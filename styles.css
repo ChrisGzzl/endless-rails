@@ -385,9 +385,9 @@ img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-
 /* UI kit v3: generated component materials used as a restrained texture layer,
    while HTML keeps all labels and layout crisp and responsive. */
 :root{--ui-kit:url('assets/ui-kit-v3.png')}
-.hud,.controls{background:linear-gradient(135deg,#0a1b2be8,#071321f5),var(--ui-kit);background-size:auto,720px auto;background-position:center,top left;box-shadow:inset 0 0 34px #4bd8ff12}
-.overlay{background:linear-gradient(145deg,#071321f5,#0a1c2cf7),var(--ui-kit);background-size:auto,900px auto;background-position:center,center}
+.hud,.controls{background:linear-gradient(135deg,#0a1b2be8,#071321f5);box-shadow:inset 0 0 34px #4bd8ff12}
+.overlay{background:linear-gradient(145deg,#071321f5,#0a1c2cf7)}
 .start-screen{background-image:linear-gradient(180deg,#06101b20,#06101bd9),url('assets/hover-poster-v2.webp');background-size:cover;background-position:center 25%}
-.upgrade-card,.event-card{background:linear-gradient(145deg,#102c43e8,#071827f2),var(--ui-kit);background-size:auto,760px auto;background-position:center,top left;box-shadow:inset 0 0 24px #39cfff18,0 5px 18px #0008}
-.pause-screen{background:linear-gradient(150deg,#06182bf2,#0b1425f7),var(--ui-kit);background-size:auto,1000px auto;background-position:center,center}
-.inspect-unit,.inspect-stats,.inspect-tabs,.result-stats,.result-damage{background-image:linear-gradient(145deg,#0e3048dd,#071827ee),var(--ui-kit);background-size:auto,680px auto;background-position:center,top left}
+.upgrade-card,.event-card{background:linear-gradient(145deg,#102c43e8,#071827f2),url('assets/ui-card-blue.png') center/100% 100% no-repeat;box-shadow:inset 0 0 24px #39cfff18,0 5px 18px #0008}
+.pause-screen{background:linear-gradient(150deg,#06182bf2,#0b1425f7),url('assets/ui-panel-blue.png') center/100% 100% no-repeat}
+.inspect-unit,.inspect-stats,.inspect-tabs,.result-stats,.result-damage{background-image:linear-gradient(145deg,#0e3048dd,#071827ee),url('assets/ui-panel-compact.png');background-size:100% 100%;background-position:center}
