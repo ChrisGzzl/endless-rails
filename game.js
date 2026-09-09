@@ -280,6 +280,21 @@ function bladePositions() {
     return {x:origin.x+Math.cos(a)*(bladeRadius()-9),y:origin.y+Math.sin(a)*(bladeRadius()-9),a};
   });
 }
+// Lv.5 specialists unlock a real bond strike: a separate attack event with
+// damage, attribution and the generated atlas effect (not a cosmetic flash).
+function fireBondAttack(drone, profile, target) {
+  const bond = {gun:"紫色共振",missile:"红色灼杀号",incendiary:"红色灼杀号",ricochet:"蓝色穿透",blades:"青色近卫",chain:"紫色共振",scatter:"蓝色穿透",piercing:"蓝色穿透"}[drone.id] || "紫色共振";
+  const radius = Math.max(42, (profile.radius || 48) * 1.15);
+  const damage = profile.damage * 1.8;
+  const source = {x:target.x,y:target.y};
+  const hit = effects.applyAreaDamage(state.enemies.filter(e=>!e.dead), source, radius, damage);
+  for (const enemy of hit.defeated) killEnemy(enemy, true);
+  state.weaponFx.push({kind:"bond",bond,x:target.x,y:target.y,life:.48,maxLife:.48});
+  burst(target.x,target.y,drone.color||"#c093ff",20,120);
+  const stats = (state.weaponStats[drone.id] ||= {damage:0,kills:0,volleys:0});
+  stats.damage += damage * hit.hitCount;
+  stats.kills += hit.defeated.length;
+}
 function updateArsenal(dt) {
   syncSwarm();
   state.weaponClocks.command=(state.weaponClocks.command||0)-dt;
@@ -294,6 +309,7 @@ function updateArsenal(dt) {
     if(state.weaponClocks[id]>0)continue;
     const p=effects.weaponProfile(id,drone.level,state.coreStacks);
     const target=nearestTarget(drone,p.range);if(!target)continue;
+    if(p.level>=5) fireBondAttack(drone,p,target);
     if(p.ultimate){burst(drone.x,drone.y,"#ffe06b",24,160);state.weaponFx.push({kind:"ultimate",x:drone.x,y:drone.y,life:.5,maxLife:.5,color:"#ffe06b"});}
     if(id==="gun"||id.startsWith("escort")||id==="scatter"||id==="piercing"){
       fireProfile(drone,p,drone.color);

@@ -15,10 +15,10 @@ if(typeof Image!=="undefined"){
   const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
   function updateArtStatus(){
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
-    const failed=assets.filter(asset=>asset.failed);
+    const failed=assets.filter(asset=>asset.failed&&asset.key!=="bond");
     const required=assets.filter(asset=>asset.key!=="bond");
     start.disabled=required.some(asset=>!gameArt[asset.key]);
-    status.hidden=ready===assets.length;
+    status.hidden=required.every(asset=>gameArt[asset.key])&&failed.length===0;
     status.textContent=failed.length?`${failed.map(asset=>asset.name).join("、")}素材加载失败，请重试。`:`正在加载美术素材 ${ready} / ${assets.length}…`;
     retry.hidden=failed.length===0;
   }
