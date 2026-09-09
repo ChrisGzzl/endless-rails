@@ -391,3 +391,14 @@ img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-
 .upgrade-card,.event-card{background:linear-gradient(145deg,#102c43e8,#071827f2),url('assets/ui-card-blue.png') center/100% 100% no-repeat;box-shadow:inset 0 0 24px #39cfff18,0 5px 18px #0008}
 .pause-screen{background:linear-gradient(150deg,#06182bf2,#0b1425f7),url('assets/ui-panel-blue.png') center/100% 100% no-repeat}
 .inspect-unit,.inspect-stats,.inspect-tabs,.result-stats,.result-damage{background-image:linear-gradient(145deg,#0e3048dd,#071827ee),url('assets/ui-panel-compact.png');background-size:100% 100%;background-position:center}
+
+/* Individual generated components: each interactive surface gets one designed
+   frame, never the full source sheet. Keep the interior calm for live text. */
+.overlay{background-image:linear-gradient(145deg,#071321f2,#0a1c2cf7),url('assets/ui-component-panel.png');background-size:100% 100%;background-position:center}
+.upgrade-card,.event-card{background-image:linear-gradient(145deg,#102c43d9,#071827e8),url('assets/ui-component-card.png');background-size:100% 100%;border-color:#3e9fc5}
+.pause-screen{background-image:linear-gradient(150deg,#06182be8,#0b1425f0),url('assets/ui-component-telemetry.png');background-size:100% 100%}
+.inspect-unit,.inspect-stats,.inspect-tabs{background-image:linear-gradient(145deg,#0e3048dc,#071827ef),url('assets/ui-component-card.png');background-size:100% 100%}
+.result-stats,.result-damage{background-image:linear-gradient(145deg,#0e3048dc,#071827ef),url('assets/ui-component-panel.png');background-size:100% 100%}
+.primary-button{background-image:linear-gradient(135deg,#e5ba69dd,#a97837ee),url('assets/ui-component-button.png');background-size:100% 100%}
+.inspect-tabs button{background-image:linear-gradient(135deg,#102c43dd,#071827ee),url('assets/ui-component-tab.png');background-size:100% 100%}
+.reroll-button{background-image:linear-gradient(135deg,#102c43dd,#071827ee),url('assets/ui-component-tab.png');background-size:100% 100%}
