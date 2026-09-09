@@ -2,8 +2,8 @@
 
 const ROUTE_EVENTS = Object.freeze([
   { id: "dust", name: "沙尘暴", description: "精英与核心更活跃。", routeDistanceMultiplier: 1, enemySpeedMultiplier: 1.04, eliteChanceMultiplier: 1.35, coreChanceMultiplier: 1.15, weather: "dust" },
-  { id: "sprint", name: "高速冲刺", description: "路程更短，敌人更快。", routeDistanceMultiplier: 0.78, enemySpeedMultiplier: 1.22, eliteChanceMultiplier: 1.1, coreChanceMultiplier: 1, weather: "speed" },
-  { id: "freight", name: "废弃货运线", description: "敌群稀疏，核心更丰富。", routeDistanceMultiplier: 1.08, enemySpeedMultiplier: 0.9, eliteChanceMultiplier: 0.8, coreChanceMultiplier: 1.55, weather: "freight" },
+  { id: "sprint", name: "高速冲刺", description: "保持 60 秒，敌人更快。", routeDistanceMultiplier: 1, enemySpeedMultiplier: 1.22, eliteChanceMultiplier: 1.1, coreChanceMultiplier: 1, weather: "speed" },
+  { id: "freight", name: "废弃货运线", description: "敌群稀疏，核心更丰富。", routeDistanceMultiplier: 1, enemySpeedMultiplier: 0.9, eliteChanceMultiplier: 0.8, coreChanceMultiplier: 1.55, weather: "freight" },
 ]);
 
 const CONTRACTS = Object.freeze([

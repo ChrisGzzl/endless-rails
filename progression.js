@@ -8,7 +8,7 @@ function createProgression(config = {}) {
     routeDistanceTotal,
     routeDistance: config.routeDistance ?? routeDistanceTotal,
     experience: config.experience ?? 0,
-    experienceToNext: config.experienceToNext ?? 10,
+    experienceToNext: config.experienceToNext ?? 4,
     level: config.level ?? 1,
     pendingLevelUps: config.pendingLevelUps ?? 0,
     drops: config.drops ? [...config.drops] : [],
@@ -28,7 +28,7 @@ function awardExperience(state, amount) {
     level += 1;
     pendingLevelUps += 1;
     levelsGained += 1;
-    experienceToNext = 10 + (level - 1) * 4;
+    experienceToNext = 4 + (level - 1) * 2;
   }
   return { state: { ...next, experience, experienceToNext, level, pendingLevelUps }, levelsGained };
 }
@@ -55,6 +55,17 @@ function expireDrops(drops, dt) {
   return drops.map(drop => ({ ...drop, life: drop.life - Math.max(0, dt) })).filter(drop => drop.life > 0);
 }
 
-const progressionApi = { CORE_TYPES, createProgression, awardExperience, advanceRoute, rollCoreDrop, collectCore, expireDrops };
+function experienceForEnemy(enemy,station,level){
+  const opening=level<3;
+  const base=enemy.elite?2:opening?1:.65;
+  const densityDiscount=opening?1:1+Math.max(0,station-1)*.15;
+  const light=enemy.kind==="runner"||enemy.kind==="crawler"?.8:1;
+  return Math.round(base/densityDiscount*light*100)/100;
+}
+function shouldOfferUpgrade(state){
+  return state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0&&state.routeDistance>5&&
+    (state.level<=3||state.visualTime>=(state.nextUpgradeAt||0));
+}
+const progressionApi = { experienceForEnemy,shouldOfferUpgrade, CORE_TYPES, createProgression, awardExperience, advanceRoute, rollCoreDrop, collectCore, expireDrops };
 if (typeof module !== "undefined" && module.exports) module.exports = progressionApi;
 if (typeof window !== "undefined") window.EndlessRailsProgression = progressionApi;

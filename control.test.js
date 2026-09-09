@@ -49,4 +49,25 @@ assert.deepEqual(
 assert.deepEqual(ring, { target: { x: 261, y: 454 }, life: 0.5 }, "advancing does not mutate the input ring");
 assert.equal(control.advanceCommandRing(ring, 0.5), null, "a fully elapsed ring expires");
 
+assert.deepEqual(control.joystickVector({ x: 1, y: 1 }, { x: 0, y: 0 }, 40), { x: 0, y: 0, strength: 0 }, "stick center has a deadzone");
+assert.deepEqual(control.joystickVector({ x: 140, y: 100 }, { x: 100, y: 100 }, 40), { x: 1, y: 0, strength: 1 });
+const diagonal = control.joystickVector({ x: 100, y: -100 }, { x: 0, y: 0 }, 40);
+assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-10, "diagonal movement is radially clamped");
+assert.ok(diagonal.x > 0 && diagonal.y < 0);
+assert.deepEqual(control.joystickVector({ x: 0, y: 0 }, { x: 0, y: 0 }, 0), { x: 0, y: 0, strength: 0 });
+assert.deepEqual(control.joystickCommand({ x: .5, y: 0 }, train, bounds), { x: 261, y: 340, angle: 0, strength: .5 }, "stick displacement controls distance relative to the train");
+assert.deepEqual(control.joystickCommand({ x: .5, y: 0 }, { x: 215, y: 360 }, bounds), { x: 281, y: 360, angle: 0, strength: .5 }, "moving the train moves the relative target");
+assert.equal(control.joystickCommand({ x: 1, y: 0 }, { x: 300, y: 340 }, bounds).x, bounds.right, "deployment remains inside the battlefield");
+
+const fullBounds = { left: 24, right: 366, top: 24, bottom: 656 };
+const origin = { x: 195, y: 340 };
+assert.deepEqual(control.stepDrone(origin, { x: 0, y: 0 }, 180, 1, fullBounds), origin, "no input means no movement");
+assert.deepEqual(control.stepDrone(origin, { x: 1, y: 0 }, 180, .1, fullBounds), { x: 213, y: 340 });
+assert.deepEqual(control.stepDrone(origin, { x: .5, y: 0 }, 180, .1, fullBounds), { x: 204, y: 340 }, "partial tilt gives partial speed");
+const diagStep = control.stepDrone(origin, { x: 1, y: 1 }, 180, .1, fullBounds);
+assert.ok(Math.abs(Math.hypot(diagStep.x-origin.x, diagStep.y-origin.y)-18)<1e-9, "diagonal motion does not exceed speed");
+let stepped = origin;
+for(let i=0;i<60;i++) stepped=control.stepDrone(stepped, { x: 0, y: -1 }, 180, 1/60, fullBounds);
+assert.ok(Math.abs(stepped.y-160)<1e-9, "movement uses elapsed time, not frame count");
+assert.deepEqual(control.stepDrone(origin, { x: 1, y: 1 }, 180, 10, fullBounds), { x: 366, y: 656 }, "only battlefield edges restrict travel");
 console.log("control tests passed");

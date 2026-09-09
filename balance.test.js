@@ -4,10 +4,15 @@ const assert = require("node:assert/strict");
 const balance = require("./balance.js");
 
 assert.equal(balance.START_TRAIN_LENGTH, 3, "the starting train remains three cars");
-assert.equal(balance.initialWaveCount(1), 8, "station one starts with a visible horde");
-assert.ok(balance.enemyCap(1) >= 16, "combat keeps a horde on screen");
-assert.equal(balance.SPAWN_BATCH_SIZE, 3, "spawns arrive in small horde bursts");
-assert.ok(balance.spawnInterval(1) <= 0.4, "horde replenishes frequently");
+assert.equal(balance.initialWaveCount(1), 2, "opening starts sparse");
+assert.equal(balance.enemyCap(1), 5, "opening keeps a safe live cap");
+assert.ok(balance.spawnInterval(1) >= 2, "opening allows recovery between spawns");
+assert.equal(balance.difficultyAt(1, 48).eliteChance, 0);
+for(let station=1;station<=5;station++) {
+  const early=balance.difficultyAt(station,0,48),late=balance.difficultyAt(station,48,48);
+  assert.ok(late.cap>early.cap && late.interval<early.interval && late.hp>early.hp);
+  if(station>1) assert.ok(early.hp>balance.difficultyAt(station-1).hp);
+}
 assert.ok(balance.REGULAR_ENEMY_HP_BASE < 1.8, "regular enemies start with less health");
 assert.ok(balance.REGULAR_ENEMY_SPEED_BASE + balance.REGULAR_ENEMY_SPEED_JITTER < 118, "regular enemies start slower");
 assert.ok(balance.ELITE_ENEMY_SPEED_BASE < 128, "elite enemies start slower");
