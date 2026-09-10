@@ -15,7 +15,7 @@
 <body>
   <main id="app">
     <header class="hud" aria-label="战斗状态">
-      <div class="brand"><span class="brand-mark" aria-hidden="true">ER</span><div><small>SWARM ESCORT</small><strong>荒原轨道</strong></div></div>
+      <div class="brand"><button class="brand-mark" id="gmToggle" type="button" aria-label="GM 模式">ER</button><div><small>SWARM ESCORT</small><strong>荒原轨道</strong></div></div>
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
       <div class="progress-strip" aria-label="路线与经验进度">
@@ -48,6 +48,7 @@
       <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
     </footer>
   </main>
+  <section class="gm-panel" id="gmPanel" hidden><b>GM 模式 · 无人机等级</b><div id="gmControls"></div><button id="gmClose" type="button">关闭</button></section>
 
   <section class="overlay start-screen" id="startScreen">
     <div class="poster-art" aria-hidden="true"><img draggable="false" src="assets/hover-poster-v2.webp" alt="" fetchpriority="high" width="1024" height="1536"></div>

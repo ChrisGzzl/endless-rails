@@ -456,7 +456,7 @@ function drawWeaponEffects() {
       continue;
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
-    if(f.kind==="bond"&&gameArt.bond){const age=1-f.life/f.maxLife,row={"紫色共振":0,"红色灼杀号":1,"蓝色穿透":2,"青色近卫":3}[f.bond]??0,fw=gameArt.bond.width/6,fh=gameArt.bond.height/4;ctx.save();ctx.globalCompositeOperation="lighter";ctx.drawImage(gameArt.bond,Math.min(5,Math.floor(age*6))*fw,row*fh,fw,fh,f.x-110,f.y-70,220,140);ctx.restore();continue;}
+    if(f.kind==="bond"){const age=1-f.life/f.maxLife;const c={"紫色共振":"#d99cff","红色灼杀号":"#ff846d","蓝色穿透":"#79c8ff","青色近卫":"#62f4df"}[f.bond]||"#8de8ff";ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.sin(Math.min(1,age)*Math.PI)*.72;ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(f.x,f.y,18+age*58,0,TAU);ctx.stroke();for(let i=0;i<6;i++){const a=i*TAU/6+age*2;line(f.x+Math.cos(a)*22,f.y+Math.sin(a)*22,f.x+Math.cos(a)*(42+age*35),f.y+Math.sin(a)*(42+age*35),c,1.5)}ctx.restore();continue;}
     if(f.kind==="ultimate"){
       const age=1-f.life/f.maxLife, radius=22+age*70;
       ctx.save();

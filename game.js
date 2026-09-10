@@ -282,18 +282,26 @@ function bladePositions() {
 }
 // Lv.5 specialists unlock a real bond strike: a separate attack event with
 // damage, attribution and the generated atlas effect (not a cosmetic flash).
-function fireBondAttack(drone, profile, target) {
-  const bond = {gun:"紫色共振",missile:"红色灼杀号",incendiary:"红色灼杀号",ricochet:"蓝色穿透",blades:"青色近卫",chain:"紫色共振",scatter:"蓝色穿透",piercing:"蓝色穿透"}[drone.id] || "紫色共振";
-  const radius = Math.max(42, (profile.radius || 48) * 1.15);
-  const damage = profile.damage * 1.8;
+const BOND_PAIRS = Object.freeze([
+  ["missile","chain","红色灼杀号"], ["blades","ricochet","青色近卫"],
+  ["gun","piercing","蓝色穿透"], ["incendiary","scatter","紫色共振"]
+]);
+function activeBondFor(id) {
+  const pair=BOND_PAIRS.find(([a,b])=>(a===id||b===id)&&level(a)>=5&&level(b)>=5);
+  return pair?{a:pair[0],b:pair[1],name:pair[2],advanced:level(pair[0])>=10&&level(pair[1])>=10}:null;
+}
+function fireBondAttack(drone, profile, target, bondInfo) {
+  const bond = bondInfo.name;
+  const radius = Math.max(42, (profile.radius || 48) * (bondInfo.advanced?1.5:1.15));
+  const damage = profile.damage * (bondInfo.advanced?3.2:1.8);
   const source = {x:target.x,y:target.y};
   const hit = effects.applyAreaDamage(state.enemies.filter(e=>!e.dead), source, radius, damage);
   for (const enemy of hit.defeated) killEnemy(enemy, true);
   state.weaponFx.push({kind:"bond",bond,x:target.x,y:target.y,life:.48,maxLife:.48});
   burst(target.x,target.y,drone.color||"#c093ff",20,120);
-  const stats = (state.weaponStats[drone.id] ||= {damage:0,kills:0,volleys:0});
-  stats.damage += damage * hit.hitCount;
-  stats.kills += hit.defeated.length;
+  const stats = (state.weaponStats[drone.id] ||= {damage:0,kills:0,volleys:0,skillDamage:0,skillKills:0});
+  stats.skillDamage += damage * hit.hitCount;
+  stats.skillKills += hit.defeated.length;
 }
 function updateArsenal(dt) {
   syncSwarm();
@@ -309,7 +317,8 @@ function updateArsenal(dt) {
     if(state.weaponClocks[id]>0)continue;
     const p=effects.weaponProfile(id,drone.level,state.coreStacks);
     const target=nearestTarget(drone,p.range);if(!target)continue;
-    if(p.level>=5) fireBondAttack(drone,p,target);
+    const bondInfo=activeBondFor(id);
+    if(bondInfo) fireBondAttack(drone,p,target,bondInfo);
     if(p.ultimate){burst(drone.x,drone.y,"#ffe06b",24,160);state.weaponFx.push({kind:"ultimate",x:drone.x,y:drone.y,life:.5,maxLife:.5,color:"#ffe06b"});}
     if(id==="gun"||id.startsWith("escort")||id==="scatter"||id==="piercing"){
       fireProfile(drone,p,drone.color);
@@ -466,7 +475,7 @@ function beginRoute(event) {
 }
 function rerollUpgrades(){if(state.rerollUsed||state.scrap<15||state.mode!=="station")return;state.scrap-=15;state.rerollUsed=true;ui.reroll.disabled=true;ui.upgrades.innerHTML="";renderUpgradeChoices();showToast("补给重新编排");updateHud()}
 function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
-function finish(win){state.mode="result";state.outcome=win?"won":"lost";state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(typeof localStorage!=="undefined"?localStorage:null,state.record);ui.result.hidden=false;$("resultBadge").textContent=win?"◆":"×";$("resultEyebrow").textContent=win?"护送完成":"列车失守";$("resultTitle").textContent=win?"列车穿过了黑夜":"铁轨被荒原吞没";$("resultCopy").textContent=win?"你让最后一班车抵达了安全区。":"再多一架无人机，也许就能撑过下一站。";$("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;const labels=Object.fromEntries((effects.DRONE_TYPES||[]).map(d=>[d.id,d.name||d.label||d.id])); labels.command="北辰"; labels.escort0="雨燕僚机"; labels.escort1="雨燕僚机"; labels.escort2="雨燕僚机"; const damageRows=Object.entries(state.weaponStats||{}).filter(([,v])=>v.damage>0).sort((a,b)=>b[1].damage-a[1].damage); $("resultDroneDamage").innerHTML=damageRows.length?damageRows.map(([id,v])=>`<span>${labels[id]||id}<em>${Math.round(v.damage)}</em></span>`).join(""):"<span>暂无记录</span>"; $("resultTrainDamage").textContent=`车炮　${Math.round(state.trainDamage||0)}`; ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀"}
+function finish(win){state.mode="result";state.outcome=win?"won":"lost";state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(typeof localStorage!=="undefined"?localStorage:null,state.record);ui.result.hidden=false;$("resultBadge").textContent=win?"◆":"×";$("resultEyebrow").textContent=win?"护送完成":"列车失守";$("resultTitle").textContent=win?"列车穿过了黑夜":"铁轨被荒原吞没";$("resultCopy").textContent=win?"你让最后一班车抵达了安全区。":"再多一架无人机，也许就能撑过下一站。";$("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;const labels=Object.fromEntries((effects.DRONE_TYPES||[]).map(d=>[d.id,d.name||d.label||d.id])); labels.command="北辰"; labels.escort0="雨燕僚机"; labels.escort1="雨燕僚机"; labels.escort2="雨燕僚机"; const damageRows=Object.entries(state.weaponStats||{}).filter(([,v])=>v.damage>0||v.skillDamage>0).sort((a,b)=>(b[1].damage+b[1].skillDamage)-(a[1].damage+a[1].skillDamage)); $("resultDroneDamage").innerHTML=damageRows.length?damageRows.map(([id,v])=>`<span>${labels[id]||id} 普攻<em>${Math.round(v.damage||0)}</em></span><span>${labels[id]||id} 技能<em>${Math.round(v.skillDamage||0)}</em></span>`).join(""):"<span>暂无记录</span>"; $("resultTrainDamage").textContent=`车炮　${Math.round(state.trainDamage||0)}`; ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀"}
 function updateHud(){syncJoystick();$("claimUpgradeButton").hidden=state.pendingLevelUps<=0||state.mode!=="combat"||state.paused;$("claimUpgradeButton").textContent="强化 ×"+state.pendingLevelUps;ui.station.textContent=String(Math.min(state.station,5)).padStart(2,"0")+" / 05";ui.scrap.textContent=String(state.scrap).padStart(3,"0");ui.health.textContent=Math.ceil(state.trainHp)+"/"+state.maxTrainHp;ui.healthFill.style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";ui.timer.textContent=Math.max(0,state.timer).toFixed(1);ui.phase.textContent=state.paused?"暂停中":state.mode==="combat"?"行驶中":state.mode==="levelup"?"战斗升级":state.mode==="routeChoice"?"路线选择":state.mode==="contractChoice"?"远征契约":state.mode==="docking"?"进站清场":state.mode==="station"?"安全停靠":"待命";$("moveSpeedValue").textContent=state.drone.moveSpeed+" px/s";ui.drone.textContent=(1+effects.swarmRoster(state.modules).length)+" 架";ui.pulseCooldown.style.height=state.pulseClock?state.pulseClock/7*100+"%":"0%";ui.pulse.classList.toggle("cooling",state.pulseClock>0);ui.objective.textContent=state.mode==="docking"?"防卫炮台清场 · 列车减速进站":state.mode==="station"?"安全区 · 列车已停稳":state.station===5?"守住列车，抵达终点防区":"护送列车抵达下一站";ui.routeLabel.textContent=state.mode==="docking"||state.mode==="station"?"车站防区 · 安全停靠":"距下一站 "+Math.max(0,state.routeDistance).toFixed(1)+" s";ui.routeFill.style.width=Math.max(0,state.routeDistance/state.routeDistanceTotal*100)+"%";ui.xpLabel.textContent="Lv."+state.level+" · "+Math.floor(state.experience)+" / "+state.experienceToNext;ui.xpFill.style.width=Math.min(100,state.experience/state.experienceToNext*100)+"%";if(state.boss){ui.bossText.textContent=Math.max(0,Math.ceil(state.boss.hp/state.boss.maxHp*100))+"%";ui.bossFill.style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+"%"}}
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
@@ -599,6 +608,10 @@ function updateHostileShots(dt){
   state.hostileShots=state.hostileShots.filter(s=>s.life>0);
 }
 $("claimUpgradeButton").addEventListener("click",()=>{if(state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0)openLevelUp();});
+// GM 面板：仅在本地/测试入口使用，直接改变模块等级并立即重建蜂群与属性。
+function renderGM(){const panel=$("gmPanel"),wrap=$("gmControls");if(!panel||!wrap)return;const ids=["rapid","scatter","piercing","chain","missile","blades","incendiary","ricochet","wingman"];wrap.innerHTML=ids.map(id=>`<label>${effects.droneLabel?.(id)||id}<input data-gm-id="${id}" type="number" min="0" max="10" value="${level(id)}"></label>`).join("");wrap.querySelectorAll("input[data-gm-id]").forEach(input=>input.addEventListener("change",()=>{const id=input.dataset.gmId;state.modules[id]=Math.max(0,Math.min(10,Math.floor(Number(input.value)||0)));input.value=level(id);syncSwarm();updateHud();showToast(`${effects.droneLabel?.(id)||id} · Lv.${level(id)}`)}));}
+$("gmToggle")?.addEventListener("click",()=>{const panel=$("gmPanel");if(!panel)return;panel.hidden=!panel.hidden;if(!panel.hidden)renderGM();});
+$("gmClose")?.addEventListener("click",()=>{$("gmPanel").hidden=true;});
 function resizeBattlefield(){
   const box=canvas.getBoundingClientRect();if(!box.width||!box.height)return;
   const scale=390/Math.min(box.width,box.height),nextWidth=Math.round(box.width*scale),nextHeight=Math.round(box.height*scale);if(nextHeight===H&&nextWidth===W)return;
