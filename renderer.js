@@ -1,6 +1,6 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null,bond:null};
+const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null,bond:null,breakthrough:null,evolvedVfx:null};
 if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
@@ -8,6 +8,7 @@ if(typeof Image!=="undefined"){
     {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
     {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
     {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/bond-vfx-v1.png",name:"羁绊组合技"},
+    {key:"breakthrough",path:"assets/drone-breakthrough-v2.png",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/skill-vfx-v2.png",name:"Lv.10突破特效"},
   ];
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
@@ -15,8 +16,9 @@ if(typeof Image!=="undefined"){
   const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
   function updateArtStatus(){
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
-    const failed=assets.filter(asset=>asset.failed&&asset.key!=="bond");
-    const required=assets.filter(asset=>asset.key!=="bond");
+    const optionalKeys=new Set(["bond","breakthrough","evolvedVfx"]);
+    const failed=assets.filter(asset=>asset.failed&&!optionalKeys.has(asset.key));
+    const required=assets.filter(asset=>!optionalKeys.has(asset.key));
     start.disabled=required.some(asset=>!gameArt[asset.key]);
     status.hidden=required.every(asset=>gameArt[asset.key])&&failed.length===0;
     status.textContent=failed.length?`${failed.map(asset=>asset.name).join("、")}素材加载失败，请重试。`:`正在加载美术素材 ${ready} / ${assets.length}…`;
@@ -66,6 +68,8 @@ function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false){
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
   ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
 }
+function paintBreakthrough(x,y,width,height,angle=0){const img=gameArt.breakthrough;if(!img)return false;ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,-width/2,-height/2,width,height);ctx.restore();return true;}
+function paintEvolvedVfx(phase,x,y,size,opacity=1){const img=gameArt.evolvedVfx;if(!img)return false;const frame=Math.max(0,Math.min(3,Math.floor(phase*4)));const cw=img.naturalWidth/4,ch=img.naturalHeight/4;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=opacity;ctx.drawImage(img,frame*cw,0,cw,ch,x-size/2,y-size/2,size,size);ctx.restore();return true;}
 // Imagegen's 4 x 4 atlas has black padding; additive blending removes the black
 // without discarding the soft light. Frames crossfade instead of visibly popping.
 function paintWeaponVfx(row,phase,x,y,size,opacity=1,angle=0,loop=true){
@@ -326,7 +330,7 @@ function drawFlight(drone,command=false){
     line(drone.x-dx*reach,drone.y-dy*reach+bob,drone.x-dx*(reach+4+thrust*5),drone.y-dy*(reach+4+thrust*5)+bob,color,3);ctx.globalAlpha=1;
   }
   // Eight eased headings with a small hover tilt; weapons keep independent aim.
-  if(!paintSprite(spriteCells[kind],drone.x,drone.y+bob,width,width,angle,bank)){
+  if(!(drone.level>=10&&paintBreakthrough(drone.x,drone.y+bob,width*1.2,width*1.2,angle))&&!paintSprite(spriteCells[kind],drone.x,drone.y+bob,width,width,angle,bank)){
     ctx.save();ctx.translate(drone.x,drone.y+bob);ctx.rotate(angle);droneSprite(0,0,command?1.25:.8,color);ctx.restore();
   }
   if(!command){
@@ -456,11 +460,12 @@ function drawWeaponEffects() {
       continue;
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
-    if(f.kind==="bond"){const age=1-f.life/f.maxLife;const c={"紫色共振":"#d99cff","红色灼杀号":"#ff846d","蓝色穿透":"#79c8ff","青色近卫":"#62f4df"}[f.bond]||"#8de8ff";ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.sin(Math.min(1,age)*Math.PI)*.72;ctx.strokeStyle=c;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(f.x,f.y,18+age*58,0,TAU);ctx.stroke();for(let i=0;i<6;i++){const a=i*TAU/6+age*2;line(f.x+Math.cos(a)*22,f.y+Math.sin(a)*22,f.x+Math.cos(a)*(42+age*35),f.y+Math.sin(a)*(42+age*35),c,1.5)}ctx.restore();continue;}
+    if(f.kind==="bond"){const age=1-f.life/f.maxLife;const row={"紫色共振":0,"红色灼杀号":1,"蓝色穿透":2,"青色近卫":3}[f.bond]??0;if(gameArt.bond){const img=gameArt.bond,cw=img.naturalWidth/6,ch=img.naturalHeight/4,frame=Math.min(5,Math.floor(age*6));ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.sin(age*Math.PI)*.72;ctx.drawImage(img,frame*cw,row*ch,cw,ch,f.x-80,f.y-80,160,160);ctx.restore();}continue;}
     if(f.kind==="ultimate"){
       const age=1-f.life/f.maxLife, radius=22+age*70;
       ctx.save();
       ctx.globalCompositeOperation="lighter";
+      paintEvolvedVfx(age,f.x,f.y,radius*2.5,(1-age)*.8);
       ctx.strokeStyle=f.color||"#ffe06b"; ctx.lineWidth=5*(1-age); ctx.shadowBlur=18; ctx.shadowColor=f.color||"#ffe06b";
       ctx.beginPath(); ctx.arc(f.x,f.y,radius,0,TAU); ctx.stroke();
       ctx.strokeStyle="#ffffff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,radius*.58,-Math.PI*.7,Math.PI*.7); ctx.stroke();
