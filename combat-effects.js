@@ -38,6 +38,32 @@ function droneIdentity(id){
   return DRONE_TYPES.find(type=>type.id===id||type.module===id);
 }
 function droneLabel(id){const type=droneIdentity(id);return type?`${type.name} · ${type.weapon}`:id;}
+// Actual displayed levels, including the Swift's free starting level.
+function droneLevel(modules={},id){
+  if(id==="command")return 1;
+  if(id==="gun"||id==="rapid")return modules.gunDisabled?0:1+moduleLevel(modules,"rapid");
+  return moduleLevel(modules,DRONE_TYPES.find(d=>d.id===id)?.module||id);
+}
+const BOND_RULES=Object.freeze([
+  {id:"red",name:"红色灼杀",pair:["missile","incendiary"],description:"北辰额外发射追踪燃烧弹，爆炸后留下火区"},
+  {id:"blue",name:"蓝色穿透",pair:["gun","piercing"],description:"北辰普攻替换为蓝色直线穿透激光"},
+  {id:"purple",name:"紫色共振",pair:["chain","ricochet"],description:"北辰额外发射紫色跳弹，弹体向附近敌人放电"},
+]);
+function bondProfile(id,level){
+  const rule=BOND_RULES.find(b=>b.id===id);if(!rule)throw new Error("Unknown bond: "+id);
+  const n=Math.max(1,Math.floor(level)),t=n-1;
+  const specs={
+    red:{damage:5*(1+t*.18),burnDamage:.7*(1+t*.18),range:340,radius:112+Math.min(t,16)*2,speed:220,life:4,turnRate:3.8,duration:2.4,tick:.4},
+    blue:{damage:3*(1+t*.2),range:360+Math.min(t,16)*4,width:10+Math.min(t,10)*.4},
+    purple:{damage:2*(1+t*.18),arcDamage:.8*(1+t*.18),range:260,speed:270,life:3.6,bounces:5,arcRadius:82+Math.min(t,16)*2,arcInterval:.35,hitRadius:14},
+  };
+  return {...rule,level:n,...specs[id]};
+}
+function bondStates(modules={}){
+  return BOND_RULES.map(rule=>{const levels=rule.pair.map(id=>droneLevel(modules,id)),active=levels.every(n=>n>=5);
+    return {...rule,levels,active,level:active?1+levels[0]-5+levels[1]-5:0};});
+}
+function activeBonds(modules={}){return bondStates(modules).filter(b=>b.active).map(b=>bondProfile(b.id,b.level));}
 // One source of truth for firing rules, upgrade previews and the pause inspector.
 function weaponProfile(id, level=1, cores={}) {
   const n=Math.max(1,Math.floor(Number(level)||1)),t=n-1;
@@ -62,16 +88,18 @@ function weaponProfile(id, level=1, cores={}) {
     p.interval/=1+Math.min(5,moduleLevel(cores,"overdrive"))*.08;
     p.coreArc=moduleLevel(cores,"arc")>0;
   }
+  p.breakthrough=n>=10&&kind!=="command"&&kind!=="escort";
+  if(p.breakthrough){p.damage*=1.35;p.range*=1.25;if(p.radius)p.radius*=1.25;if(p.chainRange)p.chainRange*=1.25;}
+  // Derive flight lifetime after the range bonus so Lv.10 bullets reach that range.
   p.life??=p.speed?p.range/p.speed:0;
-  if(n>=10){p.ultimate=true;p.damage*=1.35;p.range*=1.25;if(p.radius)p.radius*=1.25;p.ultimateBonus="终极形态";}
   p.frequency=1/p.interval;
   // One target, one projectile, no splash/chain bonus; never a promise of real DPS.
   p.singleTargetDps=p.damage/(p.tick||p.interval);
   return p;
 }
 function swarmRoster(modules={}) {
-  const fleet=DRONE_TYPES.flatMap((type,slot)=>type.id==="gun"||moduleLevel(modules,type.module)>0
-    ? [{...type,slot,level:type.id==="gun"?1+moduleLevel(modules,"rapid"):moduleLevel(modules,type.module)}] : []);
+  const fleet=DRONE_TYPES.flatMap((type,slot)=>droneLevel(modules,type.id)>0
+    ? [{...type,slot,level:droneLevel(modules,type.id)}] : []);
   for(let i=0;i<Math.min(3,moduleLevel(modules,"wingman"));i++)fleet.push({...DRONE_TYPES[0],id:"escort"+i,slot:8+i,level:1,...droneIdentity("wingman")});
   return fleet;
 }
@@ -185,6 +213,11 @@ function applyAreaDamage(targets, center, radius, damage) {
 }
 
 const combatEffects = {
+  droneLevel,
+  BOND_RULES,
+  bondProfile,
+  bondStates,
+  activeBonds,
   droneIdentity,
   droneLabel,
   weaponProfile,

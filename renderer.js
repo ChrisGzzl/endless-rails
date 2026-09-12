@@ -7,8 +7,8 @@ if(typeof Image!=="undefined"){
     {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
     {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
     {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
-    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/bond-vfx-v1.png",name:"羁绊组合技"},
-    {key:"breakthrough",path:"assets/drone-breakthrough-v2.png",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/skill-vfx-v2.png",name:"Lv.10突破特效"},
+    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/attacks-v3.webp",name:"北辰羁绊与突破攻击"},
+    {key:"breakthrough",path:"assets/hover-lv10-v3.webp",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/weapon-lv10-v3.webp",name:"Lv.10突破特效"},
   ];
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
@@ -17,7 +17,7 @@ if(typeof Image!=="undefined"){
   function updateArtStatus(){
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
     const optionalKeys=new Set(["bond","breakthrough","evolvedVfx"]);
-    const failed=assets.filter(asset=>asset.failed&&!optionalKeys.has(asset.key));
+    const failed=assets.filter(asset=>asset.failed);
     const required=assets.filter(asset=>!optionalKeys.has(asset.key));
     start.disabled=required.some(asset=>!gameArt[asset.key]);
     status.hidden=required.every(asset=>gameArt[asset.key])&&failed.length===0;
@@ -40,7 +40,7 @@ if(typeof Image!=="undefined"){
     }
     picture.onload=()=>finish(picture.naturalWidth>0);
     picture.onerror=()=>finish(false);
-    const version="20260908-standalone-art",nonce=standaloneArt?`&standalone=${Date.now()}-${attempt}`:attempt?`&retry=${Date.now()}-${attempt}`:"";
+    const version="20260912-bonds-v3",nonce=standaloneArt?`&standalone=${Date.now()}-${attempt}`:attempt?`&retry=${Date.now()}-${attempt}`:"";
     const requestUrl=asset.path+`?v=${version}${nonce}`;
     if(standaloneArt&&typeof fetch==="function"&&typeof URL!=="undefined"&&URL.createObjectURL){
       fetch(requestUrl,{cache:"reload"}).then(response=>{
@@ -60,20 +60,26 @@ const spriteCells={command:0,gun:1,missile:2,incendiary:3,blades:4,ricochet:5,ch
 // Bounds ignore transparent atlas padding, keeping units readable at gameplay scale.
 const spriteFrames=[[15,18,299,295],[371,28,221,259],[658,36,253,252],[957,19,281,277],[21,336,292,266],[364,336,236,267],[665,321,239,288],[953,326,290,284],[73,630,188,292],[416,630,114,302],[725,628,118,305],[979,628,237,297],[89,983,148,195],[402,989,139,188],[656,951,246,242],[955,941,281,274]];
 const hoverFrames=[[30,45,378,351],[430,96,394,267],[876,64,334,316],[52,470,330,287],[447,437,352,346],[855,447,377,341],[39,851,361,340],[423,876,408,274],[869,855,350,321]];
-function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false){
-  const img=index<9?gameArt.hover:gameArt.atlas;if(!img)return false;
+function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false,breakthrough=false){
+  const img=index<9?(breakthrough&&gameArt.breakthrough?gameArt.breakthrough:gameArt.hover):gameArt.atlas;if(!img)return false;
   const [sx,sy,sw,sh]=(index<9?hoverFrames:spriteFrames)[index];
   const scale=Math.min(width/sw,height/sh),dw=stretch?width:sw*scale,dh=stretch?height:sh*scale;
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
   ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
 }
-function paintBreakthrough(x,y,width,height,angle=0){const img=gameArt.breakthrough;if(!img)return false;ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.drawImage(img,0,0,img.naturalWidth,img.naturalHeight,-width/2,-height/2,width,height);ctx.restore();return true;}
-function paintEvolvedVfx(phase,x,y,size,opacity=1){const img=gameArt.evolvedVfx;if(!img)return false;const frame=Math.max(0,Math.min(3,Math.floor(phase*4)));const cw=img.naturalWidth/4,ch=img.naturalHeight/4;ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=opacity;ctx.drawImage(img,frame*cw,0,cw,ch,x-size/2,y-size/2,size,size);ctx.restore();return true;}
+// Each generated attack cell is packed with a 16px transparent gutter.
+function paintAttack(index,x,y,width,height=width,opacity=1,angle=0){
+  const img=gameArt.bond;if(!img)return false;
+  const col=index%4,row=Math.floor(index/4),iw=img.naturalWidth,ih=img.naturalHeight;
+  const sx=Math.round(col*iw/4),sy=Math.round(row*ih/4),sw=Math.round((col+1)*iw/4)-sx,sh=Math.round((row+1)*ih/4)-sy;
+  ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.globalCompositeOperation="lighter";ctx.globalAlpha=opacity;
+  ctx.drawImage(img,sx,sy,sw,sh,-width/2,-height/2,width,height);ctx.restore();return true;
+}
 // Imagegen's 4 x 4 atlas has black padding; additive blending removes the black
 // without discarding the soft light. Frames crossfade instead of visibly popping.
-function paintWeaponVfx(row,phase,x,y,size,opacity=1,angle=0,loop=true){
-  const img=gameArt.vfx;if(!img)return false;
+function paintWeaponVfx(row,phase,x,y,size,opacity=1,angle=0,loop=true,breakthrough=false){
+  const img=breakthrough&&gameArt.evolvedVfx?gameArt.evolvedVfx:gameArt.vfx;if(!img)return false;
   const frame=loop?((phase%4)+4)%4:Math.max(0,Math.min(3,phase));
   const current=Math.floor(frame),mix=frame-current,next=loop?(current+1)%4:Math.min(3,current+1);
   const cellW=img.naturalWidth/4,cellH=img.naturalHeight/4;
@@ -330,12 +336,11 @@ function drawFlight(drone,command=false){
     line(drone.x-dx*reach,drone.y-dy*reach+bob,drone.x-dx*(reach+4+thrust*5),drone.y-dy*(reach+4+thrust*5)+bob,color,3);ctx.globalAlpha=1;
   }
   // Eight eased headings with a small hover tilt; weapons keep independent aim.
-  if(!(drone.level>=10&&paintBreakthrough(drone.x,drone.y+bob,width*1.2,width*1.2,angle))&&!paintSprite(spriteCells[kind],drone.x,drone.y+bob,width,width,angle,bank)){
+  if(!paintSprite(spriteCells[kind],drone.x,drone.y+bob,width,width,angle,bank,false,!command&&drone.level>=10)){
     ctx.save();ctx.translate(drone.x,drone.y+bob);ctx.rotate(angle);droneSprite(0,0,command?1.25:.8,color);ctx.restore();
   }
   if(!command){
     for(let i=0;i<Math.min(3,drone.level);i++){ctx.fillStyle=color;ctx.fillRect(drone.x-5+i*4,drone.y+width*.47,2,2);}
-    if(drone.level>=10){ctx.save();ctx.translate(drone.x,drone.y+bob);ctx.strokeStyle="#ffe06b";ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(0,0,width*.58,0,TAU);ctx.stroke();for(let i=0;i<4;i++){const a=i*Math.PI/2+state.visualTime*.35;line(Math.cos(a)*width*.42,Math.sin(a)*width*.42,Math.cos(a)*width*.7,Math.sin(a)*width*.7,"#ffe06b",2);}ctx.restore();}
   }
 }
 function drawSpecialist(drone){drawFlight(drone);}
@@ -354,23 +359,29 @@ function drawDrone(){
   ctx.fillStyle="#edfaff";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.fillText(effects.droneIdentity("command").name,x,Math.min(H-7,y+47));
 }
 function drawShots() {
-  for (const shot of state.shots) {
+  for(const shot of state.shots){
+    const angle=Math.atan2(shot.vy,shot.vx),phase=state.visualTime*10+shot.life;
+    if(shot.bondId==="red"&&paintAttack(8,shot.x,shot.y,50,34,.95,angle))continue;
+    if(shot.bondId==="purple"&&paintAttack(12,shot.x,shot.y,48,48,.9,angle))continue;
     if(shot.bounce){
-      const phase=state.visualTime*10+shot.life,angle=Math.atan2(shot.vy,shot.vx);
       if(gameArt.vfx){
-        paintWeaponVfx(0,phase-1,shot.x-shot.vx*.065,shot.y-shot.vy*.065,22,.16,angle);
-        paintWeaponVfx(0,phase-.5,shot.x-shot.vx*.03,shot.y-shot.vy*.03,28,.3,angle);
-        paintWeaponVfx(0,phase,shot.x,shot.y,36,.9,angle);
-      }else{glow(shot.x,shot.y,19,"#ce84ff66");ctx.strokeStyle=shot.color;ctx.lineWidth=3;ctx.beginPath();ctx.arc(shot.x,shot.y,8,0,TAU);ctx.stroke();}
+        paintWeaponVfx(0,phase-1,shot.x-shot.vx*.065,shot.y-shot.vy*.065,22,.16,angle,true,shot.breakthrough);
+        paintWeaponVfx(0,phase-.5,shot.x-shot.vx*.03,shot.y-shot.vy*.03,28,.3,angle,true,shot.breakthrough);
+        paintWeaponVfx(0,phase,shot.x,shot.y,36,.9,angle,true,shot.breakthrough);
+      }
       continue;
     }
-    if(shot.missile&&gameArt.combatVfx){
-      paintCombatVfx(0,state.visualTime*9,shot.x,shot.y,50,34,.9,Math.atan2(shot.vy,shot.vx));
-      continue;
+    if(shot.missile){
+      if(shot.breakthrough&&paintAttack(4,shot.x,shot.y,50,34,.9,angle))continue;
+      if(paintCombatVfx(0,state.visualTime*9,shot.x,shot.y,50,34,.9,angle))continue;
     }
-    const trail = shot.missile ? .05 : .023;
-    line(shot.x, shot.y, shot.x - shot.vx * trail, shot.y - shot.vy * trail, shot.color, shot.missile ? 4 : 2);
-    ctx.fillStyle = "#f5efcf"; ctx.fillRect(shot.x - 1, shot.y - 1, 2, 2);
+    if(shot.breakthrough){
+      const index=shot.owner==="scatter"?1:shot.owner==="piercing"?2:0;
+      if(paintAttack(index,shot.x,shot.y,Math.max(12,Math.hypot(shot.vx,shot.vy)*.023+4),8,.95,angle))continue;
+    }
+    const trail=shot.missile?.05:.023;
+    line(shot.x,shot.y,shot.x-shot.vx*trail,shot.y-shot.vy*trail,shot.color,shot.missile?4:2);
+    ctx.fillStyle="#f5efcf";ctx.fillRect(shot.x-1,shot.y-1,2,2);
   }
 }
 
@@ -411,18 +422,19 @@ function drawZones() {
   for(const z of state.zones){
     if(z.flight>0) {
       const t=1-z.flight/(z.flightDuration||.65),x=z.sx+(z.x-z.sx)*t,y=z.sy+(z.y-z.sy)*t-Math.sin(t*Math.PI)*65;
-      if(!paintWeaponVfx(3,0,x,y,38,.95,state.visualTime*2,false)){
+      if(!paintWeaponVfx(3,0,x,y,38,.95,state.visualTime*2,false,z.breakthrough)){
         glow(x,y,12,"#ffba6277");ctx.fillStyle="#ffdfa1";ctx.fillRect(x-4,y-4,8,8);
       }
       ctx.strokeStyle="#ffb85b66";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(z.x,z.y,z.r,z.r*.8,0,0,TAU);ctx.stroke();
     }else{
       const fade=Math.min(1,z.life);
+      if(z.bondId==="red"&&paintAttack(10,z.x,z.y,z.r*2.35,z.r*2.35,fade*.68))continue;
       if(gameArt.vfx){
         const age=(z.duration||3.8)-z.life;
         ctx.save();ctx.globalAlpha=fade*.24;ctx.fillStyle="#1a0c09";
         ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,TAU);ctx.fill();ctx.restore();
-        paintWeaponVfx(2,state.visualTime*7+(z.phase||0),z.x,z.y,z.r*2.35,fade*.72);
-        if(age<.55)paintWeaponVfx(3,age/.55*3,z.x,z.y,z.r*2.5,(1-age/.55)*.85,0,false);
+        paintWeaponVfx(2,state.visualTime*7+(z.phase||0),z.x,z.y,z.r*2.35,fade*.72,0,true,z.breakthrough);
+        if(age<.55)paintWeaponVfx(3,age/.55*3,z.x,z.y,z.r*2.5,(1-age/.55)*.85,0,false,z.breakthrough);
         continue;
       }
       ctx.globalAlpha=fade;glow(z.x,z.y,z.r,"#ff70245c");
@@ -439,16 +451,8 @@ function drawZones() {
 }
 function drawWeaponEffects() {
   const cutter=state.swarm.find(d=>d.id==="blades");
-  if(cutter){
-    const r=bladeRadius(),phase=state.visualTime*6;
-    ctx.fillStyle="#5cdeff09";ctx.strokeStyle="#8defff35";ctx.lineWidth=1;
-    ctx.beginPath();ctx.arc(cutter.x,cutter.y,r,0,TAU);ctx.fill();ctx.stroke();
-    for(let i=0;i<3;i++){
-      ctx.strokeStyle=cutter.flash>0?"#b7f6ff88":"#67dfff44";ctx.lineWidth=3;
-      ctx.beginPath();ctx.arc(cutter.x,cutter.y,r-8,phase+i*TAU/3,phase+i*TAU/3+1.1);ctx.stroke();
-    }
-  }
   for(const b of bladePositions()){
+    if(cutter?.level>=10&&paintAttack(3,b.x,b.y,32,34,.9,b.a+Math.PI/2))continue;
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.a+Math.PI/2);
     shape([[-3,-15],[4,-9],[7,3],[3,13],[-4,16],[-1,2],[-5,-7]],"#d4f4ff","#57dfff",1.5);
     line(-10,-18,-14,2,"#72e4ff99",3);ctx.restore();
@@ -456,30 +460,28 @@ function drawWeaponEffects() {
   for(const f of state.weaponFx){
     if(f.kind==="ricochetBurst"){
       const age=1-f.life/f.maxLife;
-      paintWeaponVfx(1,age*3,f.x,f.y,f.r*2,(1-age)*.8,0,false);
+      if(f.bondId==="purple")paintAttack(14,f.x,f.y,f.r*2,f.r*2,(1-age)*.6);
+      else paintWeaponVfx(1,age*3,f.x,f.y,f.r*2,(1-age)*.8,0,false,f.breakthrough);
       continue;
     }
     ctx.globalAlpha=Math.min(1,f.life/f.maxLife);
-    if(f.kind==="bond"){const age=1-f.life/f.maxLife;const row={"紫色共振":0,"红色灼杀号":1,"蓝色穿透":2,"青色近卫":3}[f.bond]??0;if(gameArt.bond){const img=gameArt.bond,cw=img.naturalWidth/6,ch=img.naturalHeight/4,frame=Math.min(5,Math.floor(age*6));ctx.save();ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.sin(age*Math.PI)*.72;ctx.drawImage(img,frame*cw,row*ch,cw,ch,f.x-80,f.y-80,160,160);ctx.restore();}continue;}
-    if(f.kind==="ultimate"){
-      const age=1-f.life/f.maxLife, radius=22+age*70;
-      ctx.save();
-      ctx.globalCompositeOperation="lighter";
-      paintEvolvedVfx(age,f.x,f.y,radius*2.5,(1-age)*.8);
-      ctx.strokeStyle=f.color||"#ffe06b"; ctx.lineWidth=5*(1-age); ctx.shadowBlur=18; ctx.shadowColor=f.color||"#ffe06b";
-      ctx.beginPath(); ctx.arc(f.x,f.y,radius,0,TAU); ctx.stroke();
-      ctx.strokeStyle="#ffffff"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,radius*.58,-Math.PI*.7,Math.PI*.7); ctx.stroke();
-      ctx.fillStyle="#fff7c2"; ctx.beginPath(); ctx.arc(f.x,f.y,8+10*(1-age),0,TAU); ctx.fill();
-      for(let i=0;i<8;i++){const a=i*TAU/8+age*2; line(f.x+Math.cos(a)*12,f.y+Math.sin(a)*12,f.x+Math.cos(a)*(radius+12),f.y+Math.sin(a)*(radius+12),f.color||"#ffe06b",3*(1-age));}
-      ctx.restore();
+    if(f.kind==="bondLaser"){
+      const length=Math.hypot(f.tx-f.x,f.ty-f.y),angle=Math.atan2(f.ty-f.y,f.tx-f.x);
+      paintAttack(11,(f.x+f.tx)/2,(f.y+f.ty)/2,length,f.width*3,Math.min(1,f.life/.06),angle);
+      ctx.globalAlpha=1;continue;
     }else if(f.kind==="blast"){
       const age=1-f.life/f.maxLife;
-      if(!paintCombatVfx(1,age*3,f.x,f.y,f.r*2.25,f.r*2.25,(1-age)*.95,0,false)){
+      if(f.bondId==="red"||f.breakthrough){
+        paintAttack(f.bondId==="red"?9:5,f.x,f.y,f.r*2.25,f.r*2.25,(1-age)*.85);
+      }else if(!paintCombatVfx(1,age*3,f.x,f.y,f.r*2.25,f.r*2.25,(1-age)*.95,0,false)){
         ctx.strokeStyle="#ffbf72";ctx.lineWidth=4;ctx.beginPath();ctx.arc(f.x,f.y,f.r*age,0,TAU);ctx.stroke();
       }
     }else if(f.kind==="arc"){
       const dx=f.tx-f.x,dy=f.ty-f.y,length=Math.hypot(dx,dy),age=1-f.life/f.maxLife;
-      if(gameArt.combatVfx){
+      if(f.bondId==="purple"||f.breakthrough){
+        paintAttack(f.bondId==="purple"?13:6,(f.x+f.tx)/2,(f.y+f.ty)/2,length+18,34,Math.min(1,f.life/.08),Math.atan2(dy,dx));
+        paintAttack(f.bondId==="purple"?14:7,f.tx,f.ty,42,42,(1-age)*.7);
+      }else if(gameArt.combatVfx){
         paintCombatVfx(2,state.visualTime*18+(f.seed||0),(f.x+f.tx)/2,(f.y+f.ty)/2,length+18,34,Math.min(1,f.life/.08),Math.atan2(dy,dx));
         paintCombatVfx(3,age*3,f.tx,f.ty,42,42,(1-age)*.9,0,false);
       }else{line(f.x,f.y,f.tx,f.ty,"#c093ff",3);line(f.x,f.y,f.tx,f.ty,"#f2fdff",1.5);}

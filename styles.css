@@ -402,3 +402,14 @@ img, canvas, .inspect-portrait, .upgrade-icon { -webkit-user-drag:none; -webkit-
 .primary-button{background-image:linear-gradient(135deg,#e5ba69dd,#a97837ee),url('assets/ui-component-button.png');background-size:100% 100%}
 .inspect-tabs button{background-image:linear-gradient(135deg,#102c43dd,#071827ee),url('assets/ui-component-tab.png');background-size:100% 100%}
 .reroll-button{background-image:linear-gradient(135deg,#102c43dd,#071827ee),url('assets/ui-component-tab.png');background-size:100% 100%}
+
+/* GM and bond telemetry share actual drone levels and live damage attribution. */
+.gm-panel{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#030b14df;padding:12px;overflow:auto}
+.gm-content{width:min(440px,100%);max-height:calc(100dvh - 24px);overflow:auto;padding:20px;border:1px solid #4488a5;border-radius:16px;background:linear-gradient(135deg,#0f293c,#091525);box-shadow:0 20px 80px #0009}
+.gm-content h2{margin:0 0 8px;color:#dcefff}.gm-content p{font-size:12px;line-height:1.6;color:#a2becb}
+#gmControls{display:grid;gap:6px}#gmControls label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;min-height:34px}
+#gmControls input{width:74px;padding:6px;color:#e0f6ff;background:#081726;border:1px solid #4b8098;border-radius:6px;user-select:text}
+#gmBonds{display:grid;gap:8px;margin:16px 0}#gmBonds div{padding:8px 10px;background:#102a3a;border-radius:6px;font-size:12px}#gmBonds small{display:block;color:#a9bcc6;margin-top:4px}
+.gm-panel[hidden]{display:none}.hud .brand-mark{display:grid;cursor:pointer}
+.damage-columns{grid-template-columns:1fr}.damage-note{font-size:11px;line-height:1.6;color:#9ab5c4;margin:0 0 12px}.bond-result small{font-size:11px;color:#91aebb;display:block;margin:4px 0 8px}.bond-damage-column{margin:6px 0}
+.inspect-portrait[data-breakthrough="true"]{background-image:url('assets/hover-lv10-v3.webp')}

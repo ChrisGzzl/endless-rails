@@ -4,8 +4,8 @@ const numberText=value=>Number.isFinite(value)?Number(value.toFixed(2)).toString
 const withUnit=(value,unit)=>numberText(value)+" "+unit;
 function inspectFleet(){
   return [{id:"command",...effects.droneIdentity("command"),level:1,owned:true},...effects.DRONE_TYPES.map(type=>{
-    const owned=type.id==="gun"||level(type.module)>0;
-    return {...type,owned,level:type.id==="gun"?1+level("rapid"):Math.max(1,level(type.module))};
+    const n=effects.droneLevel(state.modules,type.id);
+    return {...type,owned:n>0,level:Math.max(1,n)};
   }),...state.swarm.filter(d=>d.id.startsWith("escort")).map(d=>({...d,owned:true}))];
 }
 function weaponRows(p){
@@ -24,7 +24,19 @@ function weaponRows(p){
   if(p.kind==="ricochet")rows.push(["反弹上限",p.bounces],["贯穿目标数","路径内全部"],["重复伤害条件","反弹后可重击"]);
   if(p.kind==="blades")rows.push(["旋转刀刃数",p.blades],["切割目标数","范围内全部"],["出击偏移上限","70 px"],["归队阈值","115 px"]);
   if(p.kind==="gun")rows.push(["额外核心弹数",Math.max(0,p.projectileCount-1)],["核心跳电",p.coreArc?"每 4 次弹击触发":"未激活"],["核心跳电倍率",p.coreArc?"65%":"—"]);
+  if(!["command","escort"].includes(p.kind))rows.push(["Lv.10 突破",p.breakthrough?"已突破 · 新机体与普攻皮肤":"未突破"],["突破加成",p.breakthrough?"伤害 +35% · 范围 +25%（上方已计入）":"达到 Lv.10 后生效"]);
   return rows;
+}
+function inspectBondRows(){
+  return effects.bondStates(state.modules).flatMap(b=>{
+    const stats=state.bondStats[b.id]||{damage:0,kills:0,casts:0},p=b.active?effects.bondProfile(b.id,b.level):null;
+    const rows=[[b.name,b.active?"Lv."+b.level:"未激活"],["配对要求",b.pair.map((id,i)=>effects.droneIdentity(id).name+" Lv."+b.levels[i]+"/5").join(" + ")]];
+    if(p){rows.push(["效果",b.description],["触发频率","北辰每次普攻"],["单次伤害",numberText(p.damage)],["射程",withUnit(p.range,"px")]);
+      if(b.id==="red")rows.push(["燃烧半径",withUnit(p.radius,"px")],["每跳燃烧",numberText(p.burnDamage)],["燃烧持续/跳频",p.duration+" s / "+p.tick+" s"]);
+      if(b.id==="purple")rows.push(["电弧半径",withUnit(p.arcRadius,"px")],["电弧伤害/跳频",numberText(p.arcDamage)+" / "+p.arcInterval+" s"]);
+    }
+    rows.push(["羁绊有效伤害",numberText(stats.damage)],["羁绊击杀/释放",stats.kills+" / "+stats.casts]);return rows;
+  });
 }
 function inspectRows(unit){
   const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
@@ -42,21 +54,22 @@ function inspectRows(unit){
   if(inspector.tab==="status"){
     const stats=state.weaponStats[unit.id]||{damage:0,kills:0,volleys:0};
     const facing=["北","东北","东","东南","南","西南","西","西北"];
-    return [["部署状态",unit.owned?"已部署":"未解锁"],["武器等级",p?"Lv."+unit.level:"无武器"],
+    const rows=[["部署状态",unit.owned?"已部署":"未解锁"],["武器等级",p?"Lv."+unit.level:"无武器"],
       ["行动状态",!drone?"未部署":unit.id==="command"?"玩家控制":({patrol:"编队巡航",engage:"自主接敌",return:"返回编队"}[drone.behavior]||"编队集结")],
       ["冷却剩余",unit.owned&&p?withUnit(Math.max(0,state.weaponClocks[unit.id]||0),"s"):"—"],
       ["累计有效伤害",numberText(stats.damage)],["直接击杀",stats.kills],["攻击轮数",stats.volleys],
       ["当前移速",drone?withUnit(Math.hypot(drone.vx||0,drone.vy||0),"px/s"):"—"],["最大移速",withUnit(unit.id==="command"?state.drone.moveSpeed:240,"px/s")],
       ["朝向",drone?facing[drone.direction||0]:"—"],["战场位置",drone?numberText(drone.x)+", "+numberText(drone.y):"—"],["机体耐久","敌人只攻击列车"]];
+    return unit.id==="command"?[...rows,...inspectBondRows()]:rows;
   }
   if(inspector.tab==="upgrade"){
     if(!unit.owned)return weaponRows(p);
-    if(unit.id==="command")return [["武器系统","星脉炮"],["强化方式","北辰固定武装"],["职责","补充稳定点伤害"]];
+    if(unit.id==="command")return [["羁绊升级","配对双方 Lv.5 激活，每升一级技能 +1"],...inspectBondRows()];
     if(unit.id.startsWith("escort"))return [["僚机强化方式","增加数量"],["每架武器","独立机枪"],["数量上限","3 架"],["已部署",level("wingman")+" 架"]];
     const next=effects.weaponProfile(unit.id,unit.level+1,state.coreStacks),before=weaponRows(p),after=new Map(weaponRows(next));
     return before.filter(([label,value])=>String(value)!==String(after.get(label))).map(([label,value])=>[label,String(value)+" → "+after.get(label)]);
   }
-  return weaponRows(p);
+  return unit.id==="command"?[...weaponRows(p),...inspectBondRows()]:weaponRows(p);
 }
 function levelInCores(id){return state.coreStacks[id]||0;}
 function renderPause(){
@@ -66,6 +79,7 @@ function renderPause(){
   $("inspectSelect").value=unit.id;
   $("pauseSummary").textContent=`第 ${state.station} 站 · Lv.${state.level} · ${state.swarm.length+1} 架 · 列车 ${Math.ceil(state.trainHp)}/${state.maxTrainHp}`;
   const portrait=$("inspectPortrait");portrait.dataset.kind=unit.id.startsWith("escort")?"gun":unit.id;
+  portrait.dataset.breakthrough=String(unit.id!=="command"&&unit.level>=10);
   const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
   $("inspectRole").textContent=inspector.tab==="global"?"列车 · 构筑 · 路线修正":p.role;
   const pageSize=window.innerHeight<450?6:window.innerHeight<700?9:12;

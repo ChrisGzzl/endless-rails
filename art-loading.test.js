@@ -51,4 +51,12 @@ assert.equal(stalled.run("gameArt.hover") ,replacement);
 stalled.requests[1].onload();stalled.requests[2].onload();stalled.requests[3].onload();stalled.requests[4].onload();stalled.requests[5].onload();
 assert.equal(stalled.elements.startButton.disabled,false);
 assert.equal(stalled.timers.size,2);
+// Optional skins never block a basic run, but failures remain visible and retryable.
+const optional=boot();optional.requests.slice(0,5).forEach(i=>i.onload());
+optional.requests[5].onerror();optional.requests.at(-1).onerror();optional.requests.at(-1).onerror();
+assert.equal(optional.elements.startButton.disabled,false);
+assert.equal(optional.elements.retryArtButton.hidden,false);
+assert.match(optional.elements.artStatus.textContent,/北辰羁绊与突破攻击/);
+optional.elements.retryArtButton.events.click();optional.requests.at(-1).onload();
+assert.equal(optional.elements.retryArtButton.hidden,true);
 console.log("Art loading: gating, cache recovery, retry limits, timeout and sprite restoration passed.");

@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#071018">
-  <link rel="manifest" href="manifest.webmanifest?v=20260909-ui-v4">
+  <link rel="manifest" href="manifest.webmanifest?v=20260912-bonds-v3">
   <link rel="apple-touch-icon" href="assets/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260909-ui-v4">
+  <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
 </head>
 <body>
   <main id="app">
@@ -48,7 +48,7 @@
       <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
     </footer>
   </main>
-  <section class="gm-panel" id="gmPanel" hidden><b>GM 模式 · 无人机等级</b><div id="gmControls"></div><button id="gmClose" type="button">关闭</button></section>
+  <section class="gm-panel" id="gmPanel" role="dialog" aria-modal="true" aria-labelledby="gmTitle" hidden><div class="gm-content"><h2 id="gmTitle">GM · 机队调试</h2><p>战斗已暂停 · 输入实际等级 · 0 为下架<br>Lv.10：普攻伤害 +35%，范围 +25%，切换突破皮肤</p><div id="gmControls"></div><div id="gmBonds"></div><button class="primary-button" id="gmClose" type="button">应用并返回</button></div></section>
 
   <section class="overlay start-screen" id="startScreen">
     <div class="poster-art" aria-hidden="true"><img draggable="false" src="assets/hover-poster-v2.webp" alt="" fetchpriority="high" width="1024" height="1536"></div>
@@ -61,7 +61,7 @@
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.1</p>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.2</p>
     </div>
   </section>
 
@@ -93,19 +93,19 @@
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
-    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
+    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><p class="damage-note">只计实际扣血；突破后的攻击仍计普攻。蓝色激光单独归入蓝色穿透。</p><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div class="bond-damage-column"><b>北辰 · 羁绊攻击</b><div id="resultBondDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
   <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
-  <script src="balance.js?v=20260909-ui-v4"></script>
-  <script src="motion.js?v=20260909-ui-v4"></script>
-  <script src="progression.js?v=20260909-ui-v4"></script>
-  <script src="combat-effects.js?v=20260909-ui-v4"></script>
-  <script src="control.js?v=20260909-ui-v4"></script>
-  <script src="route-events.js?v=20260909-ui-v4"></script>
-  <script src="run-record.js?v=20260909-ui-v4"></script>
-  <script src="renderer.js?v=20260909-ui-v4"></script>
-  <script src="game.js?v=20260909-ui-v4"></script>
-  <script src="armory.js?v=20260909-ui-v4"></script>
-  <script src="display.js?v=20260909-ui-v4"></script>
+  <script src="balance.js?v=20260912-bonds-v3"></script>
+  <script src="motion.js?v=20260912-bonds-v3"></script>
+  <script src="progression.js?v=20260912-bonds-v3"></script>
+  <script src="combat-effects.js?v=20260912-bonds-v3"></script>
+  <script src="control.js?v=20260912-bonds-v3"></script>
+  <script src="route-events.js?v=20260912-bonds-v3"></script>
+  <script src="run-record.js?v=20260912-bonds-v3"></script>
+  <script src="renderer.js?v=20260912-bonds-v3"></script>
+  <script src="game.js?v=20260912-bonds-v3"></script>
+  <script src="armory.js?v=20260912-bonds-v3"></script>
+  <script src="display.js?v=20260912-bonds-v3"></script>
 </body>
 </html>

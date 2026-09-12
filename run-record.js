@@ -8,7 +8,7 @@ function normalizeRecord(value) {
   return { version: 1, runs: Math.max(0, Number(record.runs) || 0), bestStations: Math.max(0, Number(record.bestStations) || 0), bestKills: Math.max(0, Number(record.bestKills) || 0), bestCombo: Math.max(0, Number(record.bestCombo) || 0), bestScrap: Math.max(0, Number(record.bestScrap) || 0), latest: record.latest || null };
 }
 function buildRunSummary(state) {
-  return { stations: Math.max(0, Math.min(5, Number(state.station) || 0)), kills: Math.max(0, Number(state.kills) || 0), scrap: Math.max(0, Number(state.scrap) || 0), bestCombo: Math.max(0, Number(state.bestCombo) || 0), eventId: state.activeEvent?.id || null, contractId: state.activeContract?.id || null, modules: { ...(state.modules || {}) }, cores: { ...(state.coreStacks || {}) }, damageByWeapon: { ...(state.weaponStats || {}) }, trainDamage: Number(state.trainDamage || 0), outcome: state.outcome || "lost" };
+  return { stations: Math.max(0, Math.min(5, Number(state.station) || 0)), kills: Math.max(0, Number(state.kills) || 0), scrap: Math.max(0, Number(state.scrap) || 0), bestCombo: Math.max(0, Number(state.bestCombo) || 0), eventId: state.activeEvent?.id || null, contractId: state.activeContract?.id || null, modules: { ...(state.modules || {}) }, cores: { ...(state.coreStacks || {}) }, damageByWeapon: JSON.parse(JSON.stringify(state.weaponStats || {})), damageByBond: JSON.parse(JSON.stringify(state.bondStats || {})), trainDamage: Number(state.trainDamage || 0), outcome: state.outcome || "lost" };
 }
 function mergeRecord(previous, summary) {
   const record = normalizeRecord(previous);
