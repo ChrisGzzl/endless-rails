@@ -10,12 +10,31 @@ assert.deepEqual(effects.swarmRoster({missile:1}).map(d=>d.id),["gun","missile"]
 assert.equal(effects.swarmRoster({missile:5}).length,2,"upgrading a type strengthens its existing aircraft");
 const modules={rapid:2,scatter:1,piercing:1,chain:1,missile:1,blades:1,incendiary:1,ricochet:1,wingman:3};
 assert.equal(effects.swarmRoster(modules).length,11);
+// One Swift on each side of Beichen, at equal distance, independent of hover time.
+const formationCenter={x:195,y:340};
+for(const time of [0,7,42]){
+ const swifts=effects.swarmRoster({wingman:3}).map(d=>effects.formationPosition(formationCenter,d.slot,time,390,680));
+ assert.equal(swifts.filter(p=>p.y<formationCenter.y-30&&Math.abs(p.x-formationCenter.x)<1).length,1,"one Swift above");
+ assert.equal(swifts.filter(p=>p.y>formationCenter.y+30&&Math.abs(p.x-formationCenter.x)<1).length,1,"one Swift below");
+ assert.equal(swifts.filter(p=>p.x<formationCenter.x-30&&Math.abs(p.y-formationCenter.y)<1).length,1,"one Swift left");
+ assert.equal(swifts.filter(p=>p.x>formationCenter.x+30&&Math.abs(p.y-formationCenter.y)<1).length,1,"one Swift right");
+ const radii=swifts.map(p=>Math.hypot(p.x-formationCenter.x,p.y-formationCenter.y));
+ assert.ok(Math.max(...radii)-Math.min(...radii)<1e-8,"the four escorts share a ring");
+}
 for(const center of [{x:24,y:24},{x:366,y:656}]){
  const fleet=effects.swarmRoster(modules).map(d=>effects.formationPosition(center,d.slot,1,390,680));
  assert.ok(fleet.every(p=>p.x>=16&&p.x<=374&&p.y>=16&&p.y<=664));
  for(let i=0;i<fleet.length;i++)for(let j=i+1;j<fleet.length;j++)
-  assert.ok(Math.hypot(fleet[i].x-fleet[j].x,fleet[i].y-fleet[j].y)>25,"formation retains separated slots at screen edges");
+  assert.ok(Math.hypot(fleet[i].x-fleet[j].x,fleet[i].y-fleet[j].y)>42,"formation leaves room for aircraft sprites, including specialists on the inner ring");
 }
+
+// Real movement settles into those stations while retaining local hovering.
+run('state.modules={wingman:3};state.mode="combat";state.enemies=[];state.drone.x=195;state.drone.y=340;syncSwarm();for(let i=0;i<240;i++){state.visualTime+=1/60;updateSwarm(1/60);}');
+const settled=JSON.parse(run('JSON.stringify(state.swarm)'));
+assert.equal(settled.filter(d=>d.y<300&&Math.abs(d.x-195)<20).length,1);
+assert.equal(settled.filter(d=>d.y>380&&Math.abs(d.x-195)<20).length,1);
+assert.equal(settled.filter(d=>d.x<155&&Math.abs(d.y-340)<20).length,1);
+assert.equal(settled.filter(d=>d.x>235&&Math.abs(d.y-340)<20).length,1);
 
 // A fresh specialist's movement is bounded, and render/update use the same origin.
 run('state.modules={missile:1};syncSwarm();state.drone.x=300;state.drone.y=500;');

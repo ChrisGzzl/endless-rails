@@ -103,10 +103,15 @@ function swarmRoster(modules={}) {
   for(let i=0;i<Math.min(3,moduleLevel(modules,"wingman"));i++)fleet.push({...DRONE_TYPES[0],id:"escort"+i,slot:8+i,level:1,...droneIdentity("wingman")});
   return fleet;
 }
+// The starting Swift and its three escorts share four cardinal stations.
+// New escorts fill the empty stations without moving the existing aircraft.
+const SWIFT_FORMATION_ANGLES=Object.freeze({0:Math.PI/2,8:-Math.PI/2,9:Math.PI,10:0});
 function formationPosition(center, slot, time, width, height) {
-  const radius=slot<8?64:92, angle=Math.PI/2+(slot<8?slot*Math.PI/4:(slot-8)*Math.PI*2/3)+Math.sin(time*.5)*.08;
+  const swiftAngle=SWIFT_FORMATION_ANGLES[slot];
+  const radius=swiftAngle!==undefined?112:64;
+  const angle=swiftAngle??(Math.PI/2+slot*Math.PI/4+Math.sin(time*.5)*.08);
   // Move the formation inward near edges instead of stacking every follower on the boundary.
-  const cx=Math.max(108,Math.min(width-108,center.x)),cy=Math.max(108,Math.min(height-108,center.y));
+  const cx=Math.max(128,Math.min(width-128,center.x)),cy=Math.max(128,Math.min(height-128,center.y));
   return {x:cx+Math.cos(angle)*radius,y:cy+Math.sin(angle)*radius};
 }
 
