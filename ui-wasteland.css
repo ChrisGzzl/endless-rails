@@ -1,0 +1,263 @@
+/* Wasteland terminal, v0.8.3.
+   Visual layer only: reuse the shipped raster materials and existing layout.
+   Decorative surfaces never receive pointer input. */
+:root {
+  --terminal-steel: #182932;
+  --terminal-edge: #52616a;
+  --terminal-amber: #e5b66c;
+  --terminal-cyan: #83dbe9;
+}
+body {
+  background: radial-gradient(ellipse at 50% 35%, #263b40, #101b21 52%, #080f13);
+}
+.hud, .controls {
+  background:
+    linear-gradient(110deg, #22333bec, #101e27e8 62%, #403425c9),
+    url("assets/ui-component-panel.png") center / cover;
+  border-color: #6a695550;
+  box-shadow: inset 0 1px #c5e1df24, inset 0 -1px #000a, 0 4px 16px #0004;
+}
+.controls { position: relative; }
+.hud::after, .controls::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #deae60 0 13%, #756d4740 13% 35%, #68c8d540 35% 84%, #68c8d5 84%);
+  pointer-events: none;
+}
+.hud::after { bottom: 0; }
+.controls::after { top: 0; }
+.brand-mark {
+  border-radius: 5px 2px;
+  color: #f1cd8e;
+  border-color: #aa895a;
+  background: linear-gradient(135deg, #66523c, #26343b 55%, #111b22);
+  box-shadow: inset 0 1px #e8d4a748, inset 0 -2px #0007, 0 2px 5px #0005;
+  text-shadow: 0 1px 2px #000;
+}
+.hud-stat strong, .run-readout strong { font-variant-numeric: tabular-nums; }
+.progress-row i {
+  background: #060f15;
+  box-shadow: inset 0 1px 2px #000, 0 1px #aec7c422;
+}
+.progress-row b {
+  background: repeating-linear-gradient(90deg, #0000 0 17px, #09141d44 17px 19px),
+    linear-gradient(#f1d394, #bd8945);
+}
+.progress-row--xp b {
+  background: repeating-linear-gradient(90deg, #0000 0 17px, #09141d44 17px 19px),
+    linear-gradient(#a1e7ed, #4397b1);
+}
+.pulse-dot {
+  border-radius: 50%;
+  background: #9ce4d7;
+  box-shadow: 0 0 0 3px #6fd5c21a, 0 0 8px #8de7d977;
+}
+.health-track { box-shadow: 0 2px 5px #0008; }
+.health-track i {
+  background-image: linear-gradient(#ffffff38, #00000018),
+    repeating-linear-gradient(90deg, #0000 0 18px, #09141d44 18px 20px);
+}
+.pause-button, .fullscreen-button {
+  border-radius: 5px 2px;
+  border-color: #74878c;
+  background: linear-gradient(145deg, #394c55ee, #14232ef2);
+  box-shadow: inset 0 1px #d9ecef33, inset 0 -2px #0008, 0 3px 9px #0005;
+}
+.controls .pulse-button {
+  border-radius: 7px 2px;
+  color: #e1fcff;
+  border-color: #649ca8;
+  background: radial-gradient(ellipse at 50% 15%, #397988, #173741 70%);
+  box-shadow: inset 0 1px #b1f0ee66, inset 0 -3px #08171e, 0 0 12px #6acdd318;
+}
+.controls .pulse-button.cooling { border-color: #495962; }
+.toast, .touch-hint {
+  border-radius: 4px;
+  background: linear-gradient(110deg, #0b1923ee, #152a33d9);
+  box-shadow: inset 3px 0 #c5a367, 0 4px 18px #0004;
+}
+.touch-hint { padding: 8px 10px; font-size: 13px; }
+.touch-hint b { font-size: 11px; color: #a2c8d0; }
+
+/* The original poster remains the focal point of the launch screen. */
+.overlay.start-screen { background: #09151c; }
+.poster-art::after {
+  background: linear-gradient(180deg, #07121a44, #07121a00 28%, #09151c38 45%, #09151ce8 76%, #09151c);
+}
+.start-masthead {
+  color: #dfd7c1;
+  border-bottom-color: #cfb78070;
+  text-shadow: 0 2px 4px #000;
+}
+.start-masthead span:first-child::before {
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px; margin-right: 8px;
+  background: #a2e4d7;
+  box-shadow: 0 0 8px #7adecb;
+}
+.start-copy { position: relative; }
+.start-copy::before {
+  content: "";
+  display: block;
+  width: 76px; height: 5px; margin-bottom: 15px;
+  background: repeating-linear-gradient(125deg, #d8af68 0 7px, #1c2a30 7px 12px);
+  box-shadow: 0 1px #0009;
+  pointer-events: none;
+}
+.start-copy .eyebrow { color: #dfb773; }
+.start-copy h1 { color: #fff0d6; text-shadow: 0 3px 0 #29332f, 0 6px 22px #000b; }
+.start-copy h1 span { color: #b6d6d9; }
+.lede { color: #ced9d8; }
+.primary-button {
+  border-radius: 6px 2px;
+  border-color: #ebcb8c #ab824c #8c683e;
+  color: #162027;
+  background: linear-gradient(115deg, #f4d99aeb, #d4a252c4 68%, #b7823ddd),
+    url("assets/ui-component-button.png") center / 100% 100%;
+  box-shadow: inset 0 1px #fff0c9aa, inset 0 -3px #77572b70, 0 4px 14px #0005;
+  text-shadow: 0 1px #ffedb655;
+}
+.primary-button:hover:not(:disabled) {
+  background: linear-gradient(115deg, #f4d99aeb, #d4a252c4 68%, #b7823ddd),
+    url("assets/ui-component-button.png") center / 100% 100%;
+  filter: brightness(1.1);
+}
+.primary-button:active:not(:disabled) { filter: brightness(.96); }
+.primary-button:disabled { filter: saturate(.4); }
+.display-actions button, .reroll-button, .inspect-tabs button {
+  border-radius: 4px;
+  border-color: #60788170;
+  color: #c6dadd;
+  background: linear-gradient(135deg, #29404ed9, #10212de8),
+    url("assets/ui-component-tab.png") center / 100% 100%;
+  box-shadow: inset 0 1px #d7eeed1f, inset 0 -1px #0008;
+}
+.version-label { color: #99afb3; }
+
+/* Armour remains visible at the perimeter; the text area stays quiet. */
+.overlay:not(.start-screen) {
+  background:
+    linear-gradient(90deg, #09151d80, #0b1821ed 15%, #0b1821ed 85%, #09151d80),
+    linear-gradient(145deg, #17364460, #4c352a70),
+    url("assets/ui-component-panel.png") center / 100% 100%;
+}
+.station-heading, .levelup-heading, .pause-heading {
+  border-left: 3px solid #dbb26d;
+  padding-left: 12px;
+}
+.pause-heading { border-left-color: #75cbd8; }
+.station-heading .eyebrow, .levelup-heading .eyebrow { color: #e1bc7e; }
+.station-heading h2, .levelup-heading h2, .pause-heading h2 {
+  color: #f0ede1;
+  text-shadow: 0 2px 6px #0007;
+}
+.upgrade-card, .station-screen .upgrade-card {
+  --card-accent: #7fd4df;
+  isolation: isolate;
+  border: 1px solid #73858c66;
+  border-radius: 9px 3px;
+  background: linear-gradient(120deg, #30434b, #172934 58%, #101e28);
+  box-shadow: inset 4px 0 var(--card-accent), inset 0 1px #e0eddf24, 0 4px 10px #0004;
+}
+.upgrade-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  width: auto; height: auto;
+  border: 18px solid transparent;
+  border-image: url("assets/ui-component-panel.png") 70 fill / 18px / 0 stretch;
+  background: none;
+  border-radius: inherit;
+  opacity: .4;
+  z-index: -1;
+  pointer-events: none;
+}
+.upgrade-card[data-type="train"], .upgrade-card[data-type="contract"] { --card-accent: #e3b36c; }
+.upgrade-card[data-type="dust"] { --card-accent: #d3a17a; }
+.upgrade-card[data-type="freight"] { --card-accent: #b4c89a; }
+.upgrade-card[data-weapon="missile"], .upgrade-card[data-weapon="incendiary"] { --card-accent: #eeab7d; }
+.upgrade-card[data-weapon="chain"], .upgrade-card[data-weapon="ricochet"] { --card-accent: #c1a2ed; }
+.upgrade-card[data-weapon="blades"] { --card-accent: #accf9c; }
+.upgrade-card[data-weapon="scatter"] { --card-accent: #e0c188; }
+.upgrade-card h3 { color: #f0f3e9; text-shadow: 0 2px 4px #0008; }
+.upgrade-card h3 small { color: #ebc987; white-space: nowrap; }
+.upgrade-card p { color: #c0d0d5; }
+.upgrade-card[data-scope]::after {
+  color: #bbd1d7; font-size: 10px; right: 15px;
+  text-shadow: 0 1px 3px #000;
+}
+.upgrade-icon {
+  border-radius: 7px 2px;
+  background-color: #0e1d28;
+  border-color: #667e83;
+  box-shadow: inset 0 1px #d2e1dc2a, 0 2px 7px #0006;
+}
+.upgrade-card[data-weapon] .upgrade-icon {
+  background-color: #12232c;
+  box-shadow: inset 0 0 14px #7ad8e518, 0 2px 7px #0005;
+}
+.upgrade-card:hover, .upgrade-card:focus-visible, .station-screen .upgrade-card:hover {
+  border-color: #a5d1d4;
+  background: linear-gradient(120deg, #3a5259, #1d3440 58%, #172a34);
+  box-shadow: inset 4px 0 var(--card-accent), inset 0 1px #e0eddf40, 0 4px 14px #0005;
+}
+.upgrade-card.selected, .station-screen .upgrade-card.selected {
+  border-color: #eac17c;
+  background: linear-gradient(110deg, #534634, #303b3c 55%, #182b33);
+  box-shadow: inset 4px 0 #eac17c, inset 0 0 24px #eac17c18, 0 3px 10px #0005;
+}
+.upgrade-card[data-type]::before { background: none; }
+.upgrade-card.selected::before { background: none; opacity: .55; }
+.inspect-entry { color: #a8dde1; text-underline-offset: 3px; }
+.inspect-unit {
+  border-radius: 7px 2px;
+  border-color: #84968a66;
+  background: linear-gradient(115deg, #34505acc, #152934dd),
+    url("assets/ui-component-panel.png") center / cover;
+  box-shadow: inset 0 1px #bfdcd52a, 0 3px 9px #0003;
+}
+.inspect-unit select { background: #10232d; color: #e5f0ef; }
+.inspect-stats, .inspect-tabs { background: none; box-shadow: none; }
+.inspect-stat {
+  border-color: #667d8544; border-radius: 5px 2px;
+  background: linear-gradient(130deg, #28404b, #142732);
+  box-shadow: inset 0 1px #cde3dc1f, inset 0 -2px #07141a66;
+}
+.inspect-stat dt { color: #aec5ca; }
+.inspect-stat dd { color: #eaf4ef; }
+.inspect-tabs button.active {
+  color: #e5fbf6; border-color: #82c9d3;
+  background: linear-gradient(135deg, #3c6a76, #244655);
+  box-shadow: inset 0 -3px #83d9df, inset 0 1px #defaf244;
+}
+.inspect-arrows button, .inspect-page-nav button {
+  background: linear-gradient(#314b57, #152c38);
+  border-color: #58737e;
+  box-shadow: inset 0 1px #d2e6e22a;
+}
+.train-strip { border-color: #8b815e66; }
+.mini-car { box-shadow: inset 0 2px #f1d09c44, 0 2px #0006; }
+.result-stats, .result-damage {
+  border-color: #65797c88;
+  border-radius: 8px 3px;
+  background: linear-gradient(125deg, #263f48dc, #142630eb),
+    url("assets/ui-component-panel.png") center / 100% 100%;
+  box-shadow: inset 0 1px #dbe5d62a, 0 4px 12px #0004;
+}
+.result-stats strong { color: #ebc88c; }
+.result-damage h3 { color: #b5e2e3; }
+.result-screen .result-badge {
+  color: #eac98d; border-color: #a28c62;
+  background: radial-gradient(circle at 40% 25%, #70634a, #23343d 70%);
+  box-shadow: inset 0 1px #ead6a877, 0 0 0 5px #d9b06b0d, 0 4px 16px #0006;
+}
+/* Compact screens keep the existing rows and control sizes. */
+@media (max-height: 650px) {
+  .start-copy::before { height: 3px; margin-bottom: 9px; }
+  .station-heading, .levelup-heading, .pause-heading { padding-left: 9px; }
+  .upgrade-card::before { border-image-width: 13px; border-width: 13px; }
+}
+@media (max-height: 450px) and (min-width: 600px) {
+  .station-heading, .levelup-heading { border-left-width: 2px; padding-left: 8px; }
+}
