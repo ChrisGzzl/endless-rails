@@ -17,6 +17,7 @@ assert.ok(elements.inspectStats.innerHTML.includes("6.4"));
 elements.inspectUpgrade.events.click();
 assert.ok(elements.inspectStats.innerHTML.includes("6.4 → 7.8"));
 assert.equal(run('state.modules.missile'),2,"inspection never purchases upgrades");
+assert.equal(elements.inspectPageNav.hidden,false,"single-page tabs keep the navigation rail in place");
 elements.resumeButton.events.click();
 assert.equal(run('state.paused'),false);assert.equal(elements.pauseScreen.hidden,true);
 assert.equal(run('state.moveInput.x'),0,"resuming does not restore stale joystick input");
@@ -45,8 +46,8 @@ for(const id of ['app','startScreen','pauseScreen','stationScreen','levelUpScree
 }
 // A short enclosure must retain a stable page size, including partially filled
 // final pages, so repeated Next clicks can reach every parameter exactly once.
-elements.fleetTerminal.clientHeight=300;
-Object.defineProperty(elements.fleetTerminal,"scrollHeight",{get(){return 180+30*(elements.inspectStats.innerHTML.match(/inspect-stat/g)||[]).length;}});
+elements.inspectViewport.clientHeight=120;
+Object.defineProperty(elements.inspectStats,"scrollHeight",{get(){return 30*(elements.inspectStats.innerHTML.match(/inspect-stat/g)||[]).length;}});
 run('window.innerHeight=900;window.innerWidth=390;inspector.id="command";inspector.tab="weapon";inspector.page=0;renderPause();');
 assert.equal(run('inspector.pageSize'),3);
 const expected=run('inspectRows(inspectFleet().find(d=>d.id===inspector.id)).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("")');
@@ -58,7 +59,7 @@ do{
   elements.inspectNextPage.events.click();
 }while(visited<30);
 assert.equal(collected,expected,"pagination neither skips nor repeats any parameter");
-elements.fleetTerminal.clientHeight=600;
+elements.inspectViewport.clientHeight=420;
 run('window.innerHeight=960;');
 windowEvents.resize.forEach(fn=>fn());
 assert.equal(run('inspector.pageSize'),12,"resizing reclaims available data space");

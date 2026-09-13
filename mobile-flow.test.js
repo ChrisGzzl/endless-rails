@@ -49,6 +49,26 @@ run(`state.mode="combat";state.enemies=[{kind:"spitter",x:state.train.x+140,y:st
 assert.equal(run('state.hostileShots.length'),1);
 const hp=run('state.trainHp');run('for(let i=0;i<90;i++)updateHostileShots(1/60);');assert.ok(run('state.trainHp')<hp);
 
+// Route completion now grows alongside XP, reaches full on arrival and resets
+// for the next route even when route modifiers change its duration.
+run('state.mode="combat";state.routeDistanceTotal=60;state.routeDistance=60;state.experience=0;state.experienceToNext=10;updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"0%");
+assert.equal(elements.experienceProgressFill.style.width,"0%");
+run('state.routeDistance=45;state.experience=2.5;updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"25%");
+assert.equal(elements.experienceProgressFill.style.width,"25%");
+assert.match(elements.routeProgressLabel.textContent,/已完成 25%/);
+assert.match(elements.experienceProgressLabel.textContent,/经验 Lv/);
+run('state.mode="docking";state.routeDistance=0;updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"100%");
+assert.match(elements.routeProgressLabel.textContent,/已抵达车站/);
+run('beginRoute(null);updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"0%");
+run('state.routeDistanceTotal=90;state.routeDistance=45;updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"50%");
+run('state.routeDistance=-1;updateHud();');
+assert.equal(elements.routeProgressFill.style.width,"100%");
+
 (async()=>{
   // Fullscreen is initiated by explicit user action; unsupported/rejected calls get a usable fallback.
   sandbox.document.documentElement={classList:{toggle(){}}};

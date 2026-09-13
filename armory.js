@@ -86,27 +86,39 @@ function renderPause(){
   for(const [id,tab] of [["inspectWeapon","weapon"],["inspectStatus","status"],["inspectUpgrade","upgrade"],["inspectGlobal","global"]]){
     $(id).classList.toggle("active",inspector.tab===tab);$(id).setAttribute?.("aria-pressed",String(inspector.tab===tab));
   }
-  const notes={weapon:"射程从本机到敌人边缘。理论秒伤只算单目标、单弹持续命中，不含范围、连锁和核心额外收益。",
+  const notes={weapon:"射程计至敌人边缘；秒伤按单目标持续命中估算，不含范围、连锁及核心额外收益。",
     status:"战斗已冻结。有效伤害不含溢出伤害；直接击杀不含列车、脉冲与连锁爆破协议的击杀。",
     upgrade:unit.owned?"预览下一级实际变化，核心加成已计入。此处只查看，升级仍需获得经验。":"未解锁机型显示 Lv.1 基础属性，可在战斗升级时选择部署。",
     global:"列车属性、已选模块和核心层数；数据较多时点击下方箭头翻页。"};
-  $("inspectNote").textContent=notes[inspector.tab]+(p?.kind==="missile"?" 导弹发射后可持续追踪至寿命结束。":p?.kind==="ricochet"?" 锁定后能量球可弹跳至寿命或反弹次数耗尽。":p?.kind==="incendiary"?" 火区留在地面，不跟随飞机。":"");
+  $("inspectNote").textContent=notes[inspector.tab]+(p?.kind==="missile"?" 导弹会持续追踪目标。":p?.kind==="ricochet"?" 能量球受寿命和反弹次数限制。":p?.kind==="incendiary"?" 火区留在地面，不跟随飞机。":"");
   $("resumeButton").textContent=["levelup","station"].includes(state.mode)?"返回选择界面":"继续护送";
-  // Fit complete rows to the enclosure after all labels and notes are laid out.
+  // The shell, note and action rails stay fixed. Fit whole rows inside the data bay.
   // Keep the requested page while trying sizes so later pages remain reachable.
-  const layoutKey=[unit.id,inspector.tab,window.innerWidth,window.innerHeight].join(":");
+  const viewport=$("inspectViewport"),stats=$("inspectStats");
+  const layoutKey=[unit.id,inspector.tab,window.innerWidth,window.innerHeight,viewport.clientHeight].join(":");
   let pageSize=inspector.layoutKey===layoutKey?inspector.pageSize:window.innerHeight<450?6:window.innerHeight<700?9:12;
-  const terminal=$("fleetTerminal");
-  const renderPage=()=>{
+  const renderPage=(page=requestedPage)=>{
     const pages=Math.max(1,Math.ceil(rows.length/pageSize));
-    inspector.page=Math.min(requestedPage,pages-1);
+    inspector.page=Math.min(page,pages-1);
     $("inspectStats").innerHTML=rows.slice(inspector.page*pageSize,inspector.page*pageSize+pageSize).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
     $("inspectPage").textContent=`${inspector.page+1} / ${pages}`;
     $("inspectPrevPage").disabled=inspector.page===0;$("inspectNextPage").disabled=inspector.page>=pages-1;
-    $("inspectPageNav").hidden=pages===1;
+    $("inspectPageNav").hidden=false;
   };
+  if(inspector.layoutKey!==layoutKey&&viewport.clientHeight){
+    // Check every page, including long values near the end, before fixing the
+    // page size. Next must never change page boundaries and repeat/skip rows.
+    while(pageSize>3){
+      let fits=true;
+      for(let page=0;page<Math.ceil(rows.length/pageSize);page++){
+        renderPage(page);
+        if(stats.scrollHeight>viewport.clientHeight+1){fits=false;break;}
+      }
+      if(fits)break;
+      pageSize-=3;
+    }
+  }
   renderPage();
-  while(pageSize>3&&terminal?.clientHeight&&terminal.scrollHeight>terminal.clientHeight+1){pageSize-=3;renderPage();}
   inspector.layoutKey=layoutKey;inspector.pageSize=pageSize;
 }
 $("inspectSelect").addEventListener("change",e=>{inspector.id=e.target.value;inspector.page=0;renderPause();});

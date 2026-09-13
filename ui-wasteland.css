@@ -1,5 +1,5 @@
-/* Wasteland terminal, v0.8.6.
-   Shared materials and a content-sized enclosure for every three-way choice.
+/* Wasteland terminal, v0.8.7.
+   Shared materials and a fixed enclosure with separate content and action rails.
    Decorative surfaces never receive pointer input. */
 :root {
   --terminal-steel: #182932;
@@ -455,7 +455,7 @@ body {
 }
 .inspect-entry { color: #a8dde1; text-underline-offset: 3px; }
 /* The fleet screen uses the same enclosure as the approved choice terminal.
-   Instrument cells fill a recessed deck; only real content contributes height. */
+   Instrument cells occupy a bounded data bay, with pagination for longer lists. */
 .fleet-terminal {
   gap: 10px;
   padding: 42px 27px 35px;
@@ -779,4 +779,135 @@ body {
   .fleet-terminal .inspect-unit select { font-size: 12px; }
   .fleet-terminal .pause-heading #pauseSummary { font-size: 11px; }
   .selection-terminal .upgrade-card { padding: 21px 12px 14px; }
+}
+
+/* Fixed hardware enclosure. Only its data bay changes when content changes. */
+.overlay.selection-screen {
+  overflow: hidden;
+  padding: calc(8px + env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+    calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+}
+.selection-terminal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  max-height: 840px;
+  min-height: 0;
+  gap: 14px;
+  padding: 44px 30px 54px;
+}
+.selection-terminal > * { min-width: 0; }
+.selection-terminal .upgrade-list {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #56747c transparent;
+  grid-template-rows: repeat(3, minmax(min-content, 1fr));
+}
+.selection-terminal .upgrade-card { min-height: 0; padding-block: 22px 18px; }
+.selection-terminal .terminal-footer {
+  align-self: end;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  line-height: 1.6;
+}
+.station-screen .selection-terminal { gap: 12px; }
+.station-screen .selection-terminal .upgrade-card { min-height: 0; padding-block: 20px 14px; }
+.station-actions { display: grid; gap: 8px; }
+.station-actions .train-strip { margin: 0; padding: 4px 0; border: 0; background: none; }
+.station-actions .reroll-button { margin: 0; }
+.station-actions .continue-button { min-height: 48px; }
+.fleet-terminal {
+  grid-template-rows: auto 34px auto minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 42px 30px 54px;
+}
+.fleet-terminal .pause-display { align-items: center; }
+.fleet-terminal .inspect-unit { padding: 10px; }
+.fleet-terminal .telemetry-deck {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) 36px 4.8em;
+  gap: 10px;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 11px;
+}
+.fleet-terminal .inspect-viewport {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #56747c transparent;
+}
+.fleet-terminal .inspect-stats { align-content: start; }
+.fleet-terminal .inspect-page-nav { margin: 0; align-self: center; }
+.fleet-terminal .inspect-note { margin: 0; padding: 0; line-height: 1.6; overflow-y: auto; }
+.fleet-terminal .fleet-actions { margin: 0; }
+.fleet-terminal .pause-shortcut { display: none; }
+.progress-row { grid-template-columns: 140px minmax(0, 1fr) 24px; gap: 8px; }
+.progress-row > span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.progress-row small { color: #e0c18b; font-size: 10px; text-align: right; }
+.progress-row--xp small { color: #a2d8df; }
+.progress-row b { width: 0; }
+
+/* Paint through the iOS status/home safe areas, including any uncovered viewport.
+   Keep controls above the home indicator while extending the chassis underneath. */
+html { background: #172a34; }
+@media (max-width: 599px), (pointer: coarse) {
+  html, body { height: 100%; min-height: 100%; background: #172a34; }
+  #app { position: fixed; inset: 0; height: auto; width: 100%; }
+  .overlay { height: auto; width: 100%; }
+  .hud, .controls { background: linear-gradient(110deg, #203640, #172a34 65%, #263239); }
+  .hud { padding-top: calc(10px + env(safe-area-inset-top)); }
+  .controls { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .selection-terminal { padding-inline: 26px; }
+}
+.immersive { background: #172a34; }
+.immersive body { background: #172a34; }
+@media (max-width: 359px), (max-height: 700px) {
+  .selection-terminal { padding: 38px 24px 46px; gap: 10px; }
+  .selection-terminal > .station-heading, .selection-terminal > .levelup-heading { padding-bottom: 9px; }
+  .selection-terminal .eyebrow { margin-bottom: 5px; font-size: 9px; }
+  .selection-terminal h2, .fleet-terminal .pause-heading h2 { font-size: 22px; }
+  .selection-terminal .upgrade-card, .station-screen .selection-terminal .upgrade-card { padding: 18px 10px 12px; gap: 9px; }
+  .selection-terminal .upgrade-card h3 { font-size: 14px; margin-bottom: 5px; }
+  .selection-terminal .upgrade-card p { font-size: 11px; line-height: 1.45; }
+  .selection-terminal .inspect-entry { margin-top: 6px; padding-block: 5px; min-height: 30px; }
+  .station-screen .selection-terminal { gap: 8px; }
+  .station-actions { gap: 6px; }
+  .station-actions .train-strip { display: none; }
+  .station-actions .continue-button { min-height: 42px; }
+  .fleet-terminal { gap: 7px; grid-template-rows: auto 28px auto minmax(0, 1fr) auto; }
+  .fleet-terminal .pause-heading { padding-bottom: 7px; }
+  .fleet-terminal .pause-heading .eyebrow { font-size: 8px; }
+  .fleet-terminal .pause-heading #pauseSummary { font-size: 10px; }
+  .fleet-terminal .pause-display button { min-height: 28px; padding-block: 4px; }
+  .fleet-terminal .inspect-unit { padding: 7px; gap: 7px; }
+  .fleet-terminal .inspect-unit label { font-size: 10px; margin-bottom: 3px; }
+  .fleet-terminal .inspect-unit p { font-size: 10px; margin-top: 3px; }
+  .fleet-terminal .inspect-unit select { padding-block: 5px; }
+  .fleet-terminal .inspect-portrait { flex-basis: 36px; height: 36px; }
+  .fleet-terminal .telemetry-deck { grid-template-rows: auto minmax(0, 1fr) 30px 4.8em; gap: 7px; font-size: 10px; }
+  .fleet-terminal .inspect-tabs button { min-height: 32px; padding-block: 7px; }
+  .fleet-terminal .inspect-stat { min-height: 55px; padding: 7px 6px; }
+  .fleet-terminal .inspect-stat dt { font-size: 10px; margin-bottom: 4px; }
+  .fleet-terminal .inspect-stat dd { font-size: 12px; }
+  .fleet-terminal .inspect-page-nav button { height: 30px; }
+  .fleet-terminal .inspect-note { font-size: 10px; }
+}
+@media (max-height: 450px) and (min-width: 600px) {
+  .selection-terminal { padding: 34px 30px 46px; }
+  .selection-terminal .upgrade-list { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(min-content, 1fr); }
+  .station-screen .selection-terminal { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+  .station-actions { grid-template-columns: 1fr 1fr; }
+  .fleet-terminal { grid-template-columns: minmax(190px, .9fr) minmax(0, 1.3fr); grid-template-rows: auto 28px minmax(0, 1fr) auto; gap: 7px 13px; }
+  .fleet-terminal .inspect-unit { align-self: start; }
+  .fleet-terminal .telemetry-deck { grid-column: 2; grid-row: 1 / -1; }
 }

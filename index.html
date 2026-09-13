@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#071018">
-  <link rel="manifest" href="manifest.webmanifest?v=20260912-bonds-v3">
+  <meta name="theme-color" content="#172a34">
+  <link rel="manifest" href="manifest.webmanifest?v=20260913-ui-v5">
   <link rel="apple-touch-icon" href="assets/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
   <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-ui-v4">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-ui-v5">
 </head>
 <body>
   <main id="app">
@@ -20,8 +20,8 @@
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
       <div class="progress-strip" aria-label="路线与经验进度">
-        <div class="progress-row"><span id="routeProgressLabel">距下一站 60.0 s</span><i><b id="routeProgressFill"></b></i></div>
-        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">Lv.1 · 0 / 4</span><i><b id="experienceProgressFill"></b></i></div>
+        <div class="progress-row"><span id="routeProgressLabel">行程 · 已完成 0%</span><i id="routeProgressTrack" role="progressbar" aria-label="本段行程，满格到站" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b id="routeProgressFill"></b></i><small>到站</small></div>
+        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">经验 Lv.1 · 0 / 4</span><i id="experienceProgressTrack" role="progressbar" aria-label="当前等级经验，满格升级" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b id="experienceProgressFill"></b></i><small>升级</small></div>
       </div>
     </header>
 
@@ -62,7 +62,7 @@
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.6</p>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.7</p>
     </div>
   </section>
 
@@ -70,9 +70,11 @@
     <div class="selection-terminal">
     <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>防卫炮台已清场 · 免费选择一项 · 完整度已修复</p><button class="inspect-entry" id="stationInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="upgradeList"></div>
+    <div class="station-actions">
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
     <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
+    </div>
     </div>
   </section>
 
@@ -106,7 +108,7 @@
     <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
     <div class="telemetry-deck">
     <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
-    <dl class="inspect-stats" id="inspectStats"></dl>
+    <div class="inspect-viewport" id="inspectViewport"><dl class="inspect-stats" id="inspectStats"></dl></div>
     <div class="inspect-page-nav" id="inspectPageNav"><button id="inspectPrevPage" aria-label="上一页数据">‹</button><span id="inspectPage"></span><button id="inspectNextPage" aria-label="下一页数据">›</button></div>
     <p class="inspect-note" id="inspectNote"></p>
     </div>
@@ -128,8 +130,8 @@
   <script src="route-events.js?v=20260912-bonds-v3"></script>
   <script src="run-record.js?v=20260912-bonds-v3"></script>
   <script src="renderer.js?v=20260912-bonds-v3"></script>
-  <script src="game.js?v=20260912-bonds-v3"></script>
-  <script src="armory.js?v=20260913-ui-v3"></script>
-  <script src="display.js?v=20260913-ui-v4"></script>
+  <script src="game.js?v=20260913-ui-v5"></script>
+  <script src="armory.js?v=20260913-ui-v5"></script>
+  <script src="display.js?v=20260913-ui-v5"></script>
 </body>
 </html>
