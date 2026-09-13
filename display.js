@@ -9,7 +9,8 @@ function updateDisplay(){
   document.documentElement?.classList.toggle("immersive",full||standalone);
   for(const id of ["startFullscreenButton","gameFullscreenButton","pauseFullscreenButton"]){
     const button=$(id);button.textContent=id==="gameFullscreenButton"?"⛶":full?"退出全屏":standalone?"已独立运行":"全屏游玩";
-    button.setAttribute?.("aria-label",full?"退出全屏":"进入全屏");
+    button.disabled=standalone&&!full;
+    button.setAttribute?.("aria-label",full?"退出全屏":standalone?"已独立运行":"进入全屏");
   }
   for(const id of ["startInstallButton","pauseInstallButton"])$(id).hidden=standalone;
   resizeBattlefield();if(state.paused&&typeof renderPause==="function")renderPause();
