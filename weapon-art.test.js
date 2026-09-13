@@ -39,16 +39,21 @@ assert.ok(calls.some(c=>c[0]===game.sandbox.combatImage&&c[2]===940.5),"arc impa
 game.run("state.enemies=[{x:state.drone.x+100,y:state.drone.y,r:9,hp:10,maxHp:10,delay:0}];state.shots=[];state.weaponClocks={};updateArsenal(.01);");
 assert.ok(game.run("state.shots.some(s=>s.owner==='command')"),"北辰 fires its own weapon");
 assert.equal(game.run("effects.weaponProfile('command').role"),"中程 · 稳定脉冲");
-// A broad blue envelope and a white core remain visible at gameplay scale.
+// A slimmer beam keeps a readable core, then fades smoothly over 0.3 seconds.
 calls.length=0;strokes.length=0;
 game.sandbox.bondImage={naturalWidth:1254,naturalHeight:1254};
-game.run("gameArt.bond=bondImage;state.swarm=[];state.weaponFx=[{kind:'bondLaser',x:100,y:200,tx:400,ty:200,width:10,life:.18,maxLife:.18}];drawWeaponEffects();");
-assert.ok(calls.some(c=>c[0]===game.sandbox.bondImage&&c[8]>=60),"the generated laser texture is widened");
+game.run("gameArt.bond=bondImage;state.swarm=[];state.weaponFx=[{kind:'bondLaser',x:100,y:200,tx:400,ty:200,width:10,life:.36,maxLife:.36}];drawWeaponEffects();");
+assert.ok(calls.some(c=>c[0]===game.sandbox.bondImage&&c[8]>=40&&c[8]<=45),"the energy texture is restrained");
 const core=strokes.find(s=>s.color==='#edffff');
-assert.ok(core.width>=5,"the white beam core is more than a hairline");
-assert.ok(strokes.some(s=>s.width>=40&&s.alpha<core.alpha),"wide low-opacity blue bloom surrounds the core");
+assert.ok(core.width>=2.5&&core.width<=3.2,"the white core is slim but visible");
+assert.ok(strokes.some(s=>s.width>=24&&s.width<=28&&s.alpha<core.alpha),"a restrained blue halo surrounds the core");
+strokes.length=0;
+game.run("state.weaponFx[0].life=.15;drawWeaponEffects();");
+const halfAlpha=strokes.find(s=>s.color==='#edffff').alpha;
+assert.ok(Math.abs(halfAlpha/core.alpha-.5)<.01,"halfway through the afterglow the beam is half-bright");
 strokes.length=0;
 game.run("state.weaponFx[0].life=.02;drawWeaponEffects();");
 assert.ok(strokes.find(s=>s.color==='#edffff').alpha<core.alpha,"all beam layers fade at the end of the shot");
+assert.ok(strokes.find(s=>s.color==='#edffff').alpha<.02,"the afterglow reaches near-black before removal");
 assert.equal(game.run("state.weaponFx[0].width"),10,"drawing does not alter the hitbox width");
 console.log("Generated VFX frames, missile/arc art, command weapon, ground attachment, budget and fleet names passed.");

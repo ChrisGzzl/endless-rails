@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
   <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-projection-v1">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260914-audio-v1">
 </head>
 <body>
   <main id="app">
@@ -61,8 +61,8 @@
       <button class="primary-button" id="startButton"><span>开始远征</span><span aria-hidden="true">↗</span></button>
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
-      <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.10</p>
+      <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button><button id="startSettingsButton" type="button">设置</button></div>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.11</p>
     </div>
   </section>
 
@@ -104,7 +104,7 @@
   <section class="overlay pause-screen selection-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
     <div class="selection-terminal fleet-terminal" id="fleetTerminal">
     <header class="pause-heading"><p class="eyebrow">战斗暂停 / 机队遥测</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
-    <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button></div>
+    <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button><button id="pauseSettingsButton" type="button">设置</button></div>
     <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
     <div class="telemetry-deck">
     <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
@@ -122,6 +122,18 @@
     <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><p class="damage-note">只计实际扣血；突破后的攻击仍计普攻。蓝色激光单独归入蓝色穿透。</p><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div class="bond-damage-column"><b>北辰 · 羁绊攻击</b><div id="resultBondDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
 
   <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
+  <section class="overlay selection-screen settings-screen" id="settingsScreen" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
+    <div class="selection-terminal settings-terminal">
+      <header class="station-heading"><p class="eyebrow">终端偏好 / 声音控制</p><h2 id="settingsTitle">设置</h2><p>让声音保持在舒服的位置。</p></header>
+      <div class="sound-options">
+        <div class="sound-option"><div><h3 id="musicLabel">背景音乐</h3><p>低音量氛围配乐 · 缓慢电子节拍</p></div><button id="musicToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="musicLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div>
+        <div class="sound-option"><div><h3 id="sfxLabel">游戏音效</h3><p>武器与关键提示 · 限制密集叠音</p></div><button id="sfxToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="sfxLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div>
+      </div>
+      <p class="sound-note" id="soundNote">设置自动保存 · 切到后台时静音</p>
+      <button class="primary-button" id="closeSettingsButton" type="button">完成</button>
+    </div>
+  </section>
+  <script src="audio.js?v=20260914-audio-v1"></script>
   <script src="balance.js?v=20260912-bonds-v3"></script>
   <script src="motion.js?v=20260912-bonds-v3"></script>
   <script src="progression.js?v=20260912-bonds-v3"></script>
@@ -129,9 +141,10 @@
   <script src="control.js?v=20260912-bonds-v3"></script>
   <script src="route-events.js?v=20260912-bonds-v3"></script>
   <script src="run-record.js?v=20260912-bonds-v3"></script>
-  <script src="renderer.js?v=20260913-laser-v1"></script>
-  <script src="game.js?v=20260913-ui-v5"></script>
+  <script src="renderer.js?v=20260914-laser-v2"></script>
+  <script src="game.js?v=20260914-audio-v1"></script>
   <script src="armory.js?v=20260913-ui-v5"></script>
   <script src="display.js?v=20260913-ui-v5"></script>
+  <script src="settings.js?v=20260914-audio-v1"></script>
 </body>
 </html>

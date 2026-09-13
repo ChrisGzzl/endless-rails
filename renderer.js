@@ -451,16 +451,17 @@ function drawZones() {
 }
 function drawBondLaser(f) {
   const length=Math.hypot(f.tx-f.x,f.ty-f.y),angle=Math.atan2(f.ty-f.y,f.tx-f.x);
-  const fade=Math.max(0,Math.min(1,f.life/.08));
-  // Optical bloom is intentionally wider than the unchanged gameplay hitbox.
-  // The atlas adds energy texture; layered light keeps the core substantial at phone scale.
+  const remaining=Math.max(0,Math.min(1,f.life/.3));
+  const fade=remaining*remaining*(3-2*remaining);
+  // A brief bright pulse followed by a 0.3-second optical afterglow.
+  // The lingering light never repeats the instantaneous gameplay hit.
   ctx.save();ctx.globalCompositeOperation="lighter";ctx.lineCap="round";
-  ctx.globalAlpha=fade*.14;line(f.x,f.y,f.tx,f.ty,"#267dff",f.width*4.4);
-  ctx.globalAlpha=fade*.38;line(f.x,f.y,f.tx,f.ty,"#36acff",f.width*2.5);
-  ctx.globalAlpha=fade*.85;line(f.x,f.y,f.tx,f.ty,"#78e4ff",f.width*1.25);
-  paintAttack(11,(f.x+f.tx)/2,(f.y+f.ty)/2,length,f.width*7,fade*.8,angle);
-  ctx.globalAlpha=fade;line(f.x,f.y,f.tx,f.ty,"#edffff",f.width*.52);
-  glow(f.x,f.y,f.width*2.4,"#85dcff80");
+  ctx.globalAlpha=fade*.1;line(f.x,f.y,f.tx,f.ty,"#267dff",f.width*2.6);
+  ctx.globalAlpha=fade*.28;line(f.x,f.y,f.tx,f.ty,"#36acff",f.width*1.4);
+  ctx.globalAlpha=fade*.7;line(f.x,f.y,f.tx,f.ty,"#78e4ff",f.width*.72);
+  paintAttack(11,(f.x+f.tx)/2,(f.y+f.ty)/2,length,f.width*4.2,fade*.55,angle);
+  ctx.globalAlpha=fade*.9;line(f.x,f.y,f.tx,f.ty,"#edffff",f.width*.3);
+  glow(f.x,f.y,f.width*1.4,"#85dcff60");
   ctx.restore();
 }
 function drawWeaponEffects() {

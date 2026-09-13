@@ -1,4 +1,6 @@
 "use strict";
+const gameAudio=window.EndlessRailsAudio?.createAudio(window);
+let settingsOpen=false,audioTrainHp=100;
 const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,$=id=>document.getElementById(id),motion=window.EndlessRailsMotion||{FORWARD:{x:.5,y:-Math.sqrt(3)/2},spawnPoint(side,width,height,margin,random=Math.random){const along=random()*(side==="top"||side==="bottom"?width+margin*2:height+margin*2)-margin;if(side==="top")return{x:along,y:-margin};if(side==="right")return{x:width+margin,y:along};if(side==="bottom")return{x:along,y:height+margin};return{x:-margin,y:along}},stepChaser(entity,dt,center,driftSpeed){const dx=center.x-entity.x,dy=center.y-entity.y,d=Math.hypot(dx,dy)||1;return{x:entity.x-motion.FORWARD.x*driftSpeed*dt+dx/d*entity.speed*dt,y:entity.y-motion.FORWARD.y*driftSpeed*dt+dy/d*entity.speed*dt}}};
 let W=canvas.width,H=canvas.height;
 const WORLD_SPEED=88;
@@ -23,7 +25,7 @@ const experiencePool=[
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train");
 const state={nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
-function resetRun(){gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
+function resetRun(){gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
@@ -37,6 +39,9 @@ function spawnEnemy(delay=0) {
     hue: Math.random(), elite, side, delay, hit: 0, dead: false });
 }
 function update(dt) {
+  gameAudio?.tick(state.mode,state.paused);
+  if(state.trainHp<audioTrainHp)gameAudio?.play("hurt");
+  audioTrainHp=state.trainHp;
   if (state.paused || state.mode === "levelup") return;
   if (state.mode === "docking") { updateDocking(dt); updateHud(); return; }
   if (state.mode !== "combat") return;
@@ -296,7 +301,7 @@ function fireCommandVolley(target,p,bonds){
   const origin=state.drone,angle=Math.atan2(target.y-origin.y,target.x-origin.x);
   origin.angle=angle;
   const blue=bonds.find(b=>b.id==="blue");
-  if(!blue){fireProfile(origin,p,"#8ff6ff");normalStatsFor("command").volleys++;}
+  if(!blue){gameAudio?.play("shot");fireProfile(origin,p,"#8ff6ff");normalStatsFor("command").volleys++;}
   for(const bond of bonds){
     const source={owner:"command",bondId:bond.id,bondLevel:bond.level};
     bondStatsFor(bond.id,bond.level).casts++;
@@ -316,7 +321,8 @@ function fireCommandVolley(target,p,bonds){
         const lateral=Math.abs((enemy.x-origin.x)*Math.sin(angle)-(enemy.y-origin.y)*Math.cos(angle));
         if(lateral<=(enemy.r||0)+bond.width/2)damageTarget(enemy,bond.damage,source);
       }
-      state.weaponFx.push({kind:"bondLaser",...source,x:origin.x,y:origin.y,tx:end.x,ty:end.y,width:bond.width,life:.18,maxLife:.18});
+      gameAudio?.play("laser");
+      state.weaponFx.push({kind:"bondLaser",...source,x:origin.x,y:origin.y,tx:end.x,ty:end.y,width:bond.width,life:.36,maxLife:.36});
     }
   }
 }
@@ -400,6 +406,7 @@ function openLevelUp() {
   });
 }
 function chooseLevelUp(u) {
+  gameAudio?.play("upgrade");
   if(u.id==="rapid")delete state.modules.gunDisabled;
   state.modules[u.id]=level(u.id)+1;state.pendingLevelUps=Math.max(0,state.pendingLevelUps-1);
   ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";
@@ -459,6 +466,7 @@ function updateDocking(dt) {
   }
 }
 function arriveStation() {
+  gameAudio?.play("station");
   state.mode="station";state.timer=0;state.enemies=[];state.boss=null;state.drops=[];
   ui.bossWrap.hidden=true;
   state.trainHp=Math.min(state.maxTrainHp,state.trainHp+25+level("repair")*18);
@@ -501,7 +509,7 @@ function beginRoute(event) {
   syncSwarm();spawnWave();showToast(state.station===1?"稀疏尸群 · 先积累火力":state.activeEvent?.name||"模块在线");updateHud();
 }
 function rerollUpgrades(){if(state.rerollUsed||state.scrap<15||state.mode!=="station")return;state.scrap-=15;state.rerollUsed=true;ui.reroll.disabled=true;ui.upgrades.innerHTML="";renderUpgradeChoices();showToast("补给重新编排");updateHud()}
-function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
+function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
 function renderDamageSummary(){
   const fmt=n=>Number((n||0).toFixed(1)).toString();
   const rows=Object.entries(state.weaponStats).filter(([,v])=>v.volleys||v.damage).sort((a,b)=>(b[1].damage||0)-(a[1].damage||0));
@@ -619,6 +627,7 @@ window.addEventListener("resize", resetJoystick);
 document.addEventListener?.("visibilitychange", () => { if(document.hidden){resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();} });
 function drawCommandRing(){const ring=state.commandRing;if(!ring)return;const alpha=Math.min(1,ring.life/.45);ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle="#5de1df";ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(ring.target.x,ring.target.y,17+(1-alpha)*13,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(ring.target.x-6,ring.target.y);ctx.lineTo(ring.target.x+6,ring.target.y);ctx.moveTo(ring.target.x,ring.target.y-6);ctx.lineTo(ring.target.x,ring.target.y+6);ctx.stroke();ctx.restore()}
 function togglePause(){
+  if(settingsOpen)return;
   if(gmOpen){closeGM();return;}
   if(!["combat","docking","station","levelup"].includes(state.mode)||!$("displayHelp").hidden)return;
   state.paused=!state.paused;resetJoystick();
@@ -628,7 +637,7 @@ function togglePause(){
   if(state.paused){renderPause();$("resumeButton").focus?.();}else canvas.focus?.();
   updateHud();
 }
-ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",togglePause);ui.reroll.addEventListener("click",rerollUpgrades);$("startButton").addEventListener("click",resetRun);$("restartButton").addEventListener("click",resetRun);ui.continue.addEventListener("click",continueRun);window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);if(!state.paused)draw();requestAnimationFrame(frame)}updateHud();requestAnimationFrame(frame);
+ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",togglePause);ui.reroll.addEventListener("click",rerollUpgrades);$("startButton").addEventListener("click",resetRun);$("restartButton").addEventListener("click",resetRun);ui.continue.addEventListener("click",continueRun);window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);if(!state.paused)draw();requestAnimationFrame(frame)}updateHud();requestAnimationFrame(frame);
 
 // Gesture surfaces belong to the game; do not start text/image drags or long-press menus.
 for(const surface of [$("app"),$("startScreen"),$("pauseScreen"),ui.stationScreen,ui.levelUp,ui.eventScreen,ui.contractScreen,ui.result]){

@@ -112,7 +112,7 @@ button:focus-visible, select:focus-visible { outline: 2px solid #b4eee7; outline
   -webkit-backdrop-filter: blur(8px) saturate(.65);
   backdrop-filter: blur(8px) saturate(.65);
 }
-body:has(#pauseScreen:not([hidden])) > .selection-screen:not(.pause-screen) { visibility: hidden; }
+body:has(#pauseScreen:not([hidden])) > .selection-screen:not(.pause-screen):not(.settings-screen) { visibility: hidden; }
 .selection-terminal {
   --terminal-height: 594px;
   position: relative; isolation: isolate;
@@ -334,3 +334,34 @@ body:has(#pauseScreen:not([hidden])) > .selection-screen:not(.pause-screen) { vi
   .selection-terminal { animation: none; }
   .primary-button, .selection-terminal .upgrade-card { transition: none; }
 }
+
+/* A compact settings sheet shares the projection material and never stretches its rows. */
+.overlay.settings-screen { z-index: 75; }
+body:has(#settingsScreen:not([hidden])) #pauseScreen { visibility: hidden; }
+.settings-screen .settings-terminal {
+  width: min(100%, 410px); height: auto; min-height: 0; max-height: 100%;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto;
+  padding: 24px; gap: 18px; overflow-y: auto;
+}
+.settings-terminal .sound-options { display: grid; gap: 0; }
+.sound-option { display: grid; grid-template-columns: minmax(0, 1fr) 78px; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--projection-line); }
+.sound-option:first-child { padding-top: 0; }
+.sound-option h3 { margin: 0 0 7px; font-size: 16px; line-height: 1.4; font-weight: 600; color: #ecf5f1; }
+.sound-option p { margin: 0; font-size: 11px; line-height: 1.7; color: #b9cfd6; }
+.sound-toggle { display: grid; justify-items: center; gap: 6px; min-width: 72px; min-height: 56px; padding: 5px; border: 1px solid #93b8c12e; border-radius: 7px; background: #15303e; color: #c9dee1; font: inherit; cursor: pointer; }
+.switch-track { position: relative; width: 36px; height: 19px; border: 1px solid #91aab566; border-radius: 12px; background: #0f2531; }
+.switch-track::after { content: ""; position: absolute; left: 3px; top: 3px; width: 11px; height: 11px; border-radius: 50%; background: #9db0b9; transition: transform .15s; }
+.sound-toggle[aria-checked="true"] { border-color: #9bdad95c; color: #dbf7ec; background: #234956; }
+.sound-toggle[aria-checked="true"] .switch-track { border-color: #a8e4d666; background: #365f67; }
+.sound-toggle[aria-checked="true"] .switch-track::after { background: #b9efdb; transform: translateX(16px); }
+.sound-toggle:disabled { opacity: .45; cursor: default; }
+.switch-value { font-size: 11px; line-height: 1.3; }
+.settings-terminal .sound-note { margin: 0; font-size: 11px; line-height: 1.6; color: #afc7d0; }
+.settings-terminal .primary-button { margin: 0; }
+.display-actions #startSettingsButton, .display-actions #pauseSettingsButton { flex: 0 0 58px; }
+@media (max-width: 380px), (max-height: 600px) {
+  .settings-screen .settings-terminal { padding: 19px; gap: 13px; }
+  .sound-option { gap: 8px; padding-block: 12px; }
+  .sound-option h3 { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { .switch-track::after { transition: none; } }
