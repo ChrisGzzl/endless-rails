@@ -82,12 +82,7 @@ function renderPause(){
   portrait.dataset.breakthrough=String(unit.id!=="command"&&unit.level>=10);
   const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
   $("inspectRole").textContent=inspector.tab==="global"?"列车 · 构筑 · 路线修正":p.role;
-  const pageSize=window.innerHeight<450?6:window.innerHeight<700?9:12;
-  const rows=inspectRows(unit),pages=Math.max(1,Math.ceil(rows.length/pageSize));inspector.page=Math.min(inspector.page,pages-1);
-  $("inspectStats").innerHTML=rows.slice(inspector.page*pageSize,inspector.page*pageSize+pageSize).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
-  $("inspectPage").textContent=`${inspector.page+1} / ${pages}`;
-  $("inspectPrevPage").disabled=inspector.page===0;$("inspectNextPage").disabled=inspector.page>=pages-1;
-  $("inspectPageNav").hidden=pages===1;
+  const rows=inspectRows(unit),requestedPage=inspector.page;
   for(const [id,tab] of [["inspectWeapon","weapon"],["inspectStatus","status"],["inspectUpgrade","upgrade"],["inspectGlobal","global"]]){
     $(id).classList.toggle("active",inspector.tab===tab);$(id).setAttribute?.("aria-pressed",String(inspector.tab===tab));
   }
@@ -97,6 +92,22 @@ function renderPause(){
     global:"列车属性、已选模块和核心层数；数据较多时点击下方箭头翻页。"};
   $("inspectNote").textContent=notes[inspector.tab]+(p?.kind==="missile"?" 导弹发射后可持续追踪至寿命结束。":p?.kind==="ricochet"?" 锁定后能量球可弹跳至寿命或反弹次数耗尽。":p?.kind==="incendiary"?" 火区留在地面，不跟随飞机。":"");
   $("resumeButton").textContent=["levelup","station"].includes(state.mode)?"返回选择界面":"继续护送";
+  // Fit complete rows to the enclosure after all labels and notes are laid out.
+  // Keep the requested page while trying sizes so later pages remain reachable.
+  const layoutKey=[unit.id,inspector.tab,window.innerWidth,window.innerHeight].join(":");
+  let pageSize=inspector.layoutKey===layoutKey?inspector.pageSize:window.innerHeight<450?6:window.innerHeight<700?9:12;
+  const terminal=$("fleetTerminal");
+  const renderPage=()=>{
+    const pages=Math.max(1,Math.ceil(rows.length/pageSize));
+    inspector.page=Math.min(requestedPage,pages-1);
+    $("inspectStats").innerHTML=rows.slice(inspector.page*pageSize,inspector.page*pageSize+pageSize).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("");
+    $("inspectPage").textContent=`${inspector.page+1} / ${pages}`;
+    $("inspectPrevPage").disabled=inspector.page===0;$("inspectNextPage").disabled=inspector.page>=pages-1;
+    $("inspectPageNav").hidden=pages===1;
+  };
+  renderPage();
+  while(pageSize>3&&terminal?.clientHeight&&terminal.scrollHeight>terminal.clientHeight+1){pageSize-=3;renderPage();}
+  inspector.layoutKey=layoutKey;inspector.pageSize=pageSize;
 }
 $("inspectSelect").addEventListener("change",e=>{inspector.id=e.target.value;inspector.page=0;renderPause();});
 for(const [id,delta] of [["inspectPrev",-1],["inspectNext",1]])$(id).addEventListener("click",()=>{
@@ -106,6 +117,7 @@ for(const [id,tab] of [["inspectWeapon","weapon"],["inspectStatus","status"],["i
 for(const [id,delta] of [["inspectPrevPage",-1],["inspectNextPage",1]])$(id).addEventListener("click",()=>{inspector.page=Math.max(0,inspector.page+delta);renderPause();});
 $("resumeButton").addEventListener("click",()=>{if(state.paused)togglePause();});
 for(const id of ["levelInspectButton","stationInspectButton"])$(id).addEventListener("click",togglePause);
+window.addEventListener("resize",()=>{if(state.paused&&!$("pauseScreen").hidden)renderPause();});
 // Keep keyboard navigation inside the modal; P / Escape are handled by the game.
 $("pauseScreen").addEventListener("keydown",event=>{
   if(event.code!=="Tab")return;

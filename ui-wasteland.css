@@ -1,4 +1,4 @@
-/* Wasteland terminal, v0.8.4.
+/* Wasteland terminal, v0.8.5.
    Shared materials and a content-sized enclosure for every three-way choice.
    Decorative surfaces never receive pointer input. */
 :root {
@@ -110,22 +110,51 @@ body {
 .start-copy h1 { color: #fff0d6; text-shadow: 0 3px 0 #29332f, 0 6px 22px #000b; }
 .start-copy h1 span { color: #b6d6d9; }
 .lede { color: #ced9d8; }
+/* One amber key face seated inside a steel base, shared by all primary actions. */
 .primary-button {
-  border-radius: 6px 2px;
-  border-color: #ebcb8c #ab824c #8c683e;
-  color: #162027;
-  background: linear-gradient(115deg, #f4d99aeb, #d4a252c4 68%, #b7823ddd),
-    url("assets/ui-component-button.png") center / 100% 100%;
-  box-shadow: inset 0 1px #fff0c9aa, inset 0 -3px #77572b70, 0 4px 14px #0005;
-  text-shadow: 0 1px #ffedb655;
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  min-height: 54px;
+  padding: 13px 27px 16px;
+  color: #1e292c;
+  background: linear-gradient(155deg, #a8b1a8, #555c57 28%, #19262b 65%, #77817b);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  box-shadow: none;
+  text-shadow: 0 1px #ffe8ad88;
+  letter-spacing: .06em;
+  transition: filter .15s, transform .1s;
+}
+.primary-button::before {
+  content: "";
+  position: absolute;
+  inset: 2px 3px 6px;
+  z-index: -1;
+  clip-path: inherit;
+  background: linear-gradient(105deg, #fff0c933, transparent 45%), linear-gradient(#e7c78a, #c99f59 58%, #b88a42);
+  box-shadow: inset 0 2px #fff0cb99, inset 0 -2px #7c592e, inset 1px 0 #fff0ba66;
+  pointer-events: none;
+}
+.primary-button::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 5px;
+  height: 17px;
+  transform: translateY(-60%);
+  background: repeating-linear-gradient(0deg, #51493388 0 2px, transparent 2px 5px);
+  pointer-events: none;
 }
 .primary-button:hover:not(:disabled) {
-  background: linear-gradient(115deg, #f4d99aeb, #d4a252c4 68%, #b7823ddd),
-    url("assets/ui-component-button.png") center / 100% 100%;
-  filter: brightness(1.1);
+  background: linear-gradient(155deg, #a8b1a8, #555c57 28%, #19262b 65%, #77817b);
+  filter: brightness(1.08);
 }
-.primary-button:active:not(:disabled) { filter: brightness(.96); }
-.primary-button:disabled { filter: saturate(.4); }
+.primary-button:focus-visible { outline: none; background: #c8f1e9; filter: brightness(1.08); }
+.primary-button:active:not(:disabled) { transform: translateY(1px); filter: brightness(.97); box-shadow: none; }
+.primary-button:active:not(:disabled)::before { inset-block: 4px; box-shadow: inset 0 2px #76592e66, inset 0 -1px #ffe3a666; }
+.primary-button:disabled { filter: saturate(.25); opacity: .5; box-shadow: none; }
 .display-actions button, .reroll-button, .inspect-tabs button {
   border-radius: 4px;
   border-color: #60788170;
@@ -425,31 +454,191 @@ body {
   .selection-terminal .reroll-button, .selection-terminal .continue-button { min-height: 36px; padding: 8px; }
 }
 .inspect-entry { color: #a8dde1; text-underline-offset: 3px; }
-.inspect-unit {
-  border-radius: 7px 2px;
-  border-color: #84968a66;
-  background: linear-gradient(115deg, #34505acc, #152934dd),
-    url("assets/ui-component-panel.png") center / cover;
-  box-shadow: inset 0 1px #bfdcd52a, 0 3px 9px #0003;
+/* The fleet screen uses the same enclosure as the approved choice terminal.
+   Instrument cells fill a recessed deck; only real content contributes height. */
+.fleet-terminal {
+  gap: 10px;
+  padding: 42px 27px 35px;
+  min-height: 0;
 }
-.inspect-unit select { background: #10232d; color: #e5f0ef; }
-.inspect-stats, .inspect-tabs { background: none; box-shadow: none; }
-.inspect-stat {
-  border-color: #667d8544; border-radius: 5px 2px;
-  background: linear-gradient(130deg, #28404b, #142732);
-  box-shadow: inset 0 1px #cde3dc1f, inset 0 -2px #07141a66;
+.fleet-terminal > * { flex-shrink: 0; }
+.fleet-terminal .pause-heading {
+  border: 0;
+  border-bottom: 1px solid #7eaca144;
+  padding: 0 4px 12px;
+  box-shadow: 0 1px #0009;
 }
-.inspect-stat dt { color: #aec5ca; }
-.inspect-stat dd { color: #eaf4ef; }
-.inspect-tabs button.active {
-  color: #e5fbf6; border-color: #82c9d3;
-  background: linear-gradient(135deg, #3c6a76, #244655);
-  box-shadow: inset 0 -3px #83d9df, inset 0 1px #defaf244;
+.fleet-terminal .pause-heading h2 { margin: 0; font-size: 27px; line-height: 1.3; }
+.fleet-terminal .pause-heading .eyebrow { margin: 0 0 7px; font-size: 9px; color: #95c5c8; letter-spacing: .1em; }
+.fleet-terminal .pause-heading .eyebrow::before { background: #8dbeb6; width: 5px; height: 5px; box-shadow: 0 0 7px #8dbeb677; }
+.fleet-terminal .pause-heading #pauseSummary { margin-top: 6px; font-size: 11px; line-height: 1.5; color: #a8bdc1; }
+.fleet-terminal .pause-display { margin: 0; gap: 7px; }
+.fleet-terminal .pause-display button {
+  min-height: 30px;
+  padding: 6px;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(#2b3e48, #1a2d36);
+  box-shadow: inset 0 1px #b2ccca33, inset 0 -2px #030e16;
+  color: #a9c2c5;
+  font-size: 10px;
 }
-.inspect-arrows button, .inspect-page-nav button {
-  background: linear-gradient(#314b57, #152c38);
-  border-color: #58737e;
-  box-shadow: inset 0 1px #d2e6e22a;
+.fleet-terminal .inspect-unit {
+  position: relative;
+  isolation: isolate;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 9px;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: linear-gradient(145deg, #819493, #2d434d 34%, #182c36 70%, #566d76);
+  box-shadow: none;
+}
+.fleet-terminal .inspect-unit::before {
+  content: "";
+  position: absolute;
+  inset: 2px 2px 4px;
+  z-index: -1;
+  clip-path: inherit;
+  background: linear-gradient(90deg, #0b1c26 0 74px, transparent 74px), linear-gradient(135deg, #38505a, #20323d);
+  box-shadow: inset 0 1px #c3ddcf22;
+  pointer-events: none;
+}
+.fleet-terminal .inspect-portrait { flex-basis: 58px; height: 58px; }
+.fleet-terminal .inspect-unit label { font-size: 9px; letter-spacing: .12em; color: #96aeb3; }
+.fleet-terminal .inspect-unit select { min-width: 0; background: #10232bcc; border: 0; padding: 5px 2px; font-size: 13px; color: #ecf0e4; }
+.fleet-terminal .inspect-unit option { background: #12232e; color: #ecf0e4; }
+.fleet-terminal .inspect-unit p { margin: 5px 0 0; color: #94c9ce; font-size: 10px; line-height: 1.4; }
+.fleet-terminal .inspect-arrows { gap: 4px; }
+.fleet-terminal .inspect-arrows button, .fleet-terminal .inspect-page-nav button {
+  border: 0;
+  border-radius: 0;
+  width: 28px;
+  height: 30px;
+  background: linear-gradient(145deg, #435c67, #263b46);
+  box-shadow: inset 0 1px #bdd4d34d, inset 0 -3px #0a1922;
+  color: #cbe3df;
+  font-size: 20px;
+}
+.fleet-terminal .telemetry-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 7px;
+  background: #030e16b8;
+  box-shadow: inset 0 2px 5px #000c, 0 1px #a6c5c433;
+}
+.fleet-terminal .inspect-tabs {
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.fleet-terminal .inspect-tabs button {
+  min-width: 0;
+  min-height: 33px;
+  border: 0;
+  border-radius: 0;
+  padding: 7px 1px 9px;
+  background: linear-gradient(#354953, #1c2f3a);
+  box-shadow: inset 0 1px #b6d3cf30, inset 0 -3px #080f16;
+  color: #acbec0;
+  font-size: 10px;
+}
+.fleet-terminal .inspect-tabs button.active {
+  background: linear-gradient(#48676f, #2b4651);
+  box-shadow: inset 0 1px #c8e6df66, inset 0 -3px #8bc6c7;
+  color: #e4f2e8;
+}
+.fleet-terminal .inspect-stats {
+  flex: none;
+  gap: 1px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #50636988;
+  box-shadow: 0 1px #000b;
+}
+.fleet-terminal .inspect-stat {
+  margin: 0;
+  padding: 10px 8px;
+  min-width: 0;
+  min-height: 61px;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(140deg, #243b45, #182c36);
+  box-shadow: inset 0 1px #a6c3bb14;
+}
+.fleet-terminal .inspect-stat dt { font-size: 9px; color: #9cb3b8; margin-bottom: 7px; line-height: 1.45; }
+.fleet-terminal .inspect-stat dd { margin: 0; font-size: 13px; color: #eaf0e5; line-height: 1.4; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fleet-terminal .inspect-page-nav { gap: 15px; font: 11px ui-monospace, monospace; color: #b7cccb; }
+.fleet-terminal .inspect-page-nav button { width: 31px; height: 27px; }
+.fleet-terminal .inspect-note { font-size: 10px; line-height: 1.55; color: #8da7ad; padding: 0 2px; }
+.fleet-terminal .fleet-actions { display: flex; flex-direction: column; gap: 10px; }
+.fleet-terminal .primary-button { min-height: 49px; padding-block: 12px 15px; font-size: 15px; }
+.fleet-terminal .pause-shortcut { font-size: 9px; color: #8ba3a7; }
+@media (hover: hover) {
+  .fleet-terminal .pause-display button:hover,
+  .fleet-terminal .inspect-arrows button:hover,
+  .fleet-terminal .inspect-tabs button:hover,
+  .fleet-terminal .inspect-page-nav button:hover:not(:disabled) { filter: brightness(1.16); }
+}
+.fleet-terminal button:not(.primary-button):focus-visible, .fleet-terminal select:focus-visible {
+  outline: 2px solid #9ee0de;
+  outline-offset: -2px;
+}
+@media (max-height: 820px), (max-width: 359px) {
+  .fleet-terminal { gap: 8px; padding: 36px 23px 30px; }
+  .fleet-terminal .pause-heading { padding-bottom: 9px; }
+  .fleet-terminal .pause-heading h2 { font-size: 24px; }
+  .fleet-terminal .inspect-unit { padding: 8px; gap: 7px; }
+  .fleet-terminal .inspect-portrait { flex-basis: 48px; height: 48px; }
+  .fleet-terminal .inspect-unit::before { background: linear-gradient(90deg, #0b1c26 0 64px, transparent 64px), linear-gradient(135deg, #38505a, #20323d); }
+  .fleet-terminal .inspect-arrows button { width: 25px; height: 29px; }
+  .fleet-terminal .telemetry-deck { gap: 8px; padding: 6px; }
+  .fleet-terminal .inspect-stat { padding: 8px 6px; min-height: 55px; }
+  .fleet-terminal .inspect-stat dt { margin-bottom: 5px; }
+  .fleet-terminal .inspect-stat dd { font-size: 12px; }
+  .fleet-terminal .pause-shortcut { display: none; }
+}
+@media (max-height: 620px) {
+  .fleet-terminal { gap: 6px; padding: 28px 21px 25px; }
+  .fleet-terminal .pause-heading { padding-bottom: 7px; }
+  .fleet-terminal .pause-heading .eyebrow { display: flex; font-size: 8px; margin-bottom: 4px; }
+  .fleet-terminal .pause-heading h2 { font-size: 21px; }
+  .fleet-terminal .pause-heading #pauseSummary { margin-top: 3px; font-size: 10px; }
+  .fleet-terminal .pause-display button { min-height: 26px; padding: 5px; }
+  .fleet-terminal .inspect-unit { padding: 7px; }
+  .fleet-terminal .inspect-unit select { font-size: 12px; }
+  .fleet-terminal .inspect-portrait { flex-basis: 43px; height: 43px; }
+  .fleet-terminal .telemetry-deck { gap: 6px; }
+  .fleet-terminal .inspect-tabs button { min-height: 28px; padding-block: 5px 7px; font-size: 9px; }
+  .fleet-terminal .inspect-stat { min-height: 49px; padding: 6px; }
+  .fleet-terminal .inspect-stat dd { font-size: 11px; }
+  .fleet-terminal .inspect-note { font-size: 9px; line-height: 1.45; }
+  .fleet-terminal .inspect-page-nav button { height: 25px; }
+  .fleet-terminal .primary-button { min-height: 40px; padding-block: 10px 12px; font-size: 14px; }
+}
+@media (max-height: 450px) and (min-width: 600px) {
+  .fleet-terminal {
+    display: grid;
+    grid-template-columns: minmax(190px, .9fr) minmax(0, 1.3fr);
+    grid-template-rows: auto auto 1fr auto;
+    gap: 7px 13px;
+    max-width: 740px;
+    padding: 27px 28px;
+  }
+  .fleet-terminal > .pause-heading, .fleet-terminal > .pause-display,
+  .fleet-terminal > .inspect-unit, .fleet-terminal > .fleet-actions { grid-column: 1; }
+  .fleet-terminal .telemetry-deck { grid-column: 2; grid-row: 1 / -1; }
+  .fleet-terminal .inspect-unit { align-self: start; }
+  .fleet-terminal .inspect-arrows { flex-direction: column; }
+  .fleet-terminal .inspect-arrows button { height: 24px; }
+  .fleet-terminal .pause-heading h2 { font-size: 21px; }
+  .fleet-terminal .pause-heading .eyebrow { display: none; }
 }
 .train-strip { border-color: #8b815e66; }
 .mini-car { box-shadow: inset 0 2px #f1d09c44, 0 2px #0006; }

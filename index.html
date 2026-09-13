@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
   <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-ui-v2">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-ui-v3">
 </head>
 <body>
   <main id="app">
@@ -62,7 +62,7 @@
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.4</p>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.5</p>
     </div>
   </section>
 
@@ -99,15 +99,21 @@
     </div>
   </section>
 
-  <section class="overlay pause-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+  <section class="overlay pause-screen selection-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
+    <div class="selection-terminal fleet-terminal" id="fleetTerminal">
     <header class="pause-heading"><p class="eyebrow">PAUSED / FLEET TELEMETRY</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
     <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button></div>
     <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
+    <div class="telemetry-deck">
     <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
     <dl class="inspect-stats" id="inspectStats"></dl>
     <div class="inspect-page-nav" id="inspectPageNav"><button id="inspectPrevPage" aria-label="上一页数据">‹</button><span id="inspectPage"></span><button id="inspectNextPage" aria-label="下一页数据">›</button></div>
     <p class="inspect-note" id="inspectNote"></p>
+    </div>
+    <div class="fleet-actions">
     <button class="primary-button" id="resumeButton" type="button">继续护送</button><small class="pause-shortcut">P / Esc 暂停或继续 · 切换窗口自动暂停</small>
+    </div>
+    </div>
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
@@ -123,7 +129,7 @@
   <script src="run-record.js?v=20260912-bonds-v3"></script>
   <script src="renderer.js?v=20260912-bonds-v3"></script>
   <script src="game.js?v=20260912-bonds-v3"></script>
-  <script src="armory.js?v=20260912-bonds-v3"></script>
+  <script src="armory.js?v=20260913-ui-v3"></script>
   <script src="display.js?v=20260912-bonds-v3"></script>
 </body>
 </html>

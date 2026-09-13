@@ -43,4 +43,23 @@ for(const id of ['app','startScreen','pauseScreen','stationScreen','levelUpScree
     assert.ok(prevented,id+" prevents native "+type);
   }
 }
-console.log("pause freeze/resume, inspector, pagination and touch-gesture tests passed");
+// A short enclosure must retain a stable page size, including partially filled
+// final pages, so repeated Next clicks can reach every parameter exactly once.
+elements.fleetTerminal.clientHeight=300;
+Object.defineProperty(elements.fleetTerminal,"scrollHeight",{get(){return 180+30*(elements.inspectStats.innerHTML.match(/inspect-stat/g)||[]).length;}});
+run('window.innerHeight=900;window.innerWidth=390;inspector.id="command";inspector.tab="weapon";inspector.page=0;renderPause();');
+assert.equal(run('inspector.pageSize'),3);
+const expected=run('inspectRows(inspectFleet().find(d=>d.id===inspector.id)).map(([label,value])=>`<div class="inspect-stat"><dt>${label}</dt><dd>${value}</dd></div>`).join("")');
+let collected="",visited=0;
+do{
+  collected+=elements.inspectStats.innerHTML;
+  assert.equal(run('inspector.page'),visited++);
+  if(elements.inspectNextPage.disabled)break;
+  elements.inspectNextPage.events.click();
+}while(visited<30);
+assert.equal(collected,expected,"pagination neither skips nor repeats any parameter");
+elements.fleetTerminal.clientHeight=600;
+run('window.innerHeight=960;');
+windowEvents.resize.forEach(fn=>fn());
+assert.equal(run('inspector.pageSize'),12,"resizing reclaims available data space");
+console.log("pause freeze/resume, inspector, fitted pagination and touch-gesture tests passed");
