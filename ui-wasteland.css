@@ -1,5 +1,5 @@
-/* Wasteland terminal, v0.8.3.
-   Visual layer only: reuse the shipped raster materials and existing layout.
+/* Wasteland terminal, v0.8.4.
+   Shared materials and a content-sized enclosure for every three-way choice.
    Decorative surfaces never receive pointer input. */
 :root {
   --terminal-steel: #182932;
@@ -153,62 +153,277 @@ body {
   color: #f0ede1;
   text-shadow: 0 2px 6px #0007;
 }
-.upgrade-card, .station-screen .upgrade-card {
-  --card-accent: #7fd4df;
-  isolation: isolate;
-  border: 1px solid #73858c66;
-  border-radius: 9px 3px;
-  background: linear-gradient(120deg, #30434b, #172934 58%, #101e28);
-  box-shadow: inset 4px 0 var(--card-accent), inset 0 1px #e0eddf24, 0 4px 10px #0004;
+/* Selection dialogs have one physical enclosure, independent of the backdrop.
+   Nine-slice only the enclosure: its corners never stretch with the content. */
+.overlay.selection-screen {
+  display: grid;
+  place-items: center;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  padding: max(12px, env(safe-area-inset-top)) 8px max(12px, env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: 0;
+  background: #050d14d9;
+  box-shadow: none;
+  backdrop-filter: blur(5px);
 }
-.upgrade-card::before {
+.selection-terminal {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 456px;
+  max-height: 100%;
+  padding: 47px 28px 40px;
+  filter: drop-shadow(0 16px 20px #0009);
+}
+.selection-terminal::before {
   content: "";
-  position: absolute; inset: 0;
-  width: auto; height: auto;
-  border: 18px solid transparent;
-  border-image: url("assets/ui-component-panel.png") 70 fill / 18px / 0 stretch;
-  background: none;
-  border-radius: inherit;
-  opacity: .4;
+  position: absolute;
+  inset: 0;
   z-index: -1;
+  border: 36px solid transparent;
+  border-image: url("assets/ui-component-panel.png") 80 74 94 72 fill / 38px 36px 44px 36px / 0 stretch;
+  clip-path: polygon(20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 28px), calc(100% - 24px) 100%, 24px 100%, 0 calc(100% - 28px), 0 20px);
+  filter: saturate(.45) brightness(.88);
   pointer-events: none;
 }
-.upgrade-card[data-type="train"], .upgrade-card[data-type="contract"] { --card-accent: #e3b36c; }
-.upgrade-card[data-type="dust"] { --card-accent: #d3a17a; }
-.upgrade-card[data-type="freight"] { --card-accent: #b4c89a; }
-.upgrade-card[data-weapon="missile"], .upgrade-card[data-weapon="incendiary"] { --card-accent: #eeab7d; }
-.upgrade-card[data-weapon="chain"], .upgrade-card[data-weapon="ricochet"] { --card-accent: #c1a2ed; }
-.upgrade-card[data-weapon="blades"] { --card-accent: #accf9c; }
-.upgrade-card[data-weapon="scatter"] { --card-accent: #e0c188; }
-.upgrade-card h3 { color: #f0f3e9; text-shadow: 0 2px 4px #0008; }
-.upgrade-card h3 small { color: #ebc987; white-space: nowrap; }
-.upgrade-card p { color: #c0d0d5; }
-.upgrade-card[data-scope]::after {
-  color: #bbd1d7; font-size: 10px; right: 15px;
-  text-shadow: 0 1px 3px #000;
+.selection-terminal > .station-heading,
+.selection-terminal > .levelup-heading {
+  position: relative;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 5px 15px;
+  border: 0;
+  border-bottom: 1px solid #7eaca144;
+  box-shadow: 0 1px #0009;
 }
-.upgrade-icon {
-  border-radius: 7px 2px;
-  background-color: #0e1d28;
-  border-color: #667e83;
-  box-shadow: inset 0 1px #d2e1dc2a, 0 2px 7px #0006;
+.selection-terminal .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 9px;
+  color: #d2b380;
+  font-size: 10px;
+  letter-spacing: .15em;
 }
-.upgrade-card[data-weapon] .upgrade-icon {
-  background-color: #12232c;
-  box-shadow: inset 0 0 14px #7ad8e518, 0 2px 7px #0005;
+.selection-terminal .eyebrow::before {
+  content: "";
+  width: 20px;
+  height: 9px;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(125deg, #d9b16c 0 3px, #242e31 3px 6px);
 }
-.upgrade-card:hover, .upgrade-card:focus-visible, .station-screen .upgrade-card:hover {
-  border-color: #a5d1d4;
-  background: linear-gradient(120deg, #3a5259, #1d3440 58%, #172a34);
-  box-shadow: inset 4px 0 var(--card-accent), inset 0 1px #e0eddf40, 0 4px 14px #0005;
+.selection-terminal h2 { font-size: clamp(23px, 3.6dvh, 29px); letter-spacing: .04em; }
+.selection-terminal .station-heading > p:not(.eyebrow),
+.selection-terminal .levelup-heading > p:not(.eyebrow) {
+  margin: 7px 0 0;
+  color: #aec3c6;
+  font-size: 12px;
+  line-height: 1.5;
 }
-.upgrade-card.selected, .station-screen .upgrade-card.selected {
-  border-color: #eac17c;
-  background: linear-gradient(110deg, #534634, #303b3c 55%, #182b33);
-  box-shadow: inset 4px 0 #eac17c, inset 0 0 24px #eac17c18, 0 3px 10px #0005;
+.selection-terminal .inspect-entry { margin-top: 7px; }
+.selection-terminal .upgrade-list {
+  flex: 0 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 5px;
+  background: #030d14aa;
+  box-shadow: inset 0 2px 5px #000c, 0 1px #acc4c533;
 }
-.upgrade-card[data-type]::before { background: none; }
-.upgrade-card.selected::before { background: none; opacity: .55; }
+/* Chamfered metal modules sit in the same recessed rack. No second image frame. */
+.selection-terminal .upgrade-card {
+  --card-accent: #84cdd4;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 108px;
+  padding: 20px 16px 18px 13px;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(145deg, #7d8989, #343f45 35%, #121c22 72%, #52616a);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  box-shadow: none;
+  transform: none;
+  transition: filter .15s;
+}
+.selection-terminal .upgrade-card::before {
+  content: "";
+  position: absolute;
+  inset: 2px 2px 4px;
+  z-index: -1;
+  width: auto;
+  height: auto;
+  border: 0;
+  border-image: none;
+  border-radius: 0;
+  clip-path: inherit;
+  background:
+    linear-gradient(90deg, #050d1655 0 68px, transparent 68px),
+    radial-gradient(ellipse at 30% 0, #65767b44, transparent 75%),
+    linear-gradient(165deg, #32454e, #20313b 55%, #14232d);
+  box-shadow: inset 0 1px #ccdfd533, inset 0 -2px #070f1799;
+  opacity: 1;
+  pointer-events: none;
+}
+.selection-terminal .upgrade-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: auto;
+  width: 27px;
+  height: 3px;
+  background: var(--card-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--card-accent) 45%, transparent);
+  pointer-events: none;
+}
+.selection-terminal .upgrade-card[data-scope]::after {
+  content: attr(data-scope);
+  left: auto;
+  right: 12px;
+  top: 6px;
+  width: auto;
+  height: auto;
+  background: none;
+  box-shadow: none;
+  color: var(--card-accent);
+  font-size: 9px;
+}
+.selection-terminal .upgrade-card h3 { margin: 0 0 7px; color: #f3f0e3; font-size: 16px; text-shadow: 0 1px 2px #000a; }
+.selection-terminal .upgrade-card h3 small { color: #d5bc8e; font-size: 11px; white-space: nowrap; }
+.selection-terminal .upgrade-card p { margin: 0; color: #b6c7cc; font-size: 12px; line-height: 1.6; }
+.selection-terminal .upgrade-icon {
+  position: relative;
+  width: 48px;
+  height: 54px;
+  border: 0;
+  border-radius: 0;
+  color: var(--card-accent);
+  background-color: transparent;
+  box-shadow: none;
+  text-shadow: 0 2px #0008;
+}
+.selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width: 52px; height: 52px; background-color: transparent; box-shadow: none; }
+.selection-terminal .event-card[data-type="contract"] .upgrade-icon { font-size: 0; }
+.selection-terminal .event-card[data-type="contract"] .upgrade-icon::before {
+  content: counter(choices, decimal-leading-zero);
+  align-self: start;
+  color: #dac08d;
+  font: 700 29px ui-monospace, monospace;
+}
+.selection-terminal .event-card[data-type="contract"] .upgrade-icon::after {
+  content: "契约";
+  position: absolute;
+  bottom: 0;
+  color: #85999e;
+  font: 9px system-ui, sans-serif;
+  letter-spacing: .25em;
+}
+.selection-terminal .upgrade-card[data-type="train"],
+.selection-terminal .upgrade-card[data-type="contract"] { --card-accent: #dbb579; }
+.selection-terminal .upgrade-card[data-type="dust"] { --card-accent: #d39c76; }
+.selection-terminal .upgrade-card[data-type="freight"] { --card-accent: #b4c89a; }
+.selection-terminal .upgrade-card[data-weapon="missile"],
+.selection-terminal .upgrade-card[data-weapon="incendiary"] { --card-accent: #eeab7d; }
+.selection-terminal .upgrade-card[data-weapon="chain"],
+.selection-terminal .upgrade-card[data-weapon="ricochet"] { --card-accent: #c1a2ed; }
+.selection-terminal .upgrade-card[data-weapon="blades"] { --card-accent: #accf9c; }
+.selection-terminal .upgrade-card[data-weapon="scatter"] { --card-accent: #e0c188; }
+@media (hover: hover) {
+  .selection-terminal .upgrade-card:hover { filter: brightness(1.16); }
+}
+.selection-terminal .upgrade-card:focus-visible {
+  outline: none;
+  background: var(--card-accent);
+  filter: brightness(1.18);
+}
+.selection-terminal .upgrade-card:active { filter: brightness(.91); }
+.selection-terminal .upgrade-card.selected { background: #e8c587; }
+.selection-terminal .upgrade-card.selected::before {
+  background: linear-gradient(90deg, #352f2466 0 68px, transparent 68px), linear-gradient(135deg, #525346, #2d3d40);
+  box-shadow: inset 0 1px #ead9b666, inset 0 -2px #09151bbb;
+}
+.terminal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 5px;
+  color: #90a9ac;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.terminal-footer > :last-child { color: #c3b38f; white-space: nowrap; }
+.terminal-status::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: #8abdaf;
+  box-shadow: 0 0 6px #8abdaf88;
+}
+.station-screen .selection-terminal { gap: 10px; }
+.station-screen .selection-terminal .upgrade-card { min-height: 93px; }
+.selection-terminal .reroll-button { min-height: 34px; border-radius: 0; }
+.selection-terminal .continue-button { min-height: 44px; margin: 0; border-radius: 2px; }
+.selection-terminal .train-strip { padding: 5px; }
+@media (max-height: 740px) {
+  .selection-terminal { gap: 12px; padding: 42px 25px 35px; }
+  .selection-terminal .upgrade-card { min-height: 96px; }
+  .station-screen .selection-terminal .upgrade-card { min-height: 81px; padding-block: 16px; }
+}
+@media (max-height: 650px), (max-width: 359px) {
+  .selection-terminal { gap: 10px; padding: 37px 22px 32px; }
+  .selection-terminal > .station-heading, .selection-terminal > .levelup-heading { padding-bottom: 11px; }
+  .selection-terminal .upgrade-list { gap: 7px; padding: 4px; }
+  .selection-terminal .upgrade-card { min-height: 88px; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; padding: 17px 11px 14px; }
+  .selection-terminal .upgrade-card::before { background: linear-gradient(90deg, #050d1655 0 57px, transparent 57px), linear-gradient(165deg, #35474f, #1c2e38); }
+  .selection-terminal .upgrade-card h3 { font-size: 14px; margin-bottom: 5px; }
+  .selection-terminal .upgrade-card p { font-size: 11px; line-height: 1.45; }
+  .selection-terminal .upgrade-icon, .selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width: 40px; height: 44px; }
+  .selection-terminal .event-card[data-type="contract"] .upgrade-icon::before { font-size: 25px; }
+  .selection-terminal .eyebrow { font-size: 9px; margin-bottom: 6px; }
+  .station-screen .selection-terminal { gap: 7px; }
+  .station-screen .selection-terminal .upgrade-card { min-height: 73px; padding-block: 11px; }
+  .selection-terminal .continue-button { min-height: 38px; padding-block: 8px; }
+  .selection-terminal .reroll-button { min-height: 30px; }
+}
+@media (max-height: 540px) and (max-width: 599px) {
+  .selection-terminal { padding-block: 29px; gap: 7px; }
+  .selection-terminal h2 { font-size: 21px; }
+  .selection-terminal .upgrade-card { min-height: 78px; padding-block: 12px; }
+  .station-screen .selection-terminal .upgrade-card { min-height: 62px; padding-block: 9px; }
+  .station-screen .selection-terminal .train-strip { display: none; }
+  .selection-terminal .inspect-entry { margin-top: 3px; }
+}
+@media (max-height: 450px) and (min-width: 600px) {
+  .selection-terminal { max-width: 740px; padding: 32px 30px; gap: 9px; }
+  .selection-terminal > .station-heading, .selection-terminal > .levelup-heading { padding-bottom: 8px; }
+  .selection-terminal .upgrade-list { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+  .selection-terminal .upgrade-card { grid-template-columns: minmax(0, 1fr); min-height: 112px; padding: 20px 14px 14px; gap: 0; }
+  .selection-terminal .upgrade-card::before { background: linear-gradient(165deg, #35474f, #1c2e38); }
+  .selection-terminal .upgrade-icon { display: none; }
+  .selection-terminal h2 { font-size: 22px; }
+  .station-screen .selection-terminal { display: grid; grid-template-columns: 1fr 1fr; }
+  .station-screen .selection-terminal > .station-heading,
+  .station-screen .selection-terminal > .upgrade-list { grid-column: 1 / -1; }
+  .station-screen .selection-terminal .upgrade-card { min-height: 95px; }
+  .station-screen .selection-terminal .train-strip { display: none; }
+  .selection-terminal .reroll-button, .selection-terminal .continue-button { min-height: 36px; padding: 8px; }
+}
 .inspect-entry { color: #a8dde1; text-underline-offset: 3px; }
 .inspect-unit {
   border-radius: 7px 2px;
@@ -256,7 +471,6 @@ body {
 @media (max-height: 650px) {
   .start-copy::before { height: 3px; margin-bottom: 9px; }
   .station-heading, .levelup-heading, .pause-heading { padding-left: 9px; }
-  .upgrade-card::before { border-image-width: 13px; border-width: 13px; }
 }
 @media (max-height: 450px) and (min-width: 600px) {
   .station-heading, .levelup-heading { border-left-width: 2px; padding-left: 8px; }
