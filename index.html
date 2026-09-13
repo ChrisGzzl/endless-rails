@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#172a34">
-  <link rel="manifest" href="manifest.webmanifest?v=20260913-ui-v5">
+  <meta name="theme-color" content="#132833">
+  <link rel="manifest" href="manifest.webmanifest?v=20260913-projection-v1">
   <link rel="apple-touch-icon" href="assets/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
   <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-ui-v5">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260913-projection-v1">
 </head>
 <body>
   <main id="app">
@@ -62,13 +62,13 @@
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.7</p>
+      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.8</p>
     </div>
   </section>
 
   <section class="overlay station-screen selection-screen" id="stationScreen" hidden>
     <div class="selection-terminal">
-    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>防卫炮台已清场 · 免费选择一项 · 完整度已修复</p><button class="inspect-entry" id="stationInspectButton" type="button">查看机队数据</button></div>
+    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>免费选择一项 · 列车完整度已修复</p><button class="inspect-entry" id="stationInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="upgradeList"></div>
     <div class="station-actions">
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
@@ -95,7 +95,7 @@
 
   <section class="overlay levelup-screen selection-screen" id="levelUpScreen" hidden>
     <div class="selection-terminal">
-    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>战斗已暂停。选择武器，升级后继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>选择一项武器强化，继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="levelUpList"></div>
     <div class="terminal-footer"><span class="terminal-status">战斗已暂停 · 选择后继续护送</span><span aria-hidden="true">FLEET</span></div>
     </div>
@@ -103,7 +103,7 @@
 
   <section class="overlay pause-screen selection-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
     <div class="selection-terminal fleet-terminal" id="fleetTerminal">
-    <header class="pause-heading"><p class="eyebrow">PAUSED / FLEET TELEMETRY</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
+    <header class="pause-heading"><p class="eyebrow">战斗暂停 / 机队遥测</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
     <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button></div>
     <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
     <div class="telemetry-deck">

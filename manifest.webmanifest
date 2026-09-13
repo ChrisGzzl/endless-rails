@@ -9,8 +9,8 @@
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "portrait",
-  "background_color": "#172a34",
-  "theme_color": "#172a34",
+  "background_color": "#132833",
+  "theme_color": "#132833",
   "icons": [
     {"src": "assets/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
     {"src": "assets/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
