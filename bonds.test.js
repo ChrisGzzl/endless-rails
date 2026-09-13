@@ -36,6 +36,10 @@ assert.equal(all.run('state.weaponFx.filter(f=>f.kind==="bondLaser").length'),1)
 assert.equal(all.run('state.shots.every(s=>s.owner==="command"&&s.x===100&&s.y===300)'),true);
 assert.equal(all.run('state.bondStats.blue.damage'),6,'beam damages every enemy on its line');
 assert.equal(all.run('state.weaponStats.command?.damage||0'),0,'laser is not double counted as ordinary damage');
+const blueEdge=setup({rapid:4,piercing:5});
+blueEdge.run('state.enemies.push({x:190,y:318,r:8,hp:1000,maxHp:1000,delay:0});updateArsenal(.01);');
+assert.equal(blueEdge.run('state.enemies[2].hp'),1000,'stronger optical bloom does not expand the laser hitbox');
+assert.equal(blueEdge.run('state.bondStats.blue.damage'),6,'laser damage remains unchanged');
 all.run('updateArsenal(.1)');assert.equal(all.run('state.bondStats.red.casts'),1,'cadence follows Beichen');
 all.run('updateShots(.1)');assert.equal(all.run('Object.values(state.bondStats).every(s=>s.casts===1)'),true,'secondary effects cannot cast more bonds');
 all.run('state.weaponClocks.command=Infinity;state.weaponClocks.missile=0;updateArsenal(.01)');

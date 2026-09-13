@@ -2,7 +2,8 @@
 const assert=require("node:assert/strict");
 const createGame=require("./test-harness.cjs");
 const calls=[];
-const context=new Proxy({drawImage(...args){calls.push(args);},createRadialGradient(){return {addColorStop(){}};}},{get:(target,key)=>target[key]||(()=>{})});
+const strokes=[];
+const context=new Proxy({drawImage(...args){calls.push(args);},stroke(){strokes.push({width:this.lineWidth,alpha:this.globalAlpha,color:this.strokeStyle});},createRadialGradient(){return {addColorStop(){}};}},{get:(target,key)=>target[key]||(()=>{})});
 const game=createGame({context});
 game.sandbox.vfxImage={naturalWidth:1254,naturalHeight:1254};
 game.sandbox.combatImage={naturalWidth:1254,naturalHeight:1254};
@@ -38,4 +39,16 @@ assert.ok(calls.some(c=>c[0]===game.sandbox.combatImage&&c[2]===940.5),"arc impa
 game.run("state.enemies=[{x:state.drone.x+100,y:state.drone.y,r:9,hp:10,maxHp:10,delay:0}];state.shots=[];state.weaponClocks={};updateArsenal(.01);");
 assert.ok(game.run("state.shots.some(s=>s.owner==='command')"),"北辰 fires its own weapon");
 assert.equal(game.run("effects.weaponProfile('command').role"),"中程 · 稳定脉冲");
+// A broad blue envelope and a white core remain visible at gameplay scale.
+calls.length=0;strokes.length=0;
+game.sandbox.bondImage={naturalWidth:1254,naturalHeight:1254};
+game.run("gameArt.bond=bondImage;state.swarm=[];state.weaponFx=[{kind:'bondLaser',x:100,y:200,tx:400,ty:200,width:10,life:.18,maxLife:.18}];drawWeaponEffects();");
+assert.ok(calls.some(c=>c[0]===game.sandbox.bondImage&&c[8]>=60),"the generated laser texture is widened");
+const core=strokes.find(s=>s.color==='#edffff');
+assert.ok(core.width>=5,"the white beam core is more than a hairline");
+assert.ok(strokes.some(s=>s.width>=40&&s.alpha<core.alpha),"wide low-opacity blue bloom surrounds the core");
+strokes.length=0;
+game.run("state.weaponFx[0].life=.02;drawWeaponEffects();");
+assert.ok(strokes.find(s=>s.color==='#edffff').alpha<core.alpha,"all beam layers fade at the end of the shot");
+assert.equal(game.run("state.weaponFx[0].width"),10,"drawing does not alter the hitbox width");
 console.log("Generated VFX frames, missile/arc art, command weapon, ground attachment, budget and fleet names passed.");
