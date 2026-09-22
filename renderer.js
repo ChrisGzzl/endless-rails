@@ -250,6 +250,14 @@ function drawTrain() {
     }
     ctx.restore();
   }
+  const labels={hangar:"机",pointDefense:"防",storage:"仓",radar:"雷",repair:"修"};
+  const cars=state.expeditionPlan?.cars||[];
+  for(let i=1;i<state.trainLength;i++){
+    const id=cars[i-1],p=carPosition(i);if(!id)continue;
+    const disabled=!!state.disabledCars?.[id];
+    ctx.save();ctx.translate(p.x,p.y);ctx.fillStyle=disabled?"#5b1f25dd":"#102a34dd";ctx.strokeStyle=disabled?"#ff7b72":"#9dd8d2";ctx.lineWidth=1;
+    ctx.fillRect(-9,-9,18,18);ctx.strokeRect(-9,-9,18,18);ctx.fillStyle=disabled?"#ffd0c8":"#dff2ec";ctx.font="bold 9px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(disabled?"×":(labels[id]||"舱"),0,1);ctx.restore();
+  }
 }
 function drawZombie(e, boss=false) {
   if(gameArt.atlas){
@@ -295,6 +303,11 @@ function drawEnemies() {
   for(const e of state.enemies) {
     if(e.dead||e.delay>0)continue;
     drawZombie(e);
+    if(e.kind==="charger"||e.kind==="climber"||e.kind==="spitter"){
+      ctx.save();ctx.textAlign="center";ctx.font="bold 9px ui-monospace,monospace";
+      ctx.fillStyle=e.kind==="charger"?"#ff8b73":e.kind==="climber"?"#ffd173":"#d9ef6f";
+      ctx.fillText(e.kind==="charger"?"冲":e.kind==="climber"?(e.attached?"压":"攀"):"酸",e.x,e.y-e.r-8);ctx.restore();
+    }
     if(e.elite||e.hp<e.maxHp){
       ctx.fillStyle="#25142e";ctx.fillRect(e.x-14,e.y+e.r+9,28,3);
       ctx.fillStyle=e.elite?"#ff628d":"#b6ff65";ctx.fillRect(e.x-14,e.y+e.r+9,28*Math.max(0,e.hp/e.maxHp),2);
