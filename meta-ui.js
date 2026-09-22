@@ -6,7 +6,7 @@
   const storage = typeof localStorage !== "undefined" ? localStorage : null;
   let meta = metaApi.loadMeta(storage);
   const screen = $("metaScreen"), regionList = $("metaRegionList"), carList = $("metaCarList"), researchList = $("metaResearchList");
-  const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton");
+  const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton"), trainUpgradeButton = $("metaTrainUpgradeButton");
   if (!screen || !regionList || !carList || !researchList || !startButton) return;
 
   function save() { metaApi.saveMeta(storage, meta); }
@@ -66,6 +66,7 @@
     const nextXp = metaApi.xpToNext(meta.train.level);
     trainText.textContent = `列车 Lv.${meta.train.level} · ${meta.train.xp}/${nextXp} XP · ${metaApi.trainSlots(meta)} 节远征上限`;
     resourceText.textContent = `废料 ${meta.resources.scrap} · 技术组件 ${meta.resources.components} · 研究数据 ${meta.resources.data} · 蓝图 ${meta.blueprints.length}`;
+    if(trainUpgradeButton){const cost=metaApi.trainUpgradeCost(meta),maxed=!Number.isFinite(cost.scrap);trainUpgradeButton.disabled=maxed||meta.resources.scrap<cost.scrap||meta.resources.components<cost.components;trainUpgradeButton.textContent=maxed?"列车等级已满":`强化列车 · 废料 ${cost.scrap} + 组件 ${cost.components}`;}
     const plan = metaApi.planFor(meta);
     loadoutText.textContent = `当前编组 ${plan.trainLength}/${plan.slots} 节 · ${plan.cars.map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ")}`;
     renderRegions(); renderCars(); renderResearch();
@@ -77,6 +78,7 @@
     if (window.EndlessRailsGame?.startRun) window.EndlessRailsGame.startRun(plan); else $("startButton")?.click();
   }
   function refresh() { meta = metaApi.loadMeta(storage); if (!screen.hidden) render(); }
+  trainUpgradeButton?.addEventListener("click",()=>{const result=metaApi.upgradeTrain(meta);meta=result.meta;if(result.purchased){save();render();}});
   startButton.addEventListener("click", start);
   $("metaBackButton")?.addEventListener("click", close);
   window.EndlessRailsMetaUI = { open, close, refresh, render };
