@@ -98,6 +98,16 @@ function createRun(meta, plan = planFor(meta)) { return { plan: { ...plan, cars:
 function awardRisk(run, type, amount) { if (!run?.risk || !Object.hasOwn(run.risk, type)) return run; run.risk[type] += Math.max(0, Math.floor(Number(amount) || 0)); return run; }
 function addBlueprintRisk(run, id) { if (run && blueprintById(id) && !run.riskBlueprints.includes(id) && !run.bankedBlueprints.includes(id)) run.riskBlueprints.push(id); return run; }
 function bankRisk(run) { if (!run) return run; for (const key of Object.keys(run.risk)) { run.banked[key] += run.risk[key]; run.risk[key] = 0; } run.bankedBlueprints.push(...run.riskBlueprints.filter(id => !run.bankedBlueprints.includes(id))); run.riskBlueprints = []; run.stationsBanked += 1; return run; }
+function trainUpgradeCost(meta) {
+  const level=Math.max(1,Number(meta?.train?.level)||1);
+  return level>=MAX_TRAIN_LEVEL?{scrap:Infinity,components:Infinity}:{scrap:35+level*25,components:1+Math.floor((level-1)/4)};
+}
+function upgradeTrain(meta) {
+  const next=normalizeMeta(meta),cost=trainUpgradeCost(next);
+  if(!Number.isFinite(cost.scrap)||next.resources.scrap<cost.scrap||next.resources.components<cost.components)return {meta:next,purchased:false,cost};
+  next.resources.scrap-=cost.scrap;next.resources.components-=cost.components;next.train.level=Math.min(MAX_TRAIN_LEVEL,next.train.level+1);
+  return {meta:next,purchased:true,cost};
+}
 function researchCost(meta, id) { const level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[id]) || 0)); return level >= MAX_RESEARCH_LEVEL ? Infinity : 8 + level * 8; }
 function buyResearch(meta, id) { const next = normalizeMeta(meta); if (!RESEARCH_IDS.includes(id)) return { meta: next, purchased: false }; const cost = researchCost(next, id); if (!Number.isFinite(cost) || next.resources.data < cost) return { meta: next, purchased: false }; next.resources.data -= cost; next.research[id]++; return { meta: next, purchased: true, cost }; }
 function researchProfile(meta, id) {
@@ -133,6 +143,6 @@ function settleRun(meta, run, outcome, options = {}) {
   return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
 }
 
-const api = { STORAGE_KEY, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
+const api = { STORAGE_KEY, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, trainUpgradeCost, upgradeTrain, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;
