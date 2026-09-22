@@ -12,7 +12,19 @@ const effects=window.EndlessRailsCombatEffects||{wingmanPositions:(center)=>[{x:
 const control=window.EndlessRailsControl||{relativeCommand:(point,train,bounds)=>({x:point.x,y:point.y,angle:0,strength:1}),directCommand:(point,bounds)=>({x:Math.max(bounds.left,Math.min(bounds.right,point.x)),y:Math.max(bounds.top,Math.min(bounds.bottom,point.y))}),createCommandRing:(target,life)=>({target,life}),advanceCommandRing:ring=>ring};
 const routeEvents=window.EndlessRailsRouteEvents||{ROUTE_EVENTS:[{id:"default",name:"标准线路",description:"稳定推进。",weather:"clear",routeDistanceMultiplier:1,enemySpeedMultiplier:1,eliteChanceMultiplier:1,coreChanceMultiplier:1}],CONTRACTS:[{id:"default",name:"标准契约",description:"按基础规则推进。",rewardMultiplier:1,enemyHpMultiplier:1,scrapMultiplier:1}],createSeed:()=>1,pickRouteEvents:()=>[],pickContracts:()=>[],applyRouteModifiers:base=>({...base})};
 const runRecord=window.EndlessRailsRunRecord||{emptyRecord:()=>({runs:0,bestStations:0,bestKills:0,bestCombo:0,bestScrap:0,latest:null}),loadRecord:()=>({runs:0,bestStations:0,bestKills:0,bestCombo:0,bestScrap:0,latest:null}),buildRunSummary:state=>({stations:state.station,kills:state.kills,scrap:state.scrap,bestCombo:state.bestCombo,modules:{...state.modules},cores:{...state.coreStacks},outcome:state.outcome||"lost"}),mergeRecord:(record,summary)=>({...record,runs:(record.runs||0)+1,bestStations:Math.max(record.bestStations||0,summary.stations),bestKills:Math.max(record.bestKills||0,summary.kills),bestCombo:Math.max(record.bestCombo||0,summary.bestCombo),bestScrap:Math.max(record.bestScrap||0,summary.scrap),latest:summary}),saveRecord:()=>false};
-const ui={station:$("stationValue"),scrap:$("scrapValue"),health:$("healthText"),healthFill:$("healthFill"),timer:$("timerValue"),phase:$("phaseLabel"),drone:$("droneLevel"),pulse:$("pulseButton"),pulseCooldown:$("pulseCooldown"),objective:$("objectiveText"),combo:$("comboText"),toast:$("toast"),hint:$("touchHint"),start:$("startScreen"),stationScreen:$("stationScreen"),stationTitle:$("stationTitle"),upgrades:$("upgradeList"),continue:$("continueButton"),result:$("resultScreen"),bossWrap:$("bossWrap"),bossText:$("bossText"),bossFill:$("bossFill"),trainLength:$("trainLengthLabel"),miniTrain:$("miniTrain"),routeLabel:$("routeProgressLabel"),routeFill:$("routeProgressFill"),xpLabel:$("experienceProgressLabel"),xpFill:$("experienceProgressFill"),levelUp:$("levelUpScreen"),levelUpList:$("levelUpList"),pause:$("pauseButton"),commandRing:$("commandRing"),eventScreen:$("eventScreen"),eventList:$("eventList"),contractScreen:$("contractScreen"),contractList:$("contractList"),reroll:$("rerollButton"),resultBuild:$("resultBuild"),resultRecord:$("resultRecord")};
+const longterm=window.EndlessRailsLongterm||{
+  CAR_DEFS:[],loadMeta:()=>({resources:{scrap:0,components:0,data:0},train:{level:1,xp:0},research:{},blueprints:[]}),
+  saveMeta:()=>false,planFor:()=>({regionId:"wasteland",region:{name:"起始荒原",enemyHp:1,density:1,elite:1,reward:1},cars:["hangar"],trainLength:2,slots:4}),
+  createRun:(meta,plan)=>({plan,banked:{scrap:0,components:0,data:0},risk:{scrap:0,components:0,data:0},bankedBlueprints:[],riskBlueprints:[],stationsBanked:0}),
+  awardRisk:(run,type,amount)=>{if(run?.risk&&type in run.risk)run.risk[type]+=Math.max(0,Math.floor(amount||0));return run;},
+  addBlueprintRisk:(run,id)=>{if(run&&id&&!run.riskBlueprints.includes(id))run.riskBlueprints.push(id);return run;},
+  bankRisk:run=>run,researchProfile:()=>({level:0,damageMultiplier:1,specialized:false}),
+  trainBonuses:()=>({hpMultiplier:1,droneDamageMultiplier:1,repairMultiplier:1}),
+  hasBlueprint:()=>false,rollBlueprint:()=>null,blueprintById:id=>({id,name:id}),
+  settleRun:(meta)=>({meta,gained:{scrap:0,components:0,data:0},blueprints:[],trainXp:0})
+};
+const metaStorage=typeof localStorage!=="undefined"?localStorage:null;
+const ui={station:$("stationValue"),scrap:$("scrapValue"),health:$("healthText"),healthFill:$("healthFill"),timer:$("timerValue"),phase:$("phaseLabel"),drone:$("droneLevel"),pulse:$("pulseButton"),pulseCooldown:$("pulseCooldown"),objective:$("objectiveText"),combo:$("comboText"),toast:$("toast"),hint:$("touchHint"),start:$("startScreen"),stationScreen:$("stationScreen"),stationTitle:$("stationTitle"),upgrades:$("upgradeList"),continue:$("continueButton"),result:$("resultScreen"),bossWrap:$("bossWrap"),bossText:$("bossText"),bossFill:$("bossFill"),trainLength:$("trainLengthLabel"),miniTrain:$("miniTrain"),routeLabel:$("routeProgressLabel"),routeFill:$("routeProgressFill"),xpLabel:$("experienceProgressLabel"),xpFill:$("experienceProgressFill"),levelUp:$("levelUpScreen"),levelUpList:$("levelUpList"),pause:$("pauseButton"),commandRing:$("commandRing"),eventScreen:$("eventScreen"),eventList:$("eventList"),contractScreen:$("contractScreen"),contractList:$("contractList"),reroll:$("rerollButton"),resultBuild:$("resultBuild"),resultRecord:$("resultRecord"),resultMeta:$("resultMeta"),extract:$("extractButton")};
 const upgradePool=[
  {id:"volatile",type:"train",icon:"✹",name:"连锁爆破协议",desc:"击破敌人引发范围爆炸，适合清理尸群。",cost:0},
  {id:"rapid",type:"drone",icon:"ϟ",name:"脉冲机枪",desc:"射速提升 28%。",cost:28},{id:"missile",type:"drone",icon:"➤",name:"追踪导弹",desc:"每轮发射一枚高伤导弹。",cost:38},{id:"scatter",type:"drone",icon:"✣",name:"裂片散射",desc:"每次射击额外释放两枚碎弹。",cost:44},{id:"tesla",type:"drone",icon:"∿",name:"电弧线圈",desc:"命中后跳电附近目标。",cost:52},{id:"wingman",type:"drone",icon:"◇",name:"伴飞无人机",desc:"增加一架伴飞机，火力 +45%。",cost:64},{id:"overclock",type:"drone",icon:"◎",name:"过载核心",desc:"脉冲冷却时间缩短 30%。",cost:58},
@@ -22,10 +34,55 @@ const experiencePool=[
  {id:"incendiary",icon:"♨",name:effects.droneLabel("incendiary"),desc:"专机投掷榴弹，落地留下一片火区。"},
  {id:"ricochet",icon:"◉",name:effects.droneLabel("ricochet"),desc:"中程低频能量球，反弹并贯穿尸群。"},
  {id:"rapid",icon:"ϟ",name:effects.droneLabel("rapid"),desc:"升级雨燕的近程机枪，提高射速与单弹伤害。"},{id:"scatter",icon:"✣",name:effects.droneLabel("scatter"),desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:effects.droneLabel("piercing"),desc:"远程低频磁轨弹，贯穿一线敌人。"},{id:"chain",icon:"∿",name:effects.droneLabel("chain"),desc:"中程中频电弧，连续跳击附近敌人。"},{id:"missile",icon:"➤",name:effects.droneLabel("missile"),desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:effects.droneLabel("wingman"),desc:"增派一架雨燕僚机，独立机枪支援，最多三架。"}];
-const stationUpgradePool=upgradePool.filter(u=>u.type==="train");
-const state={nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
+const stationUpgradePool=upgradePool.filter(u=>u.type==="train"&&!["cargo","railgun","magnet"].includes(u.id));
+const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
-function resetRun(){gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
+const carEnabled=id=>!!state.expeditionPlan?.cars?.includes(id)&&!state.disabledCars?.[id];
+function applyResearchProfile(id,profile){
+  const q={...profile},research=longterm.researchProfile(state.metaProfile,id),bonus=longterm.trainBonuses(state.metaProfile);
+  q.damage=(q.damage||0)*research.damageMultiplier*bonus.droneDamageMultiplier;
+  if(research.specialized){
+    if(research.id==="rapid")q.interval*=.92;
+    if(research.id==="missile"||research.id==="incendiary")q.radius=(q.radius||0)*1.15;
+    if(research.id==="ricochet")q.bounces=(q.bounces||0)+1;
+    if(research.id==="chain")q.targets=(q.targets||1)+1;
+    if(research.id==="piercing")q.pierce=(q.pierce||0)+1;
+    if(research.id==="scatter")q.projectileCount=(q.projectileCount||1)+1;
+    if(research.id==="blades"){q.range=(q.range||0)*1.12;q.radius=(q.radius||q.range)*1.12;}
+  }
+  if(research.id==="rapid"&&longterm.hasBlueprint(state.metaProfile,"swift-feed"))q.damage*=1.08;
+  if(research.id==="piercing"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"rail-lens"))q.pierce=(q.pierce||0)+1;
+  if(research.id==="chain"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"arc-resonator"))q.targets=(q.targets||1)+1;
+  if(research.id==="missile"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"missile-guidance"))q.radius=(q.radius||0)*1.12;
+  if(research.id==="incendiary"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"incendiary-gel"))q.radius=(q.radius||0)*1.12;
+  if(research.id==="ricochet"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"ricochet-prism"))q.bounces=(q.bounces||0)+1;
+  q.frequency=q.interval?1/q.interval:0;return q;
+}
+function releaseCarSuppression(enemy){if(enemy?.suppressedCar&&state.disabledCars?.[enemy.suppressedCar])delete state.disabledCars[enemy.suppressedCar];}
+function updateCamera(dt){
+  const n=Math.max(3,state.trainLength||3),base=n<=4?1:n===5?.94:n===6?.89:n===7?.84:n===8?.80:n===9?.76:.72;
+  const curve=balance.difficultyAt?.(state.station,state.routeElapsed,state.routeDistanceTotal)||{cap:30};
+  const pressure=Math.min(1,state.enemies.length/Math.max(1,curve.cap||30));
+  const dynamic=(state.boss?.dead===false)?0.06:(pressure>.78?0.04:0);
+  state.targetCameraZoom=Math.max(.72,base-dynamic);
+  state.cameraZoom+=(state.targetCameraZoom-state.cameraZoom)*(1-Math.exp(-dt*3.5));
+}
+function pointDefenseTick(dt){
+  state.pointDefenseClock=Math.max(0,(state.pointDefenseClock||0)-dt);
+  if(!carEnabled("pointDefense")||state.pointDefenseClock>0)return;
+  const target=nearestTarget(state.train,92);if(!target)return;
+  const amount=damageTarget(target,.8*(longterm.hasBlueprint(state.metaProfile,"pd-array")?1.22:1),{owner:"train-point-defense"});
+  state.trainDamage=(state.trainDamage||0)+amount;
+  state.weaponFx.push({kind:"stationBeam",x:state.train.x,y:state.train.y,tx:target.x,ty:target.y,life:.1,maxLife:.1});
+  state.pointDefenseClock=.42;
+}
+function resetRun(plan){
+  state.metaProfile=longterm.loadMeta(metaStorage);
+  state.expeditionPlan=plan||longterm.planFor(state.metaProfile);
+  state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
+  state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;
+  const metaBonuses=longterm.trainBonuses(state.metaProfile);
+gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
