@@ -31,9 +31,9 @@ const upgradePool=[
  {id:"armor",type:"train",icon:"⬢",name:"装甲铆接",desc:"最大完整度 +35，撞击伤害降低。",cost:42},{id:"railgun",type:"train",icon:"⌁",name:"车头磁轨炮",desc:"列车向前方周期性发射穿透弹。",cost:46},{id:"cargo",type:"train",icon:"▣",name:"货运舱",desc:"车厢 +1，击破废料收益 +30%。",cost:48},{id:"repair",type:"train",icon:"+",name:"维修车",desc:"每到站额外修复 18 点完整度。",cost:50},{id:"shield",type:"train",icon:"◈",name:"偏转护盾",desc:"每轮抵挡第一次撞击。",cost:55},{id:"magnet",type:"train",icon:"⊕",name:"废料磁吸",desc:"废料收益 +50%，并吸引远处掉落。",cost:60}];
 const experiencePool=[
  {id:"blades",icon:"✺",name:effects.droneLabel("blades"),desc:"大范围持续切割，主动靠近尸群；升级扩大刀环。"},
- {id:"incendiary",icon:"♨",name:effects.droneLabel("incendiary"),desc:"专机投掷榴弹，落地留下一片火区。"},
+ {id:"incendiary",icon:"♨",name:effects.droneLabel("incendiary"),desc:"专机投掷榴弹；北辰移动方向会牵引落点，主动铺设火墙。"},
  {id:"ricochet",icon:"◉",name:effects.droneLabel("ricochet"),desc:"中程低频能量球，反弹并贯穿尸群。"},
- {id:"rapid",icon:"ϟ",name:effects.droneLabel("rapid"),desc:"升级雨燕的近程机枪，提高射速与单弹伤害。"},{id:"scatter",icon:"✣",name:effects.droneLabel("scatter"),desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:effects.droneLabel("piercing"),desc:"远程低频磁轨弹，贯穿一线敌人。"},{id:"chain",icon:"∿",name:effects.droneLabel("chain"),desc:"中程中频电弧，连续跳击附近敌人。"},{id:"missile",icon:"➤",name:effects.droneLabel("missile"),desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:effects.droneLabel("wingman"),desc:"增派一架雨燕僚机，独立机枪支援，最多三架。"}];
+ {id:"rapid",icon:"ϟ",name:effects.droneLabel("rapid"),desc:"升级雨燕的近程机枪，提高射速与单弹伤害。"},{id:"scatter",icon:"✣",name:effects.droneLabel("scatter"),desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:effects.droneLabel("piercing"),desc:"远程低频磁轨弹；主动调整角度让更多敌人排成一线可提高伤害。"},{id:"chain",icon:"∿",name:effects.droneLabel("chain"),desc:"中程中频电弧；靠近密集尸潮时连锁伤害提高。"},{id:"missile",icon:"➤",name:effects.droneLabel("missile"),desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:effects.droneLabel("wingman"),desc:"增派一架雨燕僚机，独立机枪支援，最多三架。"}];
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train"&&!["cargo","railgun","magnet"].includes(u.id));
 const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
@@ -207,6 +207,15 @@ function bladeHuntTarget(origin){
   }
   return best;
 }
+function alignedTargetCount(origin,target,range=330,width=26){
+  const dx=target.x-origin.x,dy=target.y-origin.y,length=Math.hypot(dx,dy)||1,ux=dx/length,uy=dy/length;
+  let count=0;
+  for(const enemy of combatTargets()){
+    const ex=enemy.x-origin.x,ey=enemy.y-origin.y,along=ex*ux+ey*uy,perp=Math.abs(ex*uy-ey*ux);
+    if(along>0&&along<=range&&perp<=width+(enemy.r||0))count++;
+  }
+  return count;
+}
 function fireProfile(origin,profile,color){
   const target=nearestTarget(origin,profile.range??Infinity);if(!target||!profile.projectileCount)return;
   const angle=Math.atan2(target.y-origin.y,target.x-origin.x),speed=profile.speed||410;origin.angle=angle;
@@ -271,9 +280,9 @@ function fireDrone(origin=weaponDrone("gun")) {
   const profile=effects.weaponProfile(origin.id,origin.level,state.coreStacks);
   fireProfile(origin,profile,origin.color);origin.flash=.12;
 }
-function fireMissile(origin=weaponDrone("missile")) {
+function fireMissile(origin=weaponDrone("missile"),profile=null) {
   if(!origin)return;
-  const p=effects.weaponProfile(origin.id,origin.level),target=nearestTarget(origin,p.range);if(!target)return;
+  const p=profile||applyResearchProfile(origin.id,effects.weaponProfile(origin.id,origin.level,state.coreStacks)),target=nearestTarget(origin,p.range);if(!target)return;
   const a=Math.atan2(target.y-origin.y,target.x-origin.x);
   state.shots.push({x:origin.x,y:origin.y,vx:Math.cos(a)*p.speed,vy:Math.sin(a)*p.speed,
     life:p.life,damage:p.damage,radius:p.radius,seekRange:p.range,turnRate:p.turnRate,
@@ -425,10 +434,13 @@ function updateArsenal(dt) {
     const p=applyResearchProfile(id,effects.weaponProfile(id,drone.level,state.coreStacks));
     const target=nearestTarget(drone,p.range);if(!target)continue;
     if(id==="gun"||id.startsWith("escort")||id==="scatter"||id==="piercing"){
+      if(id==="piercing"){const lined=alignedTargetCount(drone,target,p.range,22);p.damage*=1+Math.min(.32,Math.max(0,lined-1)*.06);}
       fireProfile(drone,p,drone.color);
     }else if(id==="missile"){
-      fireMissile(drone);
+      fireMissile(drone,p);
     }else if(id==="chain"){
+      const density=combatTargets().filter(e=>Math.hypot(e.x-target.x,e.y-target.y)<=p.chainRange).length;
+      p.damage*=1+Math.min(.30,Math.max(0,density-1)*.05);
       const chained=[target];
       for(let j=1;j<p.targets;j++){
         const previous=chained[chained.length-1];
@@ -442,7 +454,9 @@ function updateArsenal(dt) {
     }else if(id==="blades"){
       for(const e of combatTargets())if(Math.hypot(e.x-drone.x,e.y-drone.y)<=p.range+e.r)damageTarget(e,p.damage,id);
     }else if(id==="incendiary"){
-      state.zones.push({x:target.x,y:target.y,sx:drone.x,sy:drone.y,flight:p.flight,flightDuration:p.flight,life:p.duration,duration:p.duration,phase:state.visualTime*1.7,
+      const moving=Math.hypot(state.moveInput.x||0,state.moveInput.y||0)>.2,lead=moving?30:0;
+      const zoneX=target.x+(state.moveInput.x||0)*lead,zoneY=target.y+(state.moveInput.y||0)*lead;
+      state.zones.push({x:zoneX,y:zoneY,sx:drone.x,sy:drone.y,flight:p.flight,flightDuration:p.flight,life:p.duration,duration:p.duration,phase:state.visualTime*1.7,
         r:p.radius,damage:p.damage,tick:0,tickInterval:p.tick,owner:id,breakthrough:!!p.breakthrough});
     }else if(id==="ricochet"){
       const angle=Math.atan2(target.y-drone.y,target.x-drone.x);
