@@ -536,6 +536,8 @@ function scopeLabel(scope){return scope==="main-only"?"主机":scope==="escort-o
 function openLevelUp() {
   if(state.mode==="levelup"||state.pendingLevelUps<=0)return;
   const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
+  ui.levelUp.dataset.choiceCount="3";
+  const eyebrow=ui.levelUp.querySelector(".eyebrow");if(eyebrow)eyebrow.textContent="战斗升级 · 三选一";
   if(title)title.textContent="组建专机蜂群";if(copy)copy.textContent="选择一项武器强化，继续护送。";
   state.upgradeReturnMode=state.mode==="station"?"station":"combat";state.mode="levelup";resetJoystick();ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const pool=experiencePool.filter(u=>u.id!=="wingman"||level("wingman")<3).sort(()=>Math.random()-.5);
@@ -562,6 +564,8 @@ function breakthroughChoices(id){
 }
 function openBreakthroughChoice(id){
   const choices=breakthroughChoices(id);if(!choices.length)return false;
+  ui.levelUp.dataset.choiceCount="2";
+  const eyebrow=ui.levelUp.querySelector(".eyebrow");if(eyebrow)eyebrow.textContent="专精突破 · 二选一";
   state.mode="levelup";ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
   if(title)title.textContent="Lv10 突破路线";if(copy)copy.textContent=(effects.droneIdentity(id)?.name||id)+" · 选择本局突破方向";

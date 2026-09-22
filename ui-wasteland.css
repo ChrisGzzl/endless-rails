@@ -420,3 +420,9 @@ body:has(#settingsScreen:not([hidden])) #pauseScreen { visibility: hidden; }
   .meta-actions { padding-top: 5px; }
   .meta-actions .primary-button { min-height: 34px; padding: 7px; }
 }
+
+/* Specialized breakthroughs offer two choices. */
+[data-choice-count="2"] .upgrade-list { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+@media (max-height: 450px) and (min-width: 600px) {
+  [data-choice-count="2"] .upgrade-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+}

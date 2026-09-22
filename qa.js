@@ -36,7 +36,7 @@ frameEl.addEventListener('load',()=>{
  const w=gameWindow();
  w.addEventListener('error',e=>errors.push(e.message));
  const update=w.update,draw=w.draw;
- w.update=function(...args){const start=performance.now();if(stress){state().routeDistance=60;state().pendingLevelUps=0;for(const e of state().enemies){e.dead=false;e.x=e.qaX;e.y=e.qaY;}}const value=update(...args);updateCost+=performance.now()-start;return value;};
+ w.update=function(...args){const start=performance.now();if(stress){state().trainHp=state().maxTrainHp;state().routeDistance=60;state().pendingLevelUps=0;for(const e of state().enemies){e.dead=false;e.x=e.qaX;e.y=e.qaY;}}const value=update(...args);updateCost+=performance.now()-start;return value;};
  w.draw=function(...args){const start=performance.now(),value=draw(...args);costs.push(updateCost+performance.now()-start);if(costs.length>600)costs.shift();updateCost=0;return value;};
  const tick=now=>{if(['combat','docking'].includes(state().mode)&&!state().paused){if(previous)samples.push(now-previous);if(samples.length>600)samples.shift();previous=now;}else previous=0;w.requestAnimationFrame(tick);};w.requestAnimationFrame(tick);
 });
