@@ -10,7 +10,7 @@ for(let station=1;station<=5;station++)for(const event of events.ROUTE_EVENTS){
 assert.ok(balance.difficultyAt(5,60,60).hp<1.7);
 assert.ok(balance.difficultyAt(5,60,60).cap>200);
 const kinds=new Set();for(let i=0;i<100;i++)kinds.add(balance.enemyTypeAt(5,40,false,()=>i/100));
-assert.equal(kinds.size,5);assert.equal(balance.enemyTypeAt(5,40,true),"brute");
+assert.deepEqual([...kinds].sort(),["bloater","charger","climber","crawler","runner","spitter","walker"]);assert.equal(balance.enemyTypeAt(5,40,true),"brute");
 assert.equal(balance.enemyTypeAt(1,0,false,()=>.2),"walker","opening avoids special pressure");
 assert.ok(progression.experienceForEnemy({},5,10)<progression.experienceForEnemy({},1,10));
 assert.ok(progression.experienceForEnemy({},1,10)<1);

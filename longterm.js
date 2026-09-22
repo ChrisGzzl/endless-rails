@@ -1,4 +1,5 @@
 "use strict";
+(() => {
 
 const STORAGE_KEY = "endless-rails-v09-meta";
 const MAX_TRAIN_LEVEL = 30;
@@ -146,3 +147,4 @@ function settleRun(meta, run, outcome, options = {}) {
 const api = { STORAGE_KEY, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, trainUpgradeCost, upgradeTrain, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;
+})();

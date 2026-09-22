@@ -1,5 +1,5 @@
 "use strict";
-module.exports = function createGame({context,window:windowOverrides={}} = {}) {
+module.exports = function createGame({context,window:windowOverrides={},storage} = {}) {
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -31,6 +31,7 @@ function createElement(id) {
     getAttribute(name) { return this[name]; },
     focus() { sandbox.document.activeElement=this; },
     querySelectorAll() { return []; },
+    querySelector(selector) { return (this.queries ||= {})[selector] ||= createElement(selector); },
     append(...nodes) { this.children.push(...nodes); },
     setPointerCapture(pointerId) { this.capturedPointer = pointerId; },
     hasPointerCapture(pointerId) { return this.capturedPointer === pointerId; },
@@ -52,6 +53,7 @@ Object.assign(elements.gameCanvas, { width: 390, height: 680 });
 let scheduledFrames = 0;
 const windowEvents = {};
 const sandbox = {
+  localStorage: storage,
   document: { getElementById: id => elements[id], createElement: tag => createElement(tag) },
   window: { ...windowOverrides, addEventListener(type, handler) { (windowEvents[type] ||= []).push(handler); } },
   performance: { now: () => 0 },
@@ -65,9 +67,9 @@ const sandbox = {
 vm.createContext(sandbox);
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.deepEqual(scriptNames, ["audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "renderer.js", "game.js", "armory.js", "display.js", "settings.js"], "all runtime modules must load in dependency order");
+assert.deepEqual(scriptNames, ["audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "longterm.js", "renderer.js", "game.js", "meta-ui.js", "armory.js", "display.js", "settings.js"], "all runtime modules must load in dependency order");
 for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 
-return { sandbox, elements, windowEvents, run: code => vm.runInContext(code, sandbox, { timeout: 3000 }) };
+return { sandbox, elements, windowEvents, get scheduledFrames() { return scheduledFrames; }, run: code => vm.runInContext(code, sandbox, { timeout: 3000 }) };
 };
