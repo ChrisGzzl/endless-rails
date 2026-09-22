@@ -140,10 +140,13 @@ function drawBackground() {
     const ox=((drift.x%tile)+tile)%tile-tile,oy=((drift.y%tile)+tile)%tile-tile;
     for(let x=ox;x<W;x+=tile)for(let y=oy;y<H;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
     ctx.fillStyle="#07132430";ctx.fillRect(0,0,W,H);
+    const regionTint={ruins:"#7d99ad12",industrial:"#c7924d13",infection:"#7c4c9818"}[state.expeditionPlan?.regionId];
+    if(regionTint){ctx.fillStyle=regionTint;ctx.fillRect(0,0,W,H);}
     if(state.routeModifiers.weather==="dust"){ctx.fillStyle="#c3a16915";ctx.fillRect(0,0,W,H);}
     return;
   }
-  const index = Math.max(0, Math.min(4, state.station - 1));
+  const regionIndex={wasteland:0,ruins:1,industrial:2,infection:3}[state.expeditionPlan?.regionId];
+  const index = Number.isFinite(regionIndex)?regionIndex:Math.max(0, Math.min(4, state.station - 1));
   const palette = terrainPalettes[index];
   if (!terrainPaint.has(index)) {
     const paint = ctx.createLinearGradient(0, 0, W, H);
