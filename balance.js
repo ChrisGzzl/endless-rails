@@ -60,14 +60,18 @@ const ENEMY_TYPES=Object.freeze({
   spitter:{name:"酸液喷吐者",hp:.85,speed:.8,r:10,color:"#e2f565"},
   bloater:{name:"孢囊感染者",hp:1.2,speed:.78,r:12,color:"#d38acf"},
   brute:{name:"变异重尸",hp:2.4,speed:.78,r:15,color:"#e2ff73"},
+  charger:{name:"冲车感染者",hp:1.05,speed:1.62,r:9,color:"#ff766c"},
+  climber:{name:"攀爬感染者",hp:.9,speed:1.18,r:8,color:"#f0c46a"},
 });
 function enemyTypeAt(station,elapsed,elite=false,random=Math.random){
   if(elite)return "brute";
   const roll=random();
-  if(station>=4&&roll<.1)return "bloater";
-  if(station>=3&&roll<.19)return "spitter";
-  if(station>=2&&roll<.34)return "crawler";
-  if((station>=2||elapsed>=28)&&roll<.55)return "runner";
+  if(station>=4&&roll<.08)return "bloater";
+  if(station>=3&&roll<.16)return "climber";
+  if(station>=2&&roll<.27)return "charger";
+  if(station>=3&&roll<.38)return "spitter";
+  if(station>=2&&roll<.52)return "crawler";
+  if((station>=2||elapsed>=28)&&roll<.72)return "runner";
   return "walker";
 }
 
