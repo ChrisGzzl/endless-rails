@@ -541,7 +541,7 @@ function updateDocking(dt) {
     targets.forEach((e,i)=>{
       const turret=turrets[i%turrets.length];
       state.weaponFx.push({kind:"stationBeam",x:turret.x,y:turret.y,tx:e.x,ty:e.y,life:.24,maxLife:.24});
-      e.dead=true;burst(e.x,e.y,"#b8ff4e",10,90);
+      releaseCarSuppression(e);e.dead=true;burst(e.x,e.y,"#b8ff4e",10,90);
     });
     if(d.final&&state.boss&&!state.boss.dead){
       const turret=turrets[0],boss=state.boss;
@@ -558,11 +558,12 @@ function updateDocking(dt) {
 function arriveStation() {
   gameAudio?.play("station");
   state.mode="station";state.timer=0;state.enemies=[];state.boss=null;state.drops=[];
-  ui.bossWrap.hidden=true;
-  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+25+level("repair")*18);
+  ui.bossWrap.hidden=true;longterm.bankRisk(state.longtermRun);state.disabledCars={};
+  const fieldRepair=carEnabled("repair")?(longterm.hasBlueprint(state.metaProfile,"field-repair")?18:12):0;
+  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+25+level("repair")*18+fieldRepair);
   state.shieldReady=!!level("shield");state.selectedUpgrade=null;
   ui.stationScreen.hidden=false;ui.stationTitle.textContent=String(state.station).padStart(2,"0");
-  ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";
+  ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";if(ui.extract){ui.extract.hidden=false;ui.extract.disabled=false;}
   ui.upgrades.innerHTML="";state.rerollUsed=false;ui.reroll.disabled=state.scrap<15;
   renderUpgradeChoices();renderTrainPreview();updateHud();if(state.pendingLevelUps>0)openLevelUp();
 }
@@ -579,6 +580,10 @@ function renderUpgradeChoices() {
   });
 }
 function renderTrainPreview(){ui.trainLength.textContent=state.trainLength+" 节车厢";ui.miniTrain.innerHTML="";for(let i=0;i<Math.min(7,state.trainLength+1);i++){const car=document.createElement("i");car.className="mini-car"+(i===0?" mini-car--cab":"");car.textContent=i===0?"◆":i%2?"▦":"▤";ui.miniTrain.append(car)}}
+function extractRun(){
+  if(state.mode!=="station")return;
+  ui.stationScreen.hidden=true;finish("extracted");
+}
 function continueRun() {
   const u=state.selectedUpgrade;if(!u||state.mode!=="station")return;
   state.modules[u.id]=level(u.id)+1;
@@ -587,11 +592,12 @@ function continueRun() {
   if(u.id==="shield")state.shieldReady=true;
   state.station++;state.selectedUpgrade=null;ui.stationScreen.hidden=true;openRouteEvent();
 }
-function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
+function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;const intel=carEnabled("radar")?" · 雷达："+(event.weather==="dust"?"Elite 活跃":event.weather==="speed"?"高速威胁":"资源信号增强"):"";card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+intel+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
 function openContractChoice(){const choices=routeEvents.pickContracts(state.runSeed);if(!choices.length){state.activeContract=routeEvents.CONTRACTS?.[0]||null;openRouteEvent();return}state.mode="contractChoice";state.contractChoices=choices;ui.contractList.innerHTML="";ui.contractScreen.hidden=false;choices.forEach(contract=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type="contract";card.innerHTML='<span class="upgrade-icon">◆</span><span><h3>'+contract.name+"</h3><p>"+contract.description+"</p></span>";card.addEventListener("click",()=>{state.activeContract=contract;ui.contractScreen.hidden=true;openRouteEvent()});ui.contractList.append(card)})}
 function beginRoute(event) {
   state.activeEvent=event||routeEvents.ROUTE_EVENTS?.[0]||null;
   state.routeModifiers=routeEvents.applyRouteModifiers({routeDistance:balance.routeDuration(state.station),enemySpeed:1,enemyHp:1,eliteChance:1,coreChance:1,rewardMultiplier:1,scrapMultiplier:1},state.activeEvent,state.activeContract);
+  const region=state.expeditionPlan?.region||{enemyHp:1,reward:1};state.routeModifiers.enemyHp*=region.enemyHp||1;state.routeModifiers.rewardMultiplier*=region.reward||1;state.routeModifiers.scrapMultiplier*=Math.sqrt(region.reward||1);
   state.mode="combat";state.routeElapsed=0;state.docking=null;
   state.routeDistanceTotal=state.routeModifiers.routeDistance;state.routeDistance=state.routeDistanceTotal;
   state.timer=state.routeDistance;state.enemies=[];state.hostileShots=[];state.shots=[];state.zones=[];state.weaponFx=[];
@@ -612,7 +618,30 @@ function renderDamageSummary(){
   }).join("");
   $("resultTrainDamage").textContent=`车炮　${fmt(state.trainDamage)}`;
 }
-function finish(win){state.mode="result";state.outcome=win?"won":"lost";state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(typeof localStorage!=="undefined"?localStorage:null,state.record);ui.result.hidden=false;$("resultBadge").textContent=win?"◆":"×";$("resultEyebrow").textContent=win?"护送完成":"列车失守";$("resultTitle").textContent=win?"列车穿过了黑夜":"铁轨被荒原吞没";$("resultCopy").textContent=win?"你让最后一班车抵达了安全区。":"再多一架无人机，也许就能撑过下一站。";$("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;renderDamageSummary(); ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀"}
+function settleLongterm(outcome){
+  if(state.metaSettled)return state.metaSettlement;
+  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{storageActive:carEnabled("storage")});
+  state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
+  window.EndlessRailsMetaUI?.refresh?.();return settlement;
+}
+function finish(result){
+  const outcome=result===true?"won":result==="extracted"?"extracted":"lost";
+  state.mode="result";state.outcome=outcome;
+  const settlement=settleLongterm(outcome);
+  state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(metaStorage,state.record);
+  ui.result.hidden=false;
+  const won=outcome==="won",extracted=outcome==="extracted";
+  $("resultBadge").textContent=won?"◆":extracted?"◇":"×";
+  $("resultEyebrow").textContent=won?"远征完成":extracted?"安全撤离":"列车失守";
+  $("resultTitle").textContent=won?"列车穿过了黑夜":extracted?"资源已经锁定":"铁轨被荒原吞没";
+  $("resultCopy").textContent=won?"你完成了区域远征，并将成果带回列车。":extracted?"你选择在风险继续扩大前返回基地。":"已锁定资源被带回，未保护的风险资源发生损失。";
+  $("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;
+  renderDamageSummary();
+  ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");
+  const gained=settlement?.gained||{scrap:0,components:0,data:0},bps=settlement?.blueprints||[];
+  if(ui.resultMeta)ui.resultMeta.textContent=`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${settlement?.trainXp||0}`+(bps.length?" · 新蓝图："+bps.map(id=>longterm.blueprintById(id)?.name||id).join(" / "):"");
+  ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀";
+}
 function updateHud(){syncJoystick();$("claimUpgradeButton").hidden=state.pendingLevelUps<=0||state.mode!=="combat"||state.paused;$("claimUpgradeButton").textContent="强化 ×"+state.pendingLevelUps;ui.station.textContent=String(Math.min(state.station,5)).padStart(2,"0")+" / 05";ui.scrap.textContent=String(state.scrap).padStart(3,"0");ui.health.textContent=Math.ceil(state.trainHp)+"/"+state.maxTrainHp;ui.healthFill.style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";ui.timer.textContent=Math.max(0,state.timer).toFixed(1);ui.phase.textContent=state.paused?"暂停中":state.mode==="combat"?"行驶中":state.mode==="levelup"?"战斗升级":state.mode==="routeChoice"?"路线选择":state.mode==="contractChoice"?"远征契约":state.mode==="docking"?"进站清场":state.mode==="station"?"安全停靠":"待命";$("moveSpeedValue").textContent=state.drone.moveSpeed+" px/s";ui.drone.textContent=(1+effects.swarmRoster(state.modules).length)+" 架";ui.pulseCooldown.style.height=state.pulseClock?state.pulseClock/7*100+"%":"0%";ui.pulse.classList.toggle("cooling",state.pulseClock>0);ui.objective.textContent=state.mode==="docking"?"防卫炮台清场 · 列车减速进站":state.mode==="station"?"安全区 · 列车已停稳":state.station===5?"守住列车，抵达终点防区":"护送列车抵达下一站";updateProgressHud();if(state.boss){ui.bossText.textContent=Math.max(0,Math.ceil(state.boss.hp/state.boss.maxHp*100))+"%";ui.bossFill.style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+"%"}}
 // Both instruments fill left to right: completed travel and earned experience.
 function updateProgressHud(){
@@ -630,8 +659,8 @@ function updateProgressHud(){
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
 function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
-function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);drawBackground();drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
-function drawDrops(){for(const drop of state.drops){const pulse=1+Math.sin(performance.now()/140)*.14;ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(Math.PI/4);ctx.scale(pulse,pulse);ctx.fillStyle=drop.type==="overdrive"?"#ffb45f":drop.type==="scatter"?"#b6e36b":"#5de1df";ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=14;ctx.fillRect(-8,-8,16,16);ctx.restore();ctx.strokeStyle="rgba(237,245,231,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(drop.x,drop.y,14,0,TAU*(drop.life/8));ctx.stroke()}}
+function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);drawBackground();ctx.save();const z=state.cameraZoom||1;ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-W/2,-H/2);drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
+function drawDrops(){for(const drop of state.drops){const pulse=1+Math.sin(performance.now()/140)*.14;const color=drop.type==="meta-tech"?"#78e6ff":drop.type==="research-data"?"#c39cff":drop.type==="repair-kit"?"#9be88f":drop.type==="blueprint"?"#ffd36b":drop.type==="overdrive"?"#ffb45f":drop.type==="scatter"?"#b6e36b":"#5de1df";ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(Math.PI/4);ctx.scale(pulse,pulse);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=14;ctx.fillRect(-8,-8,16,16);ctx.restore();ctx.strokeStyle="rgba(237,245,231,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(drop.x,drop.y,14,0,TAU*(drop.life/10));ctx.stroke();if(drop.type==="blueprint"){ctx.fillStyle="#fff0b8";ctx.font="bold 8px sans-serif";ctx.textAlign="center";ctx.fillText("BP",drop.x,drop.y+3)}}}
 
 function drawParticles(){for(const p of state.particles){ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;ctx.font="bold 12px ui-monospace,monospace";ctx.textAlign="center";for(const t of state.texts){ctx.globalAlpha=Math.min(1,t.life*2);ctx.fillStyle=t.color;ctx.fillText(t.text,t.x,t.y)}ctx.globalAlpha=1}
 
@@ -727,10 +756,14 @@ function togglePause(){
   if(state.paused){renderPause();$("resumeButton").focus?.();}else canvas.focus?.();
   updateHud();
 }
-ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",togglePause);ui.reroll.addEventListener("click",rerollUpgrades);$("startButton").addEventListener("click",resetRun);$("restartButton").addEventListener("click",resetRun);ui.continue.addEventListener("click",continueRun);window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);if(!state.paused)draw();requestAnimationFrame(frame)}updateHud();requestAnimationFrame(frame);
+ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",togglePause);ui.reroll.addEventListener("click",rerollUpgrades);
+$("startButton").addEventListener("click",()=>{if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
+$("restartButton").addEventListener("click",()=>{ui.result.hidden=true;if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
+ui.continue.addEventListener("click",continueRun);ui.extract?.addEventListener("click",extractRun);
+window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);if(!state.paused)draw();requestAnimationFrame(frame)}updateHud();requestAnimationFrame(frame);
 
 // Gesture surfaces belong to the game; do not start text/image drags or long-press menus.
-for(const surface of [$("app"),$("startScreen"),$("pauseScreen"),ui.stationScreen,ui.levelUp,ui.eventScreen,ui.contractScreen,ui.result]){
+for(const surface of [$("app"),$("startScreen"),$("metaScreen"),$("pauseScreen"),ui.stationScreen,ui.levelUp,ui.eventScreen,ui.contractScreen,ui.result]){
   for(const type of ["dragstart","selectstart","contextmenu"])surface.addEventListener(type,event=>event.preventDefault());
 }
 
