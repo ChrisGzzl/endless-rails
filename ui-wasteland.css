@@ -365,3 +365,42 @@ body:has(#settingsScreen:not([hidden])) #pauseScreen { visibility: hidden; }
   .sound-option h3 { font-size: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .switch-track::after { transition: none; } }
+
+
+/* v0.9.0 — expedition preparation / long-term progression */
+.meta-screen { z-index: 48; }
+.meta-terminal { --terminal-height: 840px; grid-template-rows: auto minmax(0, 1fr) auto; max-width: 560px; }
+.meta-resources { color: #e1c38e !important; font-variant-numeric: tabular-nums; }
+.meta-scroll { min-height: 0; overflow: auto; padding-right: 3px; scrollbar-width: thin; scrollbar-color: #587e8a transparent; }
+.meta-section { display: grid; gap: 9px; padding: 4px 0 15px; }
+.meta-section + .meta-section { border-top: 1px solid var(--projection-line); padding-top: 15px; }
+.meta-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #dcebea; }
+.meta-section__head b { font-size: 13px; letter-spacing: .04em; }
+.meta-section__head span { color: #91aeb8; font-size: 10px; text-align: right; }
+.meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.meta-card { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px; align-items: center; min-height: 82px; padding: 11px; border: 1px solid #86aeb936; border-radius: 7px; background: #1b3542b8; color: #e9f2ee; text-align: left; box-shadow: none; }
+.meta-card:not(:disabled):hover { border-color: #9ad7df77; background: #244b59c9; }
+.meta-card.selected { border-color: #dfbd83a8; background: linear-gradient(110deg, #66563959, #25434dc9); box-shadow: inset 3px 0 #d9b679; }
+.meta-card:disabled { opacity: .5; }
+.meta-card__icon { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #8fc5cf4a; border-radius: 6px; color: #bde3e4; background: #102b38; font: 600 18px ui-monospace, monospace; }
+.meta-card b, .meta-card small, .meta-card em { display: block; }
+.meta-card b { font-size: 12px; line-height: 1.45; }
+.meta-card small { margin-top: 2px; color: #d5b77e; font-size: 9px; line-height: 1.35; }
+.meta-card em { margin-top: 5px; color: #a9c0c7; font-size: 10px; line-height: 1.45; font-style: normal; }
+.meta-research { display: grid; gap: 6px; }
+.meta-research-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 9px; border-radius: 6px; background: #172f3b9e; border: 1px solid #80abb52b; }
+.meta-research-row b, .meta-research-row small { display: block; }
+.meta-research-row b { color: #e7f0ec; font-size: 11px; }
+.meta-research-row small { margin-top: 2px; color: #9fb7bf; font-size: 9px; }
+.meta-research-row button, .display-secondary { min-height: 34px; padding: 7px 11px; border: 1px solid #8bb7c142; border-radius: 5px; background: #243f4b; color: #d6e6e5; font-size: 11px; }
+.meta-research-row button:disabled { opacity: .38; }
+.meta-actions { display: grid; grid-template-columns: .7fr 1.3fr; gap: 9px; padding-top: 10px; border-top: 1px solid var(--projection-line); }
+.station-decision-row { display: grid; grid-template-columns: .72fr 1.28fr; gap: 8px; }
+.extract-button { min-height: 46px; border-color: #cfb27a61; color: #efd7a9; background: #463e2d; }
+.result-meta { margin: 9px 0; padding: 9px 11px; border: 1px solid #8bb7c133; border-radius: 6px; background: #17303bbd; color: #d7e6e2; font-size: 11px; line-height: 1.55; }
+@media (max-width: 520px) {
+  .meta-terminal { --terminal-height: min(880px, 94dvh); padding: 18px; }
+  .meta-grid { grid-template-columns: 1fr; }
+  .meta-card { min-height: 72px; }
+  .meta-actions { grid-template-columns: 1fr 1.35fr; }
+}
