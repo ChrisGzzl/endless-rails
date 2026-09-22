@@ -35,7 +35,7 @@ const experiencePool=[
  {id:"ricochet",icon:"◉",name:effects.droneLabel("ricochet"),desc:"中程低频能量球，反弹并贯穿尸群。"},
  {id:"rapid",icon:"ϟ",name:effects.droneLabel("rapid"),desc:"升级雨燕的近程机枪，提高射速与单弹伤害。"},{id:"scatter",icon:"✣",name:effects.droneLabel("scatter"),desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:effects.droneLabel("piercing"),desc:"远程低频磁轨弹；主动调整角度让更多敌人排成一线可提高伤害。"},{id:"chain",icon:"∿",name:effects.droneLabel("chain"),desc:"中程中频电弧；靠近密集尸潮时连锁伤害提高。"},{id:"missile",icon:"➤",name:effects.droneLabel("missile"),desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:effects.droneLabel("wingman"),desc:"增派一架雨燕僚机，独立机枪支援，最多三架。"}];
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train"&&!["cargo","railgun","magnet"].includes(u.id));
-const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
+const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},breakthroughs:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
 const carEnabled=id=>!!state.expeditionPlan?.cars?.includes(id)&&!state.disabledCars?.[id];
 function applyResearchProfile(id,profile){
@@ -56,6 +56,13 @@ function applyResearchProfile(id,profile){
   if(research.id==="missile"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"missile-guidance"))q.radius=(q.radius||0)*1.12;
   if(research.id==="incendiary"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"incendiary-gel"))q.radius=(q.radius||0)*1.12;
   if(research.id==="ricochet"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"ricochet-prism"))q.bounces=(q.bounces||0)+1;
+  const path=state.breakthroughs?.[research.id];
+  if(profile.breakthrough&&path){
+    if(research.id==="missile"&&path==="cluster"){q.damage*=.90;q.cluster=true;}
+    if(research.id==="missile"&&path==="heavy"){q.damage*=1.22;q.radius=(q.radius||0)*1.18;q.interval*=1.12;}
+    if(research.id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
+    if(research.id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
+  }
   q.frequency=q.interval?1/q.interval:0;return q;
 }
 function releaseCarSuppression(enemy){if(enemy?.suppressedCar&&state.disabledCars?.[enemy.suppressedCar])delete state.disabledCars[enemy.suppressedCar];}
@@ -80,7 +87,7 @@ function resetRun(plan){
   state.metaProfile=longterm.loadMeta(metaStorage);
   state.expeditionPlan=plan||longterm.planFor(state.metaProfile);
   state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
-  state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;
+  state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;
   const metaBonuses=longterm.trainBonuses(state.metaProfile);
 gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
@@ -286,7 +293,7 @@ function fireMissile(origin=weaponDrone("missile"),profile=null) {
   const a=Math.atan2(target.y-origin.y,target.x-origin.x);
   state.shots.push({x:origin.x,y:origin.y,vx:Math.cos(a)*p.speed,vy:Math.sin(a)*p.speed,
     life:p.life,damage:p.damage,radius:p.radius,seekRange:p.range,turnRate:p.turnRate,
-    missile:true,target,color:origin.color,owner:origin.id,breakthrough:!!p.breakthrough});origin.flash=.22;
+    missile:true,target,color:origin.color,owner:origin.id,breakthrough:!!p.breakthrough,breakthroughPath:state.breakthroughs?.missile,cluster:!!p.cluster});origin.flash=.22;
 }
 function fireRailgun(profile){const t=state.enemies.find(e=>!e.dead&&e.delay<=0)||state.boss;if(!t)return;const a=Math.atan2(t.y-(state.train.y-28),t.x-state.train.x);state.trainDamage=(state.trainDamage||0)+profile.railgunDamage;state.shots.push({x:state.train.x,y:state.train.y-28,vx:Math.cos(a)*500,vy:Math.sin(a)*500,life:1.2,damage:profile.railgunDamage,railgun:true,color:"#ffb45f"});burst(state.train.x,state.train.y-28,"#ffb45f",7,50)}
 function combatTargets() {
@@ -350,6 +357,12 @@ function updateShots(dt) {
       if(s.missile){
         areaHit(s,s.radius??68,s.damage);
         state.weaponFx.push({kind:"blast",x:s.x,y:s.y,r:s.radius??68,life:.4,maxLife:.4,bondId:s.bondId,breakthrough:s.breakthrough});
+        if(s.cluster&&!s.bondId){
+          for(let c=0;c<3;c++){const a=c*TAU/3+state.visualTime,x=s.x+Math.cos(a)*(s.radius||68)*.46,y=s.y+Math.sin(a)*(s.radius||68)*.46;
+            const source={x,y,owner:s.owner};areaHit(source,(s.radius||68)*.42,s.damage*.34,source);
+            state.weaponFx.push({kind:"blast",x,y,r:(s.radius||68)*.42,life:.28,maxLife:.28,breakthrough:true});
+          }
+        }
         if(s.bondId==="red")state.zones.push({owner:s.owner,bondId:s.bondId,bondLevel:s.bondLevel,x:s.x,y:s.y,
           r:s.radius,damage:s.burnDamage,flight:0,life:s.burnDuration,duration:s.burnDuration,tick:0,tickInterval:s.burnTick});
         burst(s.x,s.y,"#ff9658",18,110); consumed=true;break;
@@ -497,6 +510,8 @@ function killEnemy(e, fromBlast=false){
 function scopeLabel(scope){return scope==="main-only"?"主机":scope==="escort-only"?"伴飞":scope==="train-only"?"列车":scope==="team-utility"?"全队":"主机"}
 function openLevelUp() {
   if(state.mode==="levelup"||state.pendingLevelUps<=0)return;
+  const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
+  if(title)title.textContent="组建专机蜂群";if(copy)copy.textContent="选择一项武器强化，继续护送。";
   state.upgradeReturnMode=state.mode==="station"?"station":"combat";state.mode="levelup";resetJoystick();ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const pool=experiencePool.filter(u=>u.id!=="wingman"||level("wingman")<3).sort(()=>Math.random()-.5);
   // Always offer a distinct trajectory while one remains unlearned.
@@ -509,13 +524,40 @@ function openLevelUp() {
     card.addEventListener("click",()=>chooseLevelUp(u));ui.levelUpList.append(card);
   });
 }
+function breakthroughChoices(id){
+  if(id==="missile")return[
+    {id:"cluster",icon:"✹",name:"集束弹头",desc:"主弹爆炸后产生三次次级爆破，强化尸潮清理。"},
+    {id:"heavy",icon:"⬢",name:"重型弹头",desc:"射速略降，但主弹伤害与爆炸范围显著提高。"}
+  ];
+  if(id==="piercing")return[
+    {id:"focus",icon:"↠",name:"聚束磁轨",desc:"保持单束射击，进一步提高伤害与贯穿能力。"},
+    {id:"split",icon:"⋙",name:"双轨齐射",desc:"同时发射两束窄角磁轨弹，扩大覆盖面。"}
+  ];
+  return[];
+}
+function openBreakthroughChoice(id){
+  const choices=breakthroughChoices(id);if(!choices.length)return false;
+  state.mode="levelup";ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
+  const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
+  if(title)title.textContent="Lv10 突破路线";if(copy)copy.textContent=(effects.droneIdentity(id)?.name||id)+" · 选择本局突破方向";
+  choices.forEach(choice=>{const card=document.createElement("button");card.className="upgrade-card";card.dataset.weapon=id;
+    card.innerHTML=`<span class="upgrade-icon">${choice.icon}</span><span><h3>${choice.name}</h3><p>${choice.desc}</p></span>`;
+    card.addEventListener("click",()=>{state.breakthroughs[id]=choice.id;ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";state.nextUpgradeAt=state.visualTime+15;showToast((effects.droneIdentity(id)?.name||id)+" · "+choice.name);if(state.pendingLevelUps>0)openLevelUp();updateHud();});
+    ui.levelUpList.append(card);});
+  return true;
+}
 function chooseLevelUp(u) {
   gameAudio?.play("upgrade");
   if(u.id==="rapid")delete state.modules.gunDisabled;
   state.modules[u.id]=level(u.id)+1;state.pendingLevelUps=Math.max(0,state.pendingLevelUps-1);
+  syncSwarm();
+  const droneId=u.id==="rapid"?"gun":u.id,displayLevel=effects.droneLevel(state.modules,droneId),research=longterm.researchProfile(state.metaProfile,droneId);
+  if(displayLevel===10&&research.specialized&&["missile","piercing"].includes(droneId)&&!state.breakthroughs[droneId]){
+    if(openBreakthroughChoice(droneId)){updateHud();return;}
+  }
   ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";
   state.nextUpgradeAt=state.visualTime+15;
-  syncSwarm();if(state.pendingLevelUps>0)openLevelUp();else showToast(level(u.id)===1&&u.id!=="rapid"?"新机加入蜂群":"专机武器升级");
+  if(state.pendingLevelUps>0)openLevelUp();else showToast(level(u.id)===1&&u.id!=="rapid"?"新机加入蜂群":"专机武器升级");
   updateHud();
 }
 function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",4);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
