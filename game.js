@@ -87,13 +87,21 @@ function spawnWave(){const count=balance.initialWaveCount(state.station);for(let
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
   const sides = ["top", "right", "bottom", "left"], side = sides[Math.floor(Math.random()*4)];
-  const point = motion.spawnPoint(side, W, H, 28);
-  const elite = Math.random() < curve.eliteChance * (state.activeEvent?.eliteChanceMultiplier || 1);
+  const zoom=Math.max(.72,state.cameraZoom||1),extra=Math.max(0,(1/zoom-1)*Math.max(W,H)*.55);
+  const point = motion.spawnPoint(side, W, H, 34+extra);
+  const region=state.expeditionPlan?.region||{elite:1};
+  const elite = Math.random() < curve.eliteChance * (state.activeEvent?.eliteChanceMultiplier || 1) * (region.elite||1);
   const kind=balance.enemyTypeAt(state.station,state.routeElapsed,elite),type=balance.ENEMY_TYPES[kind];
   const hp = curve.hp * type.hp * state.routeModifiers.enemyHp;
-  state.enemies.push({ ...point,kind,spitClock:1.5+Math.random(),r:type.r,hp,maxHp:hp,
+  const enemy={ ...point,kind,spitClock:1.5+Math.random(),r:type.r,hp,maxHp:hp,
     speed: curve.speed * type.speed * state.routeModifiers.enemySpeed,
-    hue: Math.random(), elite, side, delay, hit: 0, dead: false });
+    hue: Math.random(), elite, side, delay, hit: 0, dead: false };
+  if(kind==="climber"){
+    const cars=(state.expeditionPlan?.cars||[]).map((id,index)=>({id,index:index+1})).filter(car=>car.id!=="hangar");
+    const target=cars[Math.floor(Math.random()*Math.max(1,cars.length))]||{id:"hangar",index:1};
+    enemy.targetCarIndex=target.index;enemy.targetCarId=target.id;
+  }
+  state.enemies.push(enemy);
 }
 function update(dt) {
   gameAudio?.tick(state.mode,state.paused);
@@ -103,6 +111,7 @@ function update(dt) {
   if (state.mode === "docking") { updateDocking(dt); updateHud(); return; }
   if (state.mode !== "combat") return;
   state.visualTime += dt;
+  updateCamera(dt);
   advanceWorld(WORLD_SPEED*dt);
   state.routeElapsed += dt;
   state.routeDistance = progression.advanceRoute(state, dt).routeDistance;
@@ -122,6 +131,10 @@ function update(dt) {
   for (let i=state.drops.length-1; i>=0; i--) {
     const drop=state.drops[i];
     if (Math.hypot(drop.x-state.drone.x,drop.y-state.drone.y) < 28+level("magnet")*16) {
+      if(drop.type==="meta-tech"){longterm.awardRisk(state.longtermRun,"components",1);state.drops.splice(i,1);showToast("技术组件已回收 · 风险资源");continue;}
+      if(drop.type==="research-data"){longterm.awardRisk(state.longtermRun,"data",1+(longterm.hasBlueprint(state.metaProfile,"bio-scan")?1:0));state.drops.splice(i,1);showToast("研究数据已回收 · 风险资源");continue;}
+      if(drop.type==="repair-kit"){state.trainHp=Math.min(state.maxTrainHp,state.trainHp+12);state.drops.splice(i,1);showToast("现场维修 +12");continue;}
+      if(drop.type==="blueprint"){longterm.addBlueprintRisk(state.longtermRun,drop.blueprintId);state.drops.splice(i,1);showToast("发现蓝图 · "+(longterm.blueprintById(drop.blueprintId)?.name||"未知"));continue;}
       const picked=progression.collectCore(state,drop.type);
       Object.assign(state,picked.state); state.scrap+=picked.scrap; state.drops.splice(i,1);
       showToast(picked.collected ? "武器核心已装配" : "核心转化为废料");
@@ -131,15 +144,16 @@ function update(dt) {
   state.enemies = state.enemies.filter(e=>!e.dead);
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
   if (state.spawnClock<=0) {
-    for (let i=0; i<curve.batch && state.enemies.length<curve.cap; i++) spawnEnemy(i*.1);
-    state.spawnClock = curve.interval * (state.activeEvent?.id === "freight" ? 1.2 : 1);
+    const density=state.expeditionPlan?.region?.density||1,batch=Math.max(1,Math.ceil(curve.batch*density)),cap=Math.ceil(curve.cap*density);
+    for (let i=0; i<batch && state.enemies.length<cap; i++) spawnEnemy(i*.1);
+    state.spawnClock = curve.interval / Math.max(.75,density) * (state.activeEvent?.id === "freight" ? 1.2 : 1);
   }
   for (const e of state.enemies) {
     if(e.dead)continue;
     if(e.delay>0){e.delay-=dt;continue;}
     stepEnemy(e,dt);
     e.hit=Math.max(0,e.hit-dt*5);
-    if(Math.hypot(state.train.x-e.x,state.train.y-e.y)<42)collideTrain(e);
+    if(e.kind!=="climber"&&Math.hypot(state.train.x-e.x,state.train.y-e.y)<42)collideTrain(e);
   }
   if (state.station===5 && state.routeElapsed>=22 && !state.boss) {
     state.boss={hp:260,maxHp:260,x:W/2+105,y:-40,r:34,speed:44,hit:0,summon:3.2,dead:false};
@@ -157,6 +171,7 @@ function update(dt) {
     }
   }
   updateHostileShots(dt);
+  pointDefenseTick(dt);
   const trainProfile=effects.trainWeaponProfile({modules:state.modules});
   if(trainProfile.railgunDamage&&state.railClock>trainProfile.railgunInterval){fireRailgun(trainProfile);state.railClock=0;}
   updateArsenal(dt);
@@ -167,7 +182,7 @@ function update(dt) {
   // Every route reaches the defense perimeter after exactly 60 seconds.
   updateHud();
 }
-function collideTrain(e){e.dead=true;if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
 function nearestTarget(origin,range=Infinity){
   let nearest,distance=Infinity;
   for(const e of combatTargets()){
@@ -407,7 +422,7 @@ function updateArsenal(dt) {
     const id=drone.id;
     state.weaponClocks[id]=(state.weaponClocks[id]||0)-dt;
     if(state.weaponClocks[id]>0)continue;
-    const p=effects.weaponProfile(id,drone.level,state.coreStacks);
+    const p=applyResearchProfile(id,effects.weaponProfile(id,drone.level,state.coreStacks));
     const target=nearestTarget(drone,p.range);if(!target)continue;
     if(id==="gun"||id.startsWith("escort")||id==="scatter"||id==="piercing"){
       fireProfile(drone,p,drone.color);
@@ -446,7 +461,25 @@ function updateArsenal(dt) {
   state.zones=state.zones.filter(z=>z.life>0&&z.x>-z.r&&z.x<W+z.r&&z.y>-z.r&&z.y<H+z.r);
   state.weaponFx=state.weaponFx.map(f=>({...f,life:f.life-dt})).filter(f=>f.life>0);
 }
-function killEnemy(e, fromBlast=false){if(e.rewarded)return;e.dead=true;e.rewarded=true;state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);const gain=Math.ceil((e.elite?14:6)*(1+level("cargo")*.3+level("magnet")*.5)*state.routeModifiers.scrapMultiplier);state.scrap+=gain;state.score+=Math.ceil((e.elite?130:50)*Math.max(1,state.combo)*state.routeModifiers.rewardMultiplier);const xp=progression.awardExperience(state,progression.experienceForEnemy(e,state.station,state.level));Object.assign(state,xp.state);let firstDropRoll=true;const coreType=progression.rollCoreDrop({elite:e.elite,combo:state.combo,random:()=>{const value=Math.random();if(firstDropRoll){firstDropRoll=false;return value/Math.max(.01,state.routeModifiers.coreChance)}return value}});if(coreType)state.drops.push({type:coreType,x:e.x,y:e.y,life:8});if((level("volatile")||e.kind==="bloater")&&!fromBlast){const blast=effects.applyAreaDamage(state.enemies.filter(target=>target!==e),e,e.kind==="bloater"?54:balance.KILL_BLAST_RADIUS,e.kind==="bloater"?1.2:balance.KILL_BLAST_DAMAGE);for(const target of blast.defeated)killEnemy(target,true);if(blast.hitCount)burst(e.x,e.y,"#ffb45f",18,100)}state.shake=e.elite?7:3;addText("+"+gain,e.x,e.y-15,"#ffb45f");burst(e.x,e.y,e.elite?"#ffb45f":"#b6e36b",e.elite?26:16,e.elite?125:90);showCombo()}
+function killEnemy(e, fromBlast=false){
+  if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
+  state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);
+  const gain=Math.ceil((e.elite?14:6)*(1+level("cargo")*.3+level("magnet")*.5)*state.routeModifiers.scrapMultiplier);
+  state.scrap+=gain;state.score+=Math.ceil((e.elite?130:50)*Math.max(1,state.combo)*state.routeModifiers.rewardMultiplier);
+  if(state.longtermRun){
+    longterm.awardRisk(state.longtermRun,"scrap",Math.max(1,Math.round((e.elite?4:1)*(state.expeditionPlan?.region?.reward||1))));
+    if(["charger","climber","spitter"].includes(e.kind)){state.longtermRun.specialKills++;if(Math.random()<.18)state.drops.push({type:"research-data",x:e.x,y:e.y,life:7});}
+    if(e.elite){
+      state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
+      if(Math.random()<.14){const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
+    }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
+  }
+  const xp=progression.awardExperience(state,progression.experienceForEnemy(e,state.station,state.level));Object.assign(state,xp.state);
+  let firstDropRoll=true;const coreType=progression.rollCoreDrop({elite:e.elite,combo:state.combo,random:()=>{const value=Math.random();if(firstDropRoll){firstDropRoll=false;return value/Math.max(.01,state.routeModifiers.coreChance)}return value}});
+  if(coreType)state.drops.push({type:coreType,x:e.x,y:e.y,life:8});
+  if((level("volatile")||e.kind==="bloater")&&!fromBlast){const blast=effects.applyAreaDamage(state.enemies.filter(target=>target!==e),e,e.kind==="bloater"?54:balance.KILL_BLAST_RADIUS,e.kind==="bloater"?1.2:balance.KILL_BLAST_DAMAGE);for(const target of blast.defeated)killEnemy(target,true);if(blast.hitCount)burst(e.x,e.y,"#ffb45f",18,100)}
+  state.shake=e.elite?7:3;addText("+"+gain,e.x,e.y-15,"#ffb45f");burst(e.x,e.y,e.elite?"#ffb45f":"#b6e36b",e.elite?26:16,e.elite?125:90);showCombo()
+}
 function scopeLabel(scope){return scope==="main-only"?"主机":scope==="escort-only"?"伴飞":scope==="train-only"?"列车":scope==="team-utility"?"全队":"主机"}
 function openLevelUp() {
   if(state.mode==="levelup"||state.pendingLevelUps<=0)return;
@@ -471,7 +504,7 @@ function chooseLevelUp(u) {
   syncSwarm();if(state.pendingLevelUps>0)openLevelUp();else showToast(level(u.id)===1&&u.id!=="rapid"?"新机加入蜂群":"专机武器升级");
   updateHud();
 }
-function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解")}
+function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",4);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
 function stationCenter() {
   const distance=state.mode==="docking"?state.docking.offset:
     state.mode==="station"||state.mode==="routeChoice"&&state.docking?0:
@@ -702,8 +735,22 @@ for(const surface of [$("app"),$("startScreen"),$("pauseScreen"),ui.stationScree
 }
 
 function stepEnemy(e,dt){
+  if(e.kind==="climber"){
+    const target=carPosition(Math.max(1,Math.min(state.trainLength-1,e.targetCarIndex||1)));
+    if(e.attached){
+      e.x=target.x+Math.sin(e.hue*TAU)*10;e.y=target.y+Math.cos(e.hue*TAU)*8;
+      if(e.targetCarId)state.disabledCars[e.targetCarId]=true;
+      return;
+    }
+    Object.assign(e,motion.stepChaser(e,dt,target,WORLD_SPEED*.08));
+    if(Math.hypot(e.x-target.x,e.y-target.y)<20){
+      e.attached=true;e.suppressedCar=e.targetCarId;if(e.suppressedCar)state.disabledCars[e.suppressedCar]=true;
+      showToast("攀爬感染者压制 · "+(longterm.CAR_DEFS?.find?.(c=>c.id===e.suppressedCar)?.name||"功能车厢"));
+    }
+    return;
+  }
   const distance=Math.hypot(e.x-state.train.x,e.y-state.train.y);
-  if(e.kind==="spitter"&&distance>90&&distance<190){
+  if(e.kind==="spitter"&&distance>90&&distance<210){
     e.spitClock-=dt;
     if(e.spitClock<=0&&state.hostileShots.length<32){
       const a=Math.atan2(state.train.y-e.y,state.train.x-e.x);
