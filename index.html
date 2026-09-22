@@ -58,11 +58,40 @@
       <p class="eyebrow">OUTLAND EXPRESS</p>
       <h1>荒原轨道<span>无人机守卫</span></h1>
       <p class="lede">最后一班列车，穿越无尽荒原。<br>集结专机蜂群，护送它抵达黎明。</p>
-      <button class="primary-button" id="startButton"><span>开始远征</span><span aria-hidden="true">↗</span></button>
+      <button class="primary-button" id="startButton"><span>远征准备</span><span aria-hidden="true">↗</span></button>
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button><button id="startSettingsButton" type="button">设置</button></div>
-      <p class="microcopy">5 个车站 <span>·</span> 随机构筑 <span>·</span> 一路向前</p><p class="version-label">v0.8.11</p>
+      <p class="microcopy">铁路远征 <span>·</span> 列车编组 <span>·</span> 长期成长</p><p class="version-label">v0.9.0-alpha.1</p>
+    </div>
+  </section>
+
+  <section class="overlay selection-screen meta-screen" id="metaScreen" role="dialog" aria-modal="true" aria-labelledby="metaTitle" hidden>
+    <div class="selection-terminal meta-terminal">
+      <header class="station-heading">
+        <p class="eyebrow">远征指挥 / LONG RANGE OPERATIONS</p>
+        <h2 id="metaTitle">远征准备</h2>
+        <p id="metaTrainLevel">列车 Lv.1</p>
+        <p class="meta-resources" id="metaResources">废料 0 · 技术组件 0 · 研究数据 0</p>
+      </header>
+      <div class="meta-scroll">
+        <section class="meta-section">
+          <div class="meta-section__head"><b>铁路区域</b><span>选择本次远征目标</span></div>
+          <div class="meta-grid" id="metaRegionList"></div>
+        </section>
+        <section class="meta-section">
+          <div class="meta-section__head"><b>列车编组</b><span id="metaLoadoutSummary">当前编组</span></div>
+          <div class="meta-grid" id="metaCarList"></div>
+        </section>
+        <section class="meta-section">
+          <div class="meta-section__head"><b>无人机长期研究</b><span>小数值成长 · Lv.3 解锁专精</span></div>
+          <div class="meta-research" id="metaResearchList"></div>
+        </section>
+      </div>
+      <div class="meta-actions">
+        <button class="display-secondary" id="metaBackButton" type="button">返回首页</button>
+        <button class="primary-button" id="metaStartButton" type="button">开始远征 →</button>
+      </div>
     </div>
   </section>
 
@@ -73,7 +102,7 @@
     <div class="station-actions">
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
-    <button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button>
+    <div class="station-decision-row"><button class="display-secondary extract-button" id="extractButton" type="button">安全撤离</button><button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button></div>
     </div>
     </div>
   </section>
@@ -119,7 +148,7 @@
   </section>
 
   <section class="overlay result-screen" id="resultScreen" hidden>
-    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><p class="damage-note">只计实际扣血；突破后的攻击仍计普攻。蓝色激光单独归入蓝色穿透。</p><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div class="bond-damage-column"><b>北辰 · 羁绊攻击</b><div id="resultBondDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">再跑一趟</button></section>
+    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><p class="damage-note">只计实际扣血；突破后的攻击仍计普攻。蓝色激光单独归入蓝色穿透。</p><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div class="bond-damage-column"><b>北辰 · 羁绊攻击</b><div id="resultBondDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-meta" id="resultMeta"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">返回远征准备</button></section>
 
   <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
   <section class="overlay selection-screen settings-screen" id="settingsScreen" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
@@ -141,8 +170,10 @@
   <script src="control.js?v=20260912-bonds-v3"></script>
   <script src="route-events.js?v=20260912-bonds-v3"></script>
   <script src="run-record.js?v=20260912-bonds-v3"></script>
+  <script src="longterm.js?v=20260922-v090a1"></script>
   <script src="renderer.js?v=20260914-laser-v2"></script>
-  <script src="game.js?v=20260914-audio-v1"></script>
+  <script src="game.js?v=20260922-v090a1"></script>
+  <script src="meta-ui.js?v=20260922-v090a1"></script>
   <script src="armory.js?v=20260913-ui-v5"></script>
   <script src="display.js?v=20260913-ui-v5"></script>
   <script src="settings.js?v=20260914-audio-v1"></script>
