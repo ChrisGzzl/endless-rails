@@ -39,7 +39,7 @@ function inspectBondRows(){
   });
 }
 function inspectRows(unit){
-  const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
+  const p=applyResearchProfile(unit.id,effects.weaponProfile(unit.id,unit.level,state.coreStacks));
   const drone=unit.id==="command"?state.drone:state.swarm.find(d=>d.id===unit.id);
   if(inspector.tab==="global"){
     const train=effects.trainWeaponProfile({modules:state.modules});
@@ -66,7 +66,7 @@ function inspectRows(unit){
     if(!unit.owned)return weaponRows(p);
     if(unit.id==="command")return [["羁绊升级","配对双方 Lv.5 激活，每升一级技能 +1"],...inspectBondRows()];
     if(unit.id.startsWith("escort"))return [["僚机强化方式","增加数量"],["每架武器","独立机枪"],["数量上限","3 架"],["已部署",level("wingman")+" 架"]];
-    const next=effects.weaponProfile(unit.id,unit.level+1,state.coreStacks),before=weaponRows(p),after=new Map(weaponRows(next));
+    const next=applyResearchProfile(unit.id,effects.weaponProfile(unit.id,unit.level+1,state.coreStacks)),before=weaponRows(p),after=new Map(weaponRows(next));
     return before.filter(([label,value])=>String(value)!==String(after.get(label))).map(([label,value])=>[label,String(value)+" → "+after.get(label)]);
   }
   return unit.id==="command"?[...weaponRows(p),...inspectBondRows()]:weaponRows(p);
@@ -80,7 +80,7 @@ function renderPause(){
   $("pauseSummary").textContent=`第 ${state.station} 站 · Lv.${state.level} · ${state.swarm.length+1} 架 · 列车 ${Math.ceil(state.trainHp)}/${state.maxTrainHp}`;
   const portrait=$("inspectPortrait");portrait.dataset.kind=unit.id.startsWith("escort")?"gun":unit.id;
   portrait.dataset.breakthrough=String(unit.id!=="command"&&unit.level>=10);
-  const p=effects.weaponProfile(unit.id,unit.level,state.coreStacks);
+  const p=applyResearchProfile(unit.id,effects.weaponProfile(unit.id,unit.level,state.coreStacks));
   $("inspectRole").textContent=inspector.tab==="global"?"列车 · 构筑 · 路线修正":p.role;
   const rows=inspectRows(unit),requestedPage=inspector.page;
   for(const [id,tab] of [["inspectWeapon","weapon"],["inspectStatus","status"],["inspectUpgrade","upgrade"],["inspectGlobal","global"]]){

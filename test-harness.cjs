@@ -21,7 +21,8 @@ function createElement(id) {
     disabled: false,
     style: {},
     textContent: "",
-    innerHTML: "",
+    get innerHTML() { return this._html || ""; },
+    set innerHTML(value) { this._html = value; this.children = []; },
     children: [],
     dataset: {},
     events: {},
@@ -71,5 +72,5 @@ assert.deepEqual(scriptNames, ["audio.js", "balance.js", "motion.js", "progressi
 for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 
-return { sandbox, elements, windowEvents, get scheduledFrames() { return scheduledFrames; }, run: code => vm.runInContext(code, sandbox, { timeout: 3000 }) };
+return { sandbox, elements, windowEvents, get scheduledFrames() { return scheduledFrames; }, run: (code, timeout = 3000) => vm.runInContext(code, sandbox, { timeout }) };
 };

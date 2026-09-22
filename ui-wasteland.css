@@ -406,3 +406,17 @@ body:has(#settingsScreen:not([hidden])) #pauseScreen { visibility: hidden; }
   .meta-card { min-height: 72px; }
   .meta-actions { grid-template-columns: 1fr 1.35fr; }
 }
+
+/* v0.9 expedition decisions keep the protected resources visible. */
+.meta-blueprints { white-space: pre-line; color: #b9cfd4; font-size: 11px; line-height: 1.8; }
+.station-salvage { margin: 0; color: #c4d9d6; font-size: 10px; line-height: 1.4; }
+.meta-screen .station-heading { min-height: 0; }
+@media (max-height: 450px) {
+  .meta-terminal { grid-template-rows: auto minmax(70px,1fr) auto; }
+  .meta-terminal .station-heading .eyebrow { display: none; }
+  .meta-terminal .station-heading h2 { font-size: 18px; }
+  .meta-terminal .station-heading p { margin-top: 3px !important; }
+  .meta-train-upgrade { margin-top: 4px; min-height: 28px; padding: 4px 8px; }
+  .meta-actions { padding-top: 5px; }
+  .meta-actions .primary-button { min-height: 34px; padding: 7px; }
+}

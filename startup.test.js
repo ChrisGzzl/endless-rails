@@ -60,7 +60,7 @@ assert.equal(vm.runInContext("state.drone.x", sandbox), JSON.parse(initialPositi
 elements.gameCanvas.events.pointermove(stickEvent(2, -100, 550));
 assert.equal(vm.runInContext("state.moveInput.x", sandbox), 1, "second touch cannot hijack movement");
 vm.runInContext("update(1)", sandbox);
-assert.equal(vm.runInContext("state.drone.x", sandbox), 366, "drone can reach the screen edge beyond the old train radius");
+assert.equal(vm.runInContext("state.drone.x", sandbox), vm.runInContext("droneBounds().right", sandbox), "drone can reach the screen edge beyond the old train radius");
 elements.gameCanvas.events.pointerup(stickEvent(1, 170, 550));
 assert.equal(elements.joystickBase.hidden, true, "release hides the floating joystick");
 const stoppedPosition = dronePosition();
@@ -70,7 +70,7 @@ elements.gameCanvas.events.pointerdown(stickEvent(3, 280, 300));
 assert.equal(vm.runInContext("joystickState.center.x", sandbox), 280, "next gesture gets a new origin");
 elements.gameCanvas.events.pointermove(stickEvent(3, 280, 200));
 vm.runInContext("update(2)", sandbox);
-assert.equal(vm.runInContext("state.drone.y", sandbox), 24, "drone can reach the top of the battlefield");
+assert.equal(vm.runInContext("state.drone.y", sandbox), vm.runInContext("droneBounds().top", sandbox), "drone can reach the top of the battlefield");
 elements.gameCanvas.events.pointercancel(stickEvent(3, 280, 200));
 assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null);
 assert.equal(vm.runInContext("state.moveInput.y", sandbox), 0);

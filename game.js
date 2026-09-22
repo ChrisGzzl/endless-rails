@@ -23,7 +23,7 @@ const longterm=window.EndlessRailsLongterm||{
   hasBlueprint:()=>false,rollBlueprint:()=>null,blueprintById:id=>({id,name:id}),
   settleRun:(meta)=>({meta,gained:{scrap:0,components:0,data:0},blueprints:[],trainXp:0})
 };
-const metaStorage=typeof localStorage!=="undefined"?localStorage:null;
+const metaStorage=longterm.gameStorage ? longterm.gameStorage(window) : null;
 const ui={station:$("stationValue"),scrap:$("scrapValue"),health:$("healthText"),healthFill:$("healthFill"),timer:$("timerValue"),phase:$("phaseLabel"),drone:$("droneLevel"),pulse:$("pulseButton"),pulseCooldown:$("pulseCooldown"),objective:$("objectiveText"),combo:$("comboText"),toast:$("toast"),hint:$("touchHint"),start:$("startScreen"),stationScreen:$("stationScreen"),stationTitle:$("stationTitle"),upgrades:$("upgradeList"),continue:$("continueButton"),result:$("resultScreen"),bossWrap:$("bossWrap"),bossText:$("bossText"),bossFill:$("bossFill"),trainLength:$("trainLengthLabel"),miniTrain:$("miniTrain"),routeLabel:$("routeProgressLabel"),routeFill:$("routeProgressFill"),xpLabel:$("experienceProgressLabel"),xpFill:$("experienceProgressFill"),levelUp:$("levelUpScreen"),levelUpList:$("levelUpList"),pause:$("pauseButton"),commandRing:$("commandRing"),eventScreen:$("eventScreen"),eventList:$("eventList"),contractScreen:$("contractScreen"),contractList:$("contractList"),reroll:$("rerollButton"),resultBuild:$("resultBuild"),resultRecord:$("resultRecord"),resultMeta:$("resultMeta"),extract:$("extractButton")};
 const upgradePool=[
  {id:"volatile",type:"train",icon:"✹",name:"连锁爆破协议",desc:"击破敌人引发范围爆炸，适合清理尸群。",cost:0},
@@ -35,7 +35,7 @@ const experiencePool=[
  {id:"ricochet",icon:"◉",name:effects.droneLabel("ricochet"),desc:"中程低频能量球，反弹并贯穿尸群。"},
  {id:"rapid",icon:"ϟ",name:effects.droneLabel("rapid"),desc:"升级雨燕的近程机枪，提高射速与单弹伤害。"},{id:"scatter",icon:"✣",name:effects.droneLabel("scatter"),desc:"近程扇形霰弹，贴近尸群集中清扫。"},{id:"piercing",icon:"↠",name:effects.droneLabel("piercing"),desc:"远程低频磁轨弹；主动调整角度让更多敌人排成一线可提高伤害。"},{id:"chain",icon:"∿",name:effects.droneLabel("chain"),desc:"中程中频电弧；靠近密集尸潮时连锁伤害提高。"},{id:"missile",icon:"➤",name:effects.droneLabel("missile"),desc:"远程低频追踪弹，高伤爆炸清理尸群。"},{id:"wingman",icon:"◇",name:effects.droneLabel("wingman"),desc:"增派一架雨燕僚机，独立机枪支援，最多三架。"}];
 const stationUpgradePool=upgradePool.filter(u=>u.type==="train"&&!["cargo","railgun","magnet"].includes(u.id));
-const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},breakthroughs:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(typeof localStorage!=="undefined"?localStorage:null),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
+const state={metaProfile:longterm.loadMeta(metaStorage),expeditionPlan:null,longtermRun:null,metaSettlement:null,metaSettled:false,disabledCars:{},breakthroughs:{},cameraZoom:1,targetCameraZoom:1,pointDefenseClock:0,nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"menu",visualTime:0,paused:false,commandRing:null,commandRingLife:0,runSeed:1,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},record:runRecord.loadRecord(metaStorage),escortClock:.2,eventChoices:[],contractChoices:[],rerollUsed:false,coreHitCounter:0,station:1,timer:60,maxTrainHp:100,trainHp:100,scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:balance.START_TRAIN_LENGTH,fireClock:0,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,moveInput:{x:0,y:0},drone:{id:"command",x:240,y:300,moveSpeed:control.DRONE_MOVE_SPEED,flash:0},train:{x:W/2,y:H/2},enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,...progression.createProgression({routeDistanceTotal:60})};
 const level=id=>state.modules[id]||0;
 const carEnabled=id=>!!state.expeditionPlan?.cars?.includes(id)&&!state.disabledCars?.[id];
 function applyResearchProfile(id,profile){
@@ -63,9 +63,22 @@ function applyResearchProfile(id,profile){
     if(research.id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
     if(research.id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
   }
-  q.frequency=q.interval?1/q.interval:0;return q;
+  if(research.id==="chain"&&longterm.hasBlueprint(state.metaProfile,"chain-overload"))q.damage*=1.08;
+  q.frequency=q.interval?1/q.interval:0;
+  if(profile.singleTargetDps && profile.damage && profile.interval)
+    q.singleTargetDps=profile.singleTargetDps*(q.damage/profile.damage)*(profile.interval/q.interval)*((q.projectileCount||1)/(profile.projectileCount||1));
+  return q;
 }
-function releaseCarSuppression(enemy){if(enemy?.suppressedCar&&state.disabledCars?.[enemy.suppressedCar])delete state.disabledCars[enemy.suppressedCar];}
+function releaseCarSuppression(enemy){
+  const id=enemy?.suppressedCar;if(!id)return;
+  if(!state.enemies.some(other=>other!==enemy&&!other.dead&&other.attached&&other.suppressedCar===id))delete state.disabledCars[id];
+}
+function cameraView(){
+  const zoom=Math.max(.72,state.cameraZoom||1);
+  const tail=state.expeditionPlan?Math.max(0,(state.trainLength||3)-1)*balance.CAR_SPACING:0;
+  const cx=state.train.x-motion.FORWARD.x*tail/2,cy=state.train.y-motion.FORWARD.y*tail/2;
+  return {zoom,cx,cy,left:cx-W/(2*zoom),right:cx+W/(2*zoom),top:cy-H/(2*zoom),bottom:cy+H/(2*zoom)};
+}
 function updateCamera(dt){
   const n=Math.max(3,state.trainLength||3),base=n<=4?1:n===5?.94:n===6?.89:n===7?.84:n===8?.80:n===9?.76:.72;
   const curve=balance.difficultyAt?.(state.station,state.routeElapsed,state.routeDistanceTotal)||{cap:30};
@@ -77,25 +90,27 @@ function updateCamera(dt){
 function pointDefenseTick(dt){
   state.pointDefenseClock=Math.max(0,(state.pointDefenseClock||0)-dt);
   if(!carEnabled("pointDefense")||state.pointDefenseClock>0)return;
-  const target=nearestTarget(state.train,92);if(!target)return;
+  const origin=carPosition(1+state.expeditionPlan.cars.indexOf("pointDefense"));
+  const target=nearestTarget(origin,92);if(!target)return;
   const amount=damageTarget(target,.8*(longterm.hasBlueprint(state.metaProfile,"pd-array")?1.22:1),{owner:"train-point-defense"});
   state.trainDamage=(state.trainDamage||0)+amount;
-  state.weaponFx.push({kind:"stationBeam",x:state.train.x,y:state.train.y,tx:target.x,ty:target.y,life:.1,maxLife:.1});
+  state.weaponFx.push({kind:"stationBeam",x:origin.x,y:origin.y,tx:target.x,ty:target.y,life:.1,maxLife:.1});
   state.pointDefenseClock=.42;
 }
 function resetRun(plan){
   state.metaProfile=longterm.loadMeta(metaStorage);
   state.expeditionPlan=plan||longterm.planFor(state.metaProfile);
   state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
-  state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;
+  state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;state.trainDamage=0;
   const metaBonuses=longterm.trainBonuses(state.metaProfile);
 gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
   const sides = ["top", "right", "bottom", "left"], side = sides[Math.floor(Math.random()*4)];
-  const zoom=Math.max(.72,state.cameraZoom||1),extra=Math.max(0,(1/zoom-1)*Math.max(W,H)*.55);
-  const point = motion.spawnPoint(side, W, H, 34+extra);
+  const view=cameraView();
+  const point = motion.spawnPoint(side, view.right-view.left, view.bottom-view.top, 34);
+  point.x+=view.left;point.y+=view.top;
   const region=state.expeditionPlan?.region||{elite:1};
   const elite = Math.random() < curve.eliteChance * (state.activeEvent?.eliteChanceMultiplier || 1) * (region.elite||1);
   const kind=balance.enemyTypeAt(state.station,state.routeElapsed,elite),type=balance.ENEMY_TYPES[kind];
@@ -110,12 +125,12 @@ function spawnEnemy(delay=0) {
   }
   state.enemies.push(enemy);
 }
-function update(dt) {
+function update(dt, refreshHud=true) {
   gameAudio?.tick(state.mode,state.paused);
   if(state.trainHp<audioTrainHp)gameAudio?.play("hurt");
   audioTrainHp=state.trainHp;
   if (state.paused || state.mode === "levelup") return;
-  if (state.mode === "docking") { updateDocking(dt); updateHud(); return; }
+  if (state.mode === "docking") { updateDocking(dt); if(refreshHud)updateHud(); return; }
   if (state.mode !== "combat") return;
   state.visualTime += dt;
   updateCamera(dt);
@@ -187,15 +202,18 @@ function update(dt) {
   if(state.routeDistance<=0)startDocking(state.station===5);
   else if(progression.shouldOfferUpgrade(state))openLevelUp();
   // Every route reaches the defense perimeter after exactly 60 seconds.
-  updateHud();
+  if(refreshHud)updateHud();
 }
 function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
 function nearestTarget(origin,range=Infinity){
   let nearest,distance=Infinity;
-  for(const e of combatTargets()){
+  for(const e of state.enemies){
+    if(e.dead||e.delay>0)continue;
     const squared=(e.x-origin.x)**2+(e.y-origin.y)**2;
     if(squared<distance&&squared<=(range+(e.r||0))**2){distance=squared;nearest=e;}
   }
+  const boss=state.boss;
+  if(boss&&!boss.dead){const squared=(boss.x-origin.x)**2+(boss.y-origin.y)**2;if(squared<distance&&squared<=(range+(boss.r||0))**2)nearest=boss;}
   return nearest;
 }
 // A coarse density grid avoids an all-pairs search as the horde grows.
@@ -260,7 +278,11 @@ function updateSwarm(dt) {
       if(d.huntClock<=0){d.huntTarget=bladeHuntTarget(d);d.huntClock=.3;}
       target=d.huntTarget||target;
     }
-    const goal=effects.autonomousGoal(state.drone,d,target,state.visualTime,W,H,state.mode==="combat");
+    const view=cameraView(),center={x:state.drone.x-view.left,y:state.drone.y-view.top};
+    const localDrone={...d,x:d.x-view.left,y:d.y-view.top};
+    const localTarget=target?{...target,x:target.x-view.left,y:target.y-view.top}:null;
+    const goal=effects.autonomousGoal(center,localDrone,localTarget,state.visualTime,view.right-view.left,view.bottom-view.top,state.mode==="combat");
+    goal.x+=view.left;goal.y+=view.top;
     for(const other of positions){
       if(other.id===d.id)continue;
       const dx=d.x-other.x,dy=d.y-other.y,length=Math.hypot(dx,dy);
@@ -272,7 +294,7 @@ function updateSwarm(dt) {
     let vy=(d.vy||0)+(dy/length*speed-(d.vy||0))*blend;
     const travel=Math.hypot(vx,vy)*dt;
     if(travel>length){vx*=length/travel;vy*=length/travel;}
-    const x=Math.max(18,Math.min(W-18,d.x+vx*dt)),y=Math.max(18,Math.min(H-18,d.y+vy*dt));
+    const x=Math.max(view.left+18,Math.min(view.right-18,d.x+vx*dt)),y=Math.max(view.top+18,Math.min(view.bottom-18,d.y+vy*dt));
     Object.assign(d,effects.flightPose(d,(x-d.x)/Math.max(dt,.001),(y-d.y)/Math.max(dt,.001),dt));
     d.x=x;d.y=y;d.behavior=goal.behavior;d.flash=Math.max(0,d.flash-dt);
     if(target)d.angle=Math.atan2(target.y-d.y,target.x-d.x);
@@ -284,7 +306,7 @@ function weaponDrone(id) {
 }
 function fireDrone(origin=weaponDrone("gun")) {
   if(!origin)return;
-  const profile=effects.weaponProfile(origin.id,origin.level,state.coreStacks);
+  const profile=applyResearchProfile(origin.id,effects.weaponProfile(origin.id,origin.level,state.coreStacks));
   fireProfile(origin,profile,origin.color);origin.flash=.12;
 }
 function fireMissile(origin=weaponDrone("missile"),profile=null) {
@@ -324,6 +346,7 @@ function ricochetBurst(x,y,r,source={}){
   if(state.weaponFx.filter(f=>f.kind==="ricochetBurst").length<24)state.weaponFx.push({kind:"ricochetBurst",x,y,r,life:.32,maxLife:.32,breakthrough:source.breakthrough,bondId:source.bondId});
 }
 function updateShots(dt) {
+  const targets=combatTargets(),view=cameraView();
   for(let i=state.shots.length-1;i>=0;i--){
     const s=state.shots[i];
     if(s.missile){
@@ -340,14 +363,14 @@ function updateShots(dt) {
     s.x+=s.vx*step;s.y+=s.vy*step;s.life-=dt;
     if(s.remainingRange!==undefined)s.remainingRange-=speed*step;
     if(s.bounce){
-      const reflected=s.x<10||s.x>W-10||s.y<10||s.y>H-10;
-      if(s.x<10||s.x>W-10){s.vx*=-1;s.x=Math.max(10,Math.min(W-10,s.x));s.hitIds=[];if(s.bounces!==undefined)s.bounces--;}
-      if(s.y<10||s.y>H-10){s.vy*=-1;s.y=Math.max(10,Math.min(H-10,s.y));s.hitIds=[];if(s.bounces!==undefined)s.bounces--;}
+      const reflected=s.x<view.left+10||s.x>view.right-10||s.y<view.top+10||s.y>view.bottom-10;
+      if(s.x<view.left+10||s.x>view.right-10){s.vx*=-1;s.x=Math.max(view.left+10,Math.min(view.right-10,s.x));s.hitIds=[];if(s.bounces!==undefined)s.bounces--;}
+      if(s.y<view.top+10||s.y>view.bottom-10){s.vy*=-1;s.y=Math.max(view.top+10,Math.min(view.bottom-10,s.y));s.hitIds=[];if(s.bounces!==undefined)s.bounces--;}
       if(reflected)ricochetBurst(s.x,s.y,34,s);
     }
     let consumed=s.bounces!==undefined&&s.bounces<0;
     if(!consumed)purpleDischarge(s,step);
-    for(const e of combatTargets()){
+    for(const e of targets){
       if(consumed)break;
       if(e.dead||s.hitIds?.includes(e))continue;
       const dx=s.x-oldX,dy=s.y-oldY,lengthSquared=dx*dx+dy*dy;
@@ -434,7 +457,7 @@ function purpleDischarge(shot,dt){
 function updateArsenal(dt) {
   syncSwarm();
   state.weaponClocks.command=(state.weaponClocks.command||0)-dt;
-  const commandProfile=effects.weaponProfile("command",1,state.coreStacks),bonds=effects.activeBonds(state.modules);
+  const commandProfile=applyResearchProfile("command",effects.weaponProfile("command",1,state.coreStacks)),bonds=effects.activeBonds(state.modules);
   const target=nearestTarget(state.drone,bonds.find(b=>b.id==="blue")?.range||commandProfile.range);
   if(state.weaponClocks.command<=0&&target){
     fireCommandVolley(target,commandProfile,bonds);
@@ -485,8 +508,10 @@ function updateArsenal(dt) {
     z.life-=dt;z.tick-=dt;
     if(z.tick<=0){areaHit(z,z.r,z.damage);z.tick=z.tickInterval||.4;}
   }
-  state.zones=state.zones.filter(z=>z.life>0&&z.x>-z.r&&z.x<W+z.r&&z.y>-z.r&&z.y<H+z.r);
-  state.weaponFx=state.weaponFx.map(f=>({...f,life:f.life-dt})).filter(f=>f.life>0);
+  const view=cameraView();
+  state.zones=state.zones.filter(z=>z.life>0&&z.x>view.left-z.r&&z.x<view.right+z.r&&z.y>view.top-z.r&&z.y<view.bottom+z.r);
+  for(const fx of state.weaponFx)fx.life-=dt;
+  state.weaponFx=state.weaponFx.filter(f=>f.life>0);
 }
 function killEnemy(e, fromBlast=false){
   if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
@@ -587,7 +612,8 @@ function updateDocking(dt) {
   for(const z of state.zones){z.flight-=dt;z.life-=dt;}
   state.zones=state.zones.filter(z=>z.life>0);
   state.shake=Math.max(0,state.shake-dt*20);state.hurtFlash=0;
-  state.weaponFx=state.weaponFx.map(f=>({...f,life:f.life-dt})).filter(f=>f.life>0);
+  for(const fx of state.weaponFx)fx.life-=dt;
+  state.weaponFx=state.weaponFx.filter(f=>f.life>0);
   for(const e of state.enemies)if(!e.dead) {
     e.delay=0;Object.assign(e,motion.stepChaser(e,dt,state.train,0));
   }
@@ -616,12 +642,15 @@ function arriveStation() {
   state.mode="station";state.timer=0;state.enemies=[];state.boss=null;state.drops=[];
   ui.bossWrap.hidden=true;longterm.bankRisk(state.longtermRun);state.disabledCars={};
   const fieldRepair=carEnabled("repair")?(longterm.hasBlueprint(state.metaProfile,"field-repair")?18:12):0;
-  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+25+level("repair")*18+fieldRepair);
+  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+Math.round((25+level("repair")*18+fieldRepair)*longterm.trainBonuses(state.metaProfile).repairMultiplier));
   state.shieldReady=!!level("shield");state.selectedUpgrade=null;
   ui.stationScreen.hidden=false;ui.stationTitle.textContent=String(state.station).padStart(2,"0");
   ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";if(ui.extract){ui.extract.hidden=false;ui.extract.disabled=false;}
   ui.upgrades.innerHTML="";state.rerollUsed=false;ui.reroll.disabled=state.scrap<15;
-  renderUpgradeChoices();renderTrainPreview();updateHud();if(state.pendingLevelUps>0)openLevelUp();
+  renderUpgradeChoices();renderTrainPreview();
+  const secured=state.longtermRun?.banked;
+  if($("stationSalvage")&&secured)$("stationSalvage").textContent=`已锁定：废料 ${secured.scrap} · 组件 ${secured.components} · 数据 ${secured.data}。继续失败也保留。`;
+  updateHud();if(state.pendingLevelUps>0)openLevelUp();
 }
 function renderUpgradeChoices() {
   state.selectedUpgrade=null;ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";
@@ -635,7 +664,7 @@ function renderUpgradeChoices() {
     });ui.upgrades.append(card);
   });
 }
-function renderTrainPreview(){ui.trainLength.textContent=state.trainLength+" 节车厢";ui.miniTrain.innerHTML="";for(let i=0;i<Math.min(7,state.trainLength+1);i++){const car=document.createElement("i");car.className="mini-car"+(i===0?" mini-car--cab":"");car.textContent=i===0?"◆":i%2?"▦":"▤";ui.miniTrain.append(car)}}
+function renderTrainPreview(){ui.trainLength.textContent=state.trainLength+" 节车厢";ui.miniTrain.innerHTML="";for(let i=0;i<Math.min(7,state.trainLength);i++){const car=document.createElement("i");car.className="mini-car"+(i===0?" mini-car--cab":"");car.textContent=i===0?"◆":i%2?"▦":"▤";ui.miniTrain.append(car)}}
 function extractRun(){
   if(state.mode!=="station")return;
   ui.stationScreen.hidden=true;finish("extracted");
@@ -648,7 +677,7 @@ function continueRun() {
   if(u.id==="shield")state.shieldReady=true;
   state.station++;state.selectedUpgrade=null;ui.stationScreen.hidden=true;openRouteEvent();
 }
-function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;const intel=carEnabled("radar")?" · 雷达："+(event.weather==="dust"?"Elite 活跃":event.weather==="speed"?"高速威胁":"资源信号增强"):"";card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+intel+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
+function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;const intel=carEnabled("radar")?" · 雷达："+(event.weather==="dust"?"Elite 活跃":event.weather==="speed"?"高速威胁":"资源信号增强")+(longterm.hasBlueprint(state.metaProfile,"radar-pulse")?`，移速 ×${event.enemySpeedMultiplier} / 精英 ×${event.eliteChanceMultiplier} / 核心 ×${event.coreChanceMultiplier}`:""):"";card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+intel+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
 function openContractChoice(){const choices=routeEvents.pickContracts(state.runSeed);if(!choices.length){state.activeContract=routeEvents.CONTRACTS?.[0]||null;openRouteEvent();return}state.mode="contractChoice";state.contractChoices=choices;ui.contractList.innerHTML="";ui.contractScreen.hidden=false;choices.forEach(contract=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type="contract";card.innerHTML='<span class="upgrade-icon">◆</span><span><h3>'+contract.name+"</h3><p>"+contract.description+"</p></span>";card.addEventListener("click",()=>{state.activeContract=contract;ui.contractScreen.hidden=true;openRouteEvent()});ui.contractList.append(card)})}
 function beginRoute(event) {
   state.activeEvent=event||routeEvents.ROUTE_EVENTS?.[0]||null;
@@ -664,7 +693,7 @@ function rerollUpgrades(){if(state.rerollUsed||state.scrap<15||state.mode!=="sta
 function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
 function renderDamageSummary(){
   const fmt=n=>Number((n||0).toFixed(1)).toString();
-  const rows=Object.entries(state.weaponStats).filter(([,v])=>v.volleys||v.damage).sort((a,b)=>(b[1].damage||0)-(a[1].damage||0));
+  const rows=Object.entries(state.weaponStats).filter(([id,v])=>!id.startsWith("train-")&&(v.volleys||v.damage)).sort((a,b)=>(b[1].damage||0)-(a[1].damage||0));
   $("resultDroneDamage").innerHTML=rows.map(([id,v])=>`<span>${effects.droneIdentity(id)?.name||id}${id.startsWith("escort")?" "+(Number(id.slice(6))+1):""} · 普攻<em>${fmt(v.damage)}</em></span>`).join("")||"<span>暂无记录</span>";
   const live=effects.bondStates(state.modules);
   $("resultBondDamage").innerHTML=live.map(b=>{
@@ -676,11 +705,12 @@ function renderDamageSummary(){
 }
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
-  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{storageActive:carEnabled("storage")});
+  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{storageActive:carEnabled("storage"),kills:state.kills,elapsed:state.routeElapsed});
   state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }
 function finish(result){
+  if(state.mode==="result"&&state.metaSettled)return;
   const outcome=result===true?"won":result==="extracted"?"extracted":"lost";
   state.mode="result";state.outcome=outcome;
   const settlement=settleLongterm(outcome);
@@ -691,7 +721,7 @@ function finish(result){
   $("resultEyebrow").textContent=won?"远征完成":extracted?"安全撤离":"列车失守";
   $("resultTitle").textContent=won?"列车穿过了黑夜":extracted?"资源已经锁定":"铁轨被荒原吞没";
   $("resultCopy").textContent=won?"你完成了区域远征，并将成果带回列车。":extracted?"你选择在风险继续扩大前返回基地。":"已锁定资源被带回，未保护的风险资源发生损失。";
-  $("resultKills").textContent=state.kills;$("resultStations").textContent=Math.min(state.station,5);$("resultScrap").textContent=state.scrap;
+  $("resultKills").textContent=state.kills;$("resultStations").textContent=(outcome==="won"?5:state.longtermRun?.stationsBanked||0);$("resultScrap").textContent=state.scrap;
   renderDamageSummary();
   ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");
   const gained=settlement?.gained||{scrap:0,components:0,data:0},bps=settlement?.blueprints||[];
@@ -715,13 +745,13 @@ function updateProgressHud(){
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
 function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
-function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);drawBackground();ctx.save();const z=state.cameraZoom||1;ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-W/2,-H/2);drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
+function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);ctx.save();const view=cameraView();ctx.translate(W/2,H/2);ctx.scale(view.zoom,view.zoom);ctx.translate(-view.cx,-view.cy);drawBackground();drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
 function drawDrops(){for(const drop of state.drops){const pulse=1+Math.sin(performance.now()/140)*.14;const color=drop.type==="meta-tech"?"#78e6ff":drop.type==="research-data"?"#c39cff":drop.type==="repair-kit"?"#9be88f":drop.type==="blueprint"?"#ffd36b":drop.type==="overdrive"?"#ffb45f":drop.type==="scatter"?"#b6e36b":"#5de1df";ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(Math.PI/4);ctx.scale(pulse,pulse);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=14;ctx.fillRect(-8,-8,16,16);ctx.restore();ctx.strokeStyle="rgba(237,245,231,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(drop.x,drop.y,14,0,TAU*(drop.life/10));ctx.stroke();if(drop.type==="blueprint"){ctx.fillStyle="#fff0b8";ctx.font="bold 8px sans-serif";ctx.textAlign="center";ctx.fillText("BP",drop.x,drop.y+3)}}}
 
 function drawParticles(){for(const p of state.particles){ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;ctx.font="bold 12px ui-monospace,monospace";ctx.textAlign="center";for(const t of state.texts){ctx.globalAlpha=Math.min(1,t.life*2);ctx.fillStyle=t.color;ctx.fillText(t.text,t.x,t.y)}ctx.globalAlpha=1}
 
 function carPosition(i){const {x:fx,y:fy}=motion.FORWARD;return{x:state.train.x-fx*i*balance.CAR_SPACING,y:state.train.y-fy*i*balance.CAR_SPACING}}
-function droneBounds(){return{left:24,right:W-24,top:24,bottom:H-24}}
+function droneBounds(){const v=cameraView();return{left:v.left+24/v.zoom,right:v.right-24/v.zoom,top:v.top+24/v.zoom,bottom:v.bottom-24/v.zoom}}
 function setCommand(vector) {
   if (!canUseJoystick()) return;
   state.moveInput = { x: vector.x, y: vector.y };
@@ -816,7 +846,17 @@ ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",toggl
 $("startButton").addEventListener("click",()=>{if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
 $("restartButton").addEventListener("click",()=>{ui.result.hidden=true;if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
 ui.continue.addEventListener("click",continueRun);ui.extract?.addEventListener("click",extractRun);
-window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now();function frame(now){const dt=Math.min(.033,(now-last)/1000);last=now;update(dt);if(!state.paused)draw();requestAnimationFrame(frame)}updateHud();requestAnimationFrame(frame);
+window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now(),lastHud=0,lastDrawMode=null;
+function frame(now){
+  // Substeps preserve wall-clock pacing at 20/30 FPS and keep collision steps small.
+  const dt=Math.max(0,Math.min(.25,(now-last)/1000));last=now;
+  const steps=Math.max(1,Math.ceil(dt/(1/60)));
+  for(let i=0;i<steps;i++)update(dt/steps,false);
+  if(now-lastHud>=100){updateHud();lastHud=now;}
+  if(!state.paused&&(["combat","docking"].includes(state.mode)||lastDrawMode!==state.mode)){draw();lastDrawMode=state.mode;}
+  requestAnimationFrame(frame);
+}
+updateHud();requestAnimationFrame(frame);
 
 // Gesture surfaces belong to the game; do not start text/image drags or long-press menus.
 for(const surface of [$("app"),$("startScreen"),$("metaScreen"),$("pauseScreen"),ui.stationScreen,ui.levelUp,ui.eventScreen,ui.contractScreen,ui.result]){
@@ -902,7 +942,8 @@ function resizeBattlefield(){
   const objects=[state.train,state.drone,...state.swarm,...state.enemies,...state.shots,...state.hostileShots,...state.zones,...state.drops,...state.particles,...state.texts,...state.weaponFx];
   if(state.boss)objects.push(state.boss);
   for(const item of objects){if(Number.isFinite(item.x))item.x+=dx;if(Number.isFinite(item.sx))item.sx+=dx;if(Number.isFinite(item.tx))item.tx+=dx;if(Number.isFinite(item.y))item.y+=dy;if(Number.isFinite(item.sy))item.sy+=dy;if(Number.isFinite(item.ty))item.ty+=dy;}
-  state.drone.x=Math.max(24,Math.min(W-24,state.drone.x));state.drone.y=Math.max(24,Math.min(H-24,state.drone.y));
-  for(const d of state.swarm){d.x=Math.max(18,Math.min(W-18,d.x));d.y=Math.max(18,Math.min(H-18,d.y));d.huntTarget=null;d.huntClock=0;}
+  const bounds=droneBounds(),view=cameraView();
+  state.drone.x=Math.max(bounds.left,Math.min(bounds.right,state.drone.x));state.drone.y=Math.max(bounds.top,Math.min(bounds.bottom,state.drone.y));
+  for(const d of state.swarm){d.x=Math.max(view.left+18,Math.min(view.right-18,d.x));d.y=Math.max(view.top+18,Math.min(view.bottom-18,d.y));d.huntTarget=null;d.huntClock=0;}
   if(state.paused)draw();
 }

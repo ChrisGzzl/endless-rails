@@ -1,0 +1,42 @@
+'use strict';
+const assert=require('node:assert/strict');
+const meta=require('./longterm');
+const createGame=require('./test-harness.cjs');
+const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
+const values=new Map(),storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)};
+let m=meta.emptyMeta();m.resources={scrap:200,components:4,data:48};
+const bought=meta.upgradeTrain(m);assert.equal(bought.purchased,true);assert.equal(bought.meta.resources.scrap,140);assert.equal(m.train.level,1);
+for(let i=0;i<3;i++)m=meta.buyResearch(m,'missile').meta;
+assert.equal(m.research.missile,3);assert.equal(m.resources.data,0);assert.equal(meta.buyResearch(m,'missile').purchased,false);
+meta.saveMeta(storage,m);assert.deepEqual(meta.loadMeta(storage),m);
+const r=meta.createRun(m);r.risk={scrap:100,components:10,data:10};meta.bankRisk(r);r.risk={scrap:100,components:10,data:10};
+meta.addBlueprintRisk(r,'pd-array');
+for(const [active,keep] of [[false,50],[true,70]]){
+ const s=meta.settleRun(m,r,'lost',{storageActive:active});assert.equal(s.gained.scrap,100+keep);assert.equal(s.blueprints.length,0);
+}
+const win=meta.settleRun(m,r,'won',{kills:100,elapsed:60});assert.equal(win.meta.regions.ruins.unlocked,true);assert.equal(win.gained.scrap,200);assert.deepEqual(win.blueprints,['pd-array']);
+assert.equal(meta.settleRun(meta.emptyMeta(),meta.createRun(m),'lost').trainXp,0,'immediate failure cannot farm train XP');
+const twice=meta.settleRun(win.meta,r,'won');assert.equal(twice.meta.regions.wasteland.repaired,true);
+const qaHost={location:{search:'?qa=1'},localStorage:storage};
+assert.equal(meta.gameStorage(qaHost),meta.gameStorage(qaHost));assert.notEqual(meta.gameStorage(qaHost),storage,'QA must be isolated');
+assert.equal(meta.gameStorage({get localStorage(){throw new Error('blocked');}}),null);
+
+const g=createGame({storage});
+g.run(`resetRun();state.longtermRun.risk={scrap:100,components:10,data:10};state.kills=20;state.routeElapsed=40;finish(false);`);
+const resources=g.run('state.metaProfile.resources.scrap'),runs=g.run('state.record.runs');
+g.run('finish(false);');assert.equal(g.run('state.metaProfile.resources.scrap'),resources);assert.equal(g.run('state.record.runs'),runs,'settlement and records are idempotent');
+g.run('state.trainDamage=123;resetRun();');assert.equal(g.run('state.trainDamage'),0,'damage is per run');
+g.run(`state.mode='combat';state.disabledCars={storage:true};
+state.enemies=[{suppressedCar:'storage',targetCarId:'storage',attached:true,hp:5},{suppressedCar:'storage',targetCarId:'storage',attached:true,hp:5}];
+state.enemies[0].dead=true;releaseCarSuppression(state.enemies[0]);`);
+assert.equal(g.run('carEnabled("storage")'),false,'another climber still suppresses the car');
+g.run('state.enemies[1].dead=true;releaseCarSuppression(state.enemies[1]);');assert.equal(g.run('carEnabled("storage")'),true);
+g.run(`state.metaProfile.research.rapid=3;state.metaProfile.train.level=5;state.metaProfile.research.missile=3;
+state.modules={missile:9};state.pendingLevelUps=1;state.mode='combat';openLevelUp();chooseLevelUp({id:'missile'});`);
+assert.equal(g.run('state.mode'),'levelup');assert.equal(g.elements.levelUpList.children.length,2);
+g.elements.levelUpList.children[0].events.click();assert.equal(g.run('state.breakthroughs.missile'),'cluster');
+g.run(`state.modules.missile=10;inspector.tab='weapon';inspector.id='missile';`);
+const rows=JSON.parse(g.run('JSON.stringify(inspectRows({id:"missile",level:10,owned:true}))'));
+near(Number(rows[0][1]),Number(g.run('numberText(applyResearchProfile("missile",effects.weaponProfile("missile",10,state.coreStacks)).damage)')));
+assert.equal(meta.researchProfile({research:{rapid:3}},'escort1').level,3,'Swift escorts inherit research');
+console.log('long-term persistence, settlement, suppression, specialization and displayed stats passed');

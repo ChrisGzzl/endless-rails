@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260912-bonds-v3">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260922-v090a3">
+  <link rel="stylesheet" href="styles.css?v=20260922-v090rc1">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260922-v090rc1">
 </head>
 <body>
   <main id="app">
@@ -62,7 +62,7 @@
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
       <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button><button id="startSettingsButton" type="button">设置</button></div>
-      <p class="microcopy">铁路远征 <span>·</span> 列车编组 <span>·</span> 长期成长</p><p class="version-label">v0.9.0-alpha.3</p>
+      <p class="microcopy">铁路远征 <span>·</span> 列车编组 <span>·</span> 长期成长</p><p class="version-label">v0.9.0-rc.1</p>
     </div>
   </section>
 
@@ -87,6 +87,8 @@
           <div class="meta-section__head"><b>无人机长期研究</b><span>小数值成长 · Lv.3 解锁专精</span></div>
           <div class="meta-research" id="metaResearchList"></div>
         </section>
+        <section class="meta-section"><div class="meta-section__head"><b>已回收蓝图</b><span>永久生效</span></div><div id="metaBlueprintList" class="meta-blueprints"></div>
+        </section>
       </div>
       <div class="meta-actions">
         <button class="display-secondary" id="metaBackButton" type="button">返回首页</button>
@@ -102,6 +104,7 @@
     <div class="station-actions">
     <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
     <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
+    <p class="station-salvage" id="stationSalvage"></p>
     <div class="station-decision-row"><button class="display-secondary extract-button" id="extractButton" type="button">安全撤离</button><button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button></div>
     </div>
     </div>
@@ -162,20 +165,20 @@
       <button class="primary-button" id="closeSettingsButton" type="button">完成</button>
     </div>
   </section>
-  <script src="audio.js?v=20260914-audio-v1"></script>
-  <script src="balance.js?v=20260922-v090a3"></script>
-  <script src="motion.js?v=20260912-bonds-v3"></script>
-  <script src="progression.js?v=20260912-bonds-v3"></script>
-  <script src="combat-effects.js?v=20260913-formation-v1"></script>
-  <script src="control.js?v=20260912-bonds-v3"></script>
-  <script src="route-events.js?v=20260912-bonds-v3"></script>
-  <script src="run-record.js?v=20260912-bonds-v3"></script>
-  <script src="longterm.js?v=20260922-v090a3"></script>
-  <script src="renderer.js?v=20260922-v090a3"></script>
-  <script src="game.js?v=20260922-v090a3"></script>
-  <script src="meta-ui.js?v=20260922-v090a3"></script>
-  <script src="armory.js?v=20260913-ui-v5"></script>
-  <script src="display.js?v=20260913-ui-v5"></script>
-  <script src="settings.js?v=20260914-audio-v1"></script>
+  <script src="audio.js?v=20260922-v090rc1"></script>
+  <script src="balance.js?v=20260922-v090rc1"></script>
+  <script src="motion.js?v=20260922-v090rc1"></script>
+  <script src="progression.js?v=20260922-v090rc1"></script>
+  <script src="combat-effects.js?v=20260922-v090rc1"></script>
+  <script src="control.js?v=20260922-v090rc1"></script>
+  <script src="route-events.js?v=20260922-v090rc1"></script>
+  <script src="run-record.js?v=20260922-v090rc1"></script>
+  <script src="longterm.js?v=20260922-v090rc1"></script>
+  <script src="renderer.js?v=20260922-v090rc1"></script>
+  <script src="game.js?v=20260922-v090rc1"></script>
+  <script src="meta-ui.js?v=20260922-v090rc1"></script>
+  <script src="armory.js?v=20260922-v090rc1"></script>
+  <script src="display.js?v=20260922-v090rc1"></script>
+  <script src="settings.js?v=20260922-v090rc1"></script>
 </body>
 </html>

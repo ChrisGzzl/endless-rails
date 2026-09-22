@@ -2,6 +2,16 @@
 (() => {
 
 const STORAGE_KEY = "endless-rails-v09-meta";
+let qaStorage;
+// Regression runs use disposable memory storage, without touching player progress.
+function gameStorage(host) {
+  if (host?.location?.search && new URLSearchParams(host.location.search).get("qa") === "1") {
+    if(qaStorage)return qaStorage;
+    const values = new Map();
+    return qaStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)) };
+  }
+  try { return host?.localStorage || (typeof localStorage !== "undefined" ? localStorage : null); } catch { return null; }
+}
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 3;
 
@@ -112,7 +122,7 @@ function upgradeTrain(meta) {
 function researchCost(meta, id) { const level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[id]) || 0)); return level >= MAX_RESEARCH_LEVEL ? Infinity : 8 + level * 8; }
 function buyResearch(meta, id) { const next = normalizeMeta(meta); if (!RESEARCH_IDS.includes(id)) return { meta: next, purchased: false }; const cost = researchCost(next, id); if (!Number.isFinite(cost) || next.resources.data < cost) return { meta: next, purchased: false }; next.resources.data -= cost; next.research[id]++; return { meta: next, purchased: true, cost }; }
 function researchProfile(meta, id) {
-  const key = id === "gun" ? "rapid" : id, level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[key]) || 0));
+  const key = id === "gun" || id.startsWith("escort") ? "rapid" : id, level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[key]) || 0));
   return { id: key, level, damageMultiplier: 1 + level * .03, specialized: level >= 3 };
 }
 function trainBonuses(meta) { const level = Math.max(1, Number(meta?.train?.level) || 1); return { hpMultiplier: 1 + Math.min(20, level - 1) * .018, droneDamageMultiplier: 1 + Math.min(20, level - 1) * .012, repairMultiplier: 1 + Math.min(15, level - 1) * .02 }; }
@@ -139,12 +149,13 @@ function settleRun(meta, run, outcome, options = {}) {
     regionState.clears++; if (regionState.clears >= 2) regionState.repaired = true;
     for (const id of regionById(regionId).next) if (next.regions[id]) next.regions[id].unlocked = true;
   }
-  const xp = 18 + run.stationsBanked * 10 + (outcome === "won" ? 40 : outcome === "extracted" ? 15 : 0);
+  const participation = Math.min(18, Math.floor((options.kills || 0) * .5 + (options.elapsed || 0) * .12));
+  const xp = participation + run.stationsBanked * 10 + (outcome === "won" ? 40 : outcome === "extracted" ? 15 : 0);
   next = applyTrainXp(next, xp);
   return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
 }
 
-const api = { STORAGE_KEY, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, trainUpgradeCost, upgradeTrain, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
+const api = { STORAGE_KEY, gameStorage, MAX_TRAIN_LEVEL, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, trainUpgradeCost, upgradeTrain, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;
 })();

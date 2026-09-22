@@ -135,14 +135,15 @@ function glow(x, y, radius, color) {
   ctx.fillStyle = gradient; ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 }
 function drawBackground() {
+  const view=cameraView();
   if(gameArt.ground){
     const tile=360,drift=motion.worldDrift(1,state.worldDistance);
     const ox=((drift.x%tile)+tile)%tile-tile,oy=((drift.y%tile)+tile)%tile-tile;
-    for(let x=ox;x<W;x+=tile)for(let y=oy;y<H;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
-    ctx.fillStyle="#07132430";ctx.fillRect(0,0,W,H);
+    for(let x=ox+Math.floor((view.left-ox)/tile)*tile;x<view.right;x+=tile)for(let y=oy+Math.floor((view.top-oy)/tile)*tile;y<view.bottom;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
+    ctx.fillStyle="#07132430";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
     const regionTint={ruins:"#7d99ad12",industrial:"#c7924d13",infection:"#7c4c9818"}[state.expeditionPlan?.regionId];
-    if(regionTint){ctx.fillStyle=regionTint;ctx.fillRect(0,0,W,H);}
-    if(state.routeModifiers.weather==="dust"){ctx.fillStyle="#c3a16915";ctx.fillRect(0,0,W,H);}
+    if(regionTint){ctx.fillStyle=regionTint;ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);}
+    if(state.routeModifiers.weather==="dust"){ctx.fillStyle="#c3a16915";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);}
     return;
   }
   const regionIndex={wasteland:0,ruins:1,industrial:2,infection:3}[state.expeditionPlan?.regionId];
@@ -153,7 +154,7 @@ function drawBackground() {
     paint.addColorStop(0, palette.ground); paint.addColorStop(1, palette.shade);
     terrainPaint.set(index, paint);
   }
-  ctx.fillStyle = terrainPaint.get(index); ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = terrainPaint.get(index); ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
   const offset = state.worldDistance;
   const seedShift = (state.runSeed % 997) / 997;
   for (let i = 0; i < terrainSeeds.length; i++) {
@@ -183,12 +184,12 @@ function drawBackground() {
     ctx.restore();
   }
   if (state.routeModifiers.weather === "dust") {
-    ctx.fillStyle = "#daa45c12"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#daa45c12"; ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
   }
 }
 function drawRails() {
   const { x: fx, y: fy } = motion.FORWARD;
-  const nx = -fy, ny = fx, length = balance.RAIL_HALF_LENGTH;
+  const nx = -fy, ny = fx, length = Math.min(balance.RAIL_HALF_LENGTH,Math.hypot(W,H)/(state.cameraZoom||1));
   const track = (offset, color, width) => line(state.train.x + nx * offset - fx * length, state.train.y + ny * offset - fy * length, state.train.x + nx * offset + fx * length, state.train.y + ny * offset + fy * length, color, width);
   track(0, "#161d1866", 77); track(0, "#1c293a", 63); track(0, "#65604455", 51);
   const scroll = state.worldDistance % 26;
