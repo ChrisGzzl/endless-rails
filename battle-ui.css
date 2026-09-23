@@ -70,7 +70,7 @@
 #app .drone-readout span { font-size:10px; }
 #app .drone-readout strong { color:white; font-size:11px; }
 #app .combo { top:calc(146px + env(safe-area-inset-top)); right:12px; color:#fff; text-shadow:0 2px 4px #263342; }
-#app .touch-hint { bottom:19%; padding:7px; border-radius:8px; background:#173249b8; font-size:12px; }
+#app .touch-hint { bottom:19%; width:max-content; max-width:calc(100% - 110px); padding:7px 10px; border-radius:8px; background:#173249b8; font-size:12px; }
 #app .touch-hint b { color:#caf0fd; font-size:10px; }
 
 /* The paused scene stays visible behind the three cards. */
@@ -117,7 +117,7 @@
   box-shadow:none; color:var(--card-glow); font-size:29px; }
 .levelup-screen .upgrade-card[data-weapon="missile"] .upgrade-icon,
 .levelup-screen .upgrade-card[data-weapon="incendiary"] .upgrade-icon { filter:hue-rotate(-36deg) saturate(1.12); }
-.levelup-screen .upgrade-card[data-weapon="scatter"] .upgrade-icon { filter:hue-rotate(152deg) saturate(1.08); }
+.levelup-screen .upgrade-card[data-weapon="scatter"] .upgrade-icon { filter:grayscale(1) sepia(1) saturate(6) hue-rotate(140deg) brightness(1.14); }
 .levelup-screen .selection-terminal .upgrade-card > span:last-child { display:block; width:100%; }
 .levelup-screen .selection-terminal .upgrade-card h3 { display:flex; flex-direction:column; align-items:center;
   gap:3px; margin:0 0 5px; color:#fff; font-size:13px; font-weight:800; line-height:1.25; }

@@ -82,7 +82,7 @@ function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false,breakth
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
   // Preserve the source art while aligning the three mismatched sprite accents.
   if(index===2||index===3)ctx.filter="hue-rotate(-36deg) saturate(1.12)";
-  if(index===7)ctx.filter="hue-rotate(152deg) saturate(1.08)";
+  if(index===7)ctx.filter="grayscale(1) sepia(1) saturate(6) hue-rotate(140deg) brightness(1.14)";
   ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
 }
 // Each generated attack cell is packed with a 16px transparent gutter.
