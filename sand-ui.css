@@ -75,6 +75,10 @@ body { background:#bcb3a1; }
 .home-hub .meta-card small { color:#397257; }
 .home-hub .meta-car .meta-card__icon { color:#425953; }
 .home-hub .meta-research-row button { background:#d5ad70; border-color:#b98546; color:#293b3e; }
+.home-hub .meta-research-row small { font-size:10px; line-height:1.35; }
+.home-hub .meta-research-row button:disabled {
+  opacity:1; background:#e1d7c6; border-color:#c2b49c; color:#69766b;
+}
 .home-hub .meta-blueprints,.bond-guide small,.bond-guide { color:#3f5953; }
 .home-hub .sound-option { border-color:#c9bba2; }
 .home-hub .switch-track { background:#bdc4b8; border-color:#89978c; }
@@ -132,6 +136,8 @@ body { background:#bcb3a1; }
 }
 .selection-terminal .upgrade-card h3 { color:#27393b; }
 .selection-terminal .upgrade-card p { color:#52645e; }
+.station-screen .selection-terminal .upgrade-card h3 small,
+.choice-screen .selection-terminal .upgrade-card h3 small { color:#805f3b; font-weight:700; }
 .station-screen .selection-terminal .upgrade-icon,
 .choice-screen .selection-terminal .upgrade-icon {
   width:40px; height:40px; display:grid; place-items:center;
@@ -159,6 +165,9 @@ body { background:#bcb3a1; }
 .selection-terminal .reroll-button:hover:not(:disabled),
 .selection-terminal .inspect-entry:hover,
 .selection-terminal .display-secondary:hover:not(:disabled) { background:#e8d7ba; }
+.selection-terminal .reroll-button:disabled {
+  opacity:1; background:#e9e2d3; border-color:#cfc4ae; color:#778073;
+}
 .station-screen .station-decision-row { grid-template-columns:minmax(88px,.72fr) minmax(0,1.28fr); gap:7px; }
 .station-screen .station-decision-row button { min-width:0; min-height:44px; padding:7px 5px; font-size:12px; }
 .station-screen .selection-terminal .continue-button { line-height:1.2; white-space:normal; }
@@ -181,6 +190,29 @@ body { background:#bcb3a1; }
 .result-stats strong { color:#965d30; }
 .settings-screen .sound-options,.fleet-terminal .inspect-unit,
 .fleet-terminal .inspect-stat { background:#f9f1e3; border-color:#d0c2a9; }
+.fleet-terminal .pause-heading { border-color:#c8bba4; }
+.fleet-terminal #pauseSummary,.fleet-terminal .inspect-unit label,
+.fleet-terminal .inspect-unit p,.fleet-terminal .inspect-stat dt,
+.fleet-terminal .inspect-note { color:#536761; }
+.fleet-terminal .pause-display button,.fleet-terminal .inspect-arrows button,
+.fleet-terminal .inspect-page-nav button {
+  background:#eee3d0; border-color:#c7b99e; color:#344d4b;
+}
+.fleet-terminal .inspect-unit select {
+  background-color:#eee4d2; border-color:#c7b99e; color:#2b4141;
+}
+.fleet-terminal .inspect-unit option { background:#eee4d2; color:#2b4141; }
+.fleet-terminal .inspect-stats { background:#d5c9b3; }
+.fleet-terminal .inspect-stat dd { color:#263a3b; }
+.fleet-terminal .inspect-tabs { border-color:#c8bba4; }
+.fleet-terminal .inspect-tabs button { color:#536862; }
+.fleet-terminal .inspect-tabs button.active {
+  color:#273b3c; background:#e2d1b0; box-shadow:inset 0 -3px #ba8246;
+}
+.fleet-terminal .inspect-page-nav { color:#3e5852; }
+.fleet-terminal .inspect-page-nav button:disabled,
+.fleet-terminal .inspect-arrows button:disabled { opacity:.55; }
+.fleet-terminal .fleet-actions { border-color:#c8bba4; }
 
 @media (max-width:359px), (max-height:650px) {
   .station-screen .selection-terminal { padding:9px; gap:5px; }
