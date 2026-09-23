@@ -14,7 +14,7 @@ function scenario(name){
  stress=false;resetSamples();
  for(const el of w.document.querySelectorAll('.overlay,#gmPanel'))el.hidden=true;
  const m=profile(!['fresh','normal'].includes(name));
- if(name==='fresh'||name==='grown'){w.EndlessRailsMetaUI.open();return;}
+ if(name==='fresh'||name==='grown'){state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;}
  w.EndlessRailsGame.startRun(w.EndlessRailsLongterm.planFor(m));
  const s=state();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
  w.beginRoute(w.EndlessRailsRouteEvents.ROUTE_EVENTS[2]);

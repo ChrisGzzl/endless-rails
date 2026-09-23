@@ -4,12 +4,13 @@ const settingsInert=[];
 $("settingsScreen").hidden=true;
 function renderSoundSettings(){
   const prefs=gameAudio?.getPreferences()||{music:false,sfx:false};
-  for(const [id,key] of [["musicToggle","music"],["sfxToggle","sfx"]]){
+  for(const [id,key] of [["musicToggle","music"],["sfxToggle","sfx"],["homeMusicToggle","music"],["homeSfxToggle","sfx"]]){
     const button=$(id);button.setAttribute?.("aria-checked",String(prefs[key]));
     const value=button.querySelector?.(".switch-value");if(value)value.textContent=prefs[key]?"开启":"关闭";
     button.disabled=!gameAudio?.supported;
   }
   $("soundNote").textContent=gameAudio?.supported?"设置自动保存 · 切到后台时静音":"当前浏览器暂不支持音频，游戏可继续运行。";
+  $("homeSoundNote").textContent=$("soundNote").textContent;
 }
 function openSettings(){
   if(settingsOpen)return;
@@ -27,9 +28,9 @@ function closeSettings(){
   for(const [element,inert] of settingsInert.splice(0))element.inert=inert;
   gameAudio?.tick(state.mode,state.paused);updateHud();settingsReturnFocus?.focus?.();
 }
-for(const id of ["startSettingsButton","pauseSettingsButton"])$(id).addEventListener("click",openSettings);
+for(const id of ["pauseSettingsButton"])$(id).addEventListener("click",openSettings);
 $("closeSettingsButton").addEventListener("click",closeSettings);
-for(const [id,key] of [["musicToggle","music"],["sfxToggle","sfx"]])$(id).addEventListener("click",()=>{
+for(const [id,key] of [["musicToggle","music"],["sfxToggle","sfx"],["homeMusicToggle","music"],["homeSfxToggle","sfx"]])$(id).addEventListener("click",()=>{
   if(!gameAudio)return;
   const enabled=!gameAudio.getPreferences()[key];gameAudio.setPreference(key,enabled);renderSoundSettings();
   if(enabled)gameAudio.unlock().then(()=>{if(key==="sfx")gameAudio.play("ui");});
@@ -55,3 +56,5 @@ document.addEventListener?.("visibilitychange",()=>gameAudio?.setHidden(!!docume
 window.addEventListener("pagehide",()=>gameAudio?.setHidden(true));
 window.addEventListener("pageshow",()=>gameAudio?.setHidden(!!document.hidden));
 renderSoundSettings();
+
+window.EndlessRailsSettings={refresh:renderSoundSettings};

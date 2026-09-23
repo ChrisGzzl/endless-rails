@@ -76,7 +76,7 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.get(k)||nul
 
   const game=createGame({window:{AudioContext:Context,localStorage:memoryStorage()}});
   const e=game.elements;
-  e.startSettingsButton.focus();e.startSettingsButton.events.click();
+  e.pauseSettingsButton.focus();e.pauseSettingsButton.events.click();
   assert.equal(e.settingsScreen.hidden,false);assert.equal(e.app.inert,true);
   assert.equal(game.sandbox.document.activeElement,e.musicToggle);
   assert.equal(e.musicToggle["aria-checked"],"true");
@@ -85,7 +85,7 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.get(k)||nul
   e.settingsScreen.events.keydown({code:"Tab",shiftKey:true,preventDefault(){},stopPropagation(){}});
   assert.equal(game.sandbox.document.activeElement,e.closeSettingsButton,"focus stays within the dialog");
   e.closeSettingsButton.events.click();assert.equal(e.app.inert,false);assert.equal(game.run("state.paused"),false);
-  assert.equal(game.sandbox.document.activeElement,e.startSettingsButton);
+  assert.equal(game.sandbox.document.activeElement,e.pauseSettingsButton);
   game.run("state.mode='combat';state.paused=true;");e.pauseSettingsButton.focus();e.pauseSettingsButton.events.click();
   game.run("togglePause()");assert.equal(game.run("state.paused"),true,"settings cannot accidentally resume combat");
   e.settingsScreen.events.keydown({code:"Escape",preventDefault(){},stopPropagation(){}});

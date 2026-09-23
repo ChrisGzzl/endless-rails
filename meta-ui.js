@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const storage = metaStorage;
   let meta = metaApi.loadMeta(storage);
-  const screen = $("metaScreen"), regionList = $("metaRegionList"), carList = $("metaCarList"), researchList = $("metaResearchList");
+  const screen = $("startScreen"), regionList = $("metaRegionList"), carList = $("metaCarList"), researchList = $("metaResearchList");
   const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton"), trainUpgradeButton = $("metaTrainUpgradeButton");
   if (!screen || !regionList || !carList || !researchList || !startButton) return;
 
@@ -24,7 +24,8 @@
       const button = document.createElement("button");
       button.type = "button"; button.className = "meta-card meta-region" + (meta.selectedRegion === region.id ? " selected" : "");
       button.disabled = !unlocked;button.setAttribute("aria-pressed",String(meta.selectedRegion===region.id));
-      button.innerHTML = `<span class="meta-card__icon">${unlocked ? "⌖" : "?"}</span><span><b>${unlocked ? region.name : "未知区域"}</b><small>${unlocked ? statusFor(region) + " · " + region.statusText : "铁路情报不足"}</small><em>${unlocked ? region.description : "完成前置区域后解锁。"}</em></span>`;
+      button.innerHTML = `<b>${region.name}</b><small>${unlocked ? statusFor(region) : "未解锁"}</small>`;
+      button.setAttribute("aria-label",region.name+" · "+(unlocked?statusFor(region):"未解锁"));
       button.addEventListener("click", () => { meta = metaApi.setRegion(meta, region.id); save(); render(); });
       regionList.append(button);
     }
@@ -63,6 +64,12 @@
     }
   }
   function render() {
+    const compact=n=>n>=1000000?(n/1000000).toFixed(1)+"m":n>=10000?(n/1000).toFixed(1)+"k":String(n);
+    $("homePlayerLevel").textContent="列车 Lv."+meta.train.level;
+    for(const [id,key] of [["homeScrap","scrap"],["homeComponents","components"],["homeData","data"]]){$(id).textContent=compact(meta.resources[key]);$(id).setAttribute("aria-label",String(meta.resources[key]));}
+    const selected=metaApi.regionById(meta.selectedRegion);
+    $("homeRegionName").textContent=selected.name;$("homeRegionDescription").textContent=selected.description;$("homeRegionStatus").textContent=statusFor(selected)+" · "+selected.statusText;
+    $("homeLoadout").textContent="当前编组 · "+metaApi.planFor(meta).trainLength+" 节车厢 · 列车 Lv."+meta.train.level;
     meta = metaApi.normalizeMeta(meta);
     const nextXp = metaApi.xpToNext(meta.train.level);
     trainText.textContent = `列车 Lv.${meta.train.level} · ${meta.train.xp}/${nextXp} XP · ${metaApi.trainSlots(meta)} 节远征上限`;
@@ -74,16 +81,39 @@
     const blueprints=$("metaBlueprintList");
     if(blueprints)blueprints.textContent=meta.blueprints.length?meta.blueprints.map(id=>{const bp=metaApi.blueprintById(id);return bp.name+"："+bp.description;}).join("\n"):"暂无蓝图 · 击破精英或区域 Boss 后回收，到站锁定。";
   }
-  function open() { meta = metaApi.loadMeta(storage); render(); screen.hidden = false; $("startScreen").hidden = true; }
-  function close() { screen.hidden = true; $("startScreen").hidden = false; }
+  const tabs=[['shop','homeTabShop','homeShop'],['train','homeTabTrain','metaScreen'],['battle','homeTabBattle','homeBattle'],['research','homeTabResearch','homeResearch'],['settings','startSettingsButton','homeSettings']];
+  let activeTab='battle';
+  function selectTab(name,focus=false){
+    if(!tabs.some(([key])=>key===name))name='battle';
+    activeTab=name;
+    for(const [key,buttonId,panelId] of tabs){
+      const active=key===name,button=$(buttonId);button.setAttribute('aria-selected',String(active));button.setAttribute('tabindex',active?'0':'-1');$(panelId).hidden=!active;
+      if(active&&focus)button.focus?.();
+    }
+    meta=metaApi.loadMeta(storage);render();
+    window.EndlessRailsSettings?.refresh();
+  }
+  function open(tab='battle') { screen.hidden=false;selectTab(tab); }
+  function close() { open('battle'); }
   function start() {
     if(window.EndlessRailsCloud&&!window.EndlessRailsCloud.canStart()){window.EndlessRailsCloud.open();return;}
     meta = metaApi.loadMeta(storage); const plan = metaApi.planFor(meta); screen.hidden = true;
-    if (window.EndlessRailsGame?.startRun) window.EndlessRailsGame.startRun(plan); else $("startButton")?.click();
+    window.EndlessRailsGame?.startRun(plan);
   }
   function refresh() { meta = metaApi.loadMeta(storage); if (!screen.hidden) render(); }
-  trainUpgradeButton?.addEventListener("click",()=>{const result=metaApi.upgradeTrain(meta);meta=result.meta;if(result.purchased){save();render();}});
-  startButton.addEventListener("click", start);
-  $("metaBackButton")?.addEventListener("click", close);
-  window.EndlessRailsMetaUI = { open, close, refresh, render };
+  trainUpgradeButton?.addEventListener('click',()=>{const result=metaApi.upgradeTrain(meta);meta=result.meta;if(result.purchased){save();render();}});
+  startButton.addEventListener('click',()=>selectTab('battle',true));
+  $('shopToBattle').addEventListener('click',()=>selectTab('battle',true));
+  tabs.forEach(([key,id],index)=>{
+    $(id).addEventListener('click',()=>selectTab(key));
+    $(id).addEventListener('keydown',event=>{
+      let next;
+      if(event.code==='ArrowRight')next=(index+1)%tabs.length;
+      if(event.code==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
+      if(event.code==='Home')next=0;if(event.code==='End')next=tabs.length-1;
+      if(next!==undefined){event.preventDefault();event.stopPropagation?.();selectTab(tabs[next][0],true);}
+    });
+  });
+  window.EndlessRailsMetaUI = { open, close, start, refresh, render, selectTab, getTab:()=>activeTab };
+  selectTab('battle');
 })();

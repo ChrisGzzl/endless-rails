@@ -23,11 +23,10 @@ try {
 
 assert.equal(clickError, null, "clicking start must not fail");
 assert.equal(elements.startScreen.hidden, true, "clicking start must hide the start screen");
-assert.equal(elements.metaScreen.hidden, false, "start opens expedition preparation");
+assert.equal(elements.metaScreen.hidden, true, "train tab remains hidden during expedition");
 assert.equal(elements.metaRegionList.children.length, 4);
 assert.equal(elements.metaResearchList.children.length, 8);
-elements.metaStartButton.events.click();
-assert.equal(elements.metaScreen.hidden, true);
+
 assert.equal(elements.phaseLabel.textContent, "远征契约", "clicking start must open the contract choice");
 assert.equal(elements.contractScreen.hidden, false, "clicking start must show contract choices before combat");
 assert.ok(elements.contractList.children.length >= 3, "contract choice must render three options");
