@@ -76,6 +76,9 @@ function memoryStorage(){const data=new Map();return{getItem:k=>data.get(k)||nul
 
   const game=createGame({window:{AudioContext:Context,localStorage:memoryStorage()}});
   const e=game.elements;
+  e.startSettingsButton.events.click();assert.equal(game.run('settingsOpen'),false,'home settings is an inline tab');
+  e.homeMusicToggle.events.click();assert.equal(e.musicToggle['aria-checked'],'false','home and pause settings share the same preference');
+  e.homeMusicToggle.events.click();assert.equal(e.musicToggle['aria-checked'],'true');
   e.pauseSettingsButton.focus();e.pauseSettingsButton.events.click();
   assert.equal(e.settingsScreen.hidden,false);assert.equal(e.app.inert,true);
   assert.equal(game.sandbox.document.activeElement,e.musicToggle);

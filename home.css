@@ -1,5 +1,5 @@
 /* The base fills the viewport; only individual pages scroll above the persistent dock. */
-.overlay.home-hub { display:grid; grid-template-rows:auto minmax(0,1fr) auto; overflow:hidden; background:#10232e; border:0; }
+.overlay.home-hub { display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto; justify-content:stretch; overflow:hidden; background:#10232e; border:0; }
 .home-header { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:calc(12px + env(safe-area-inset-top)) 15px 12px; background:#152d39; border-bottom:1px solid #99bdc323; }
 .home-profile { display:flex; gap:8px; align-items:center; flex-shrink:0; }
 .home-emblem { width:35px; height:39px; display:grid; place-items:center; border:1px solid #e5c0838a; border-radius:8px 8px 15px 15px; background:linear-gradient(145deg,#355967,#152d39); color:#ecd4a6; font:700 13px ui-monospace,monospace; }
