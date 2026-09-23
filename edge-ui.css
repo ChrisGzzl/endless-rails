@@ -1,0 +1,104 @@
+/* Angular, content-sized surfaces for the wasteland combat UI. */
+.home-emblem,.home-wallet > span,.home-keyart,.home-route-mark,.mission-stamp span,
+.home-regions .meta-region,.home-upgrade-card,.home-train-art,.home-hub .meta-car,
+.home-secondary,.home-hub .meta-research-row,.research-icon,.home-hub .meta-research-row button,
+.home-blueprints,.shop-coming,.home-tag,.home-hub .sound-options,.bond-guide {
+  border-radius:4px;
+}
+.home-tabs #homeTabBattle {
+  border-radius:5px 5px 0 0;
+  background:linear-gradient(180deg,#375674,#203b57);
+}
+.home-tabs #homeTabBattle svg {
+  border-radius:4px;
+  background:#ffcd45;
+}
+.home-hub .primary-button,.selection-terminal .primary-button,.result-screen .primary-button {
+  border-radius:3px;
+  background-image:url("assets/primary-button-v2.webp");
+  color:#fff7df;
+  text-shadow:0 1px 1px #0b1d29;
+}
+.home-hub .primary-button:hover:not(:disabled),
+.selection-terminal .primary-button:hover:not(:disabled),
+.result-screen .primary-button:hover:not(:disabled) {
+  background-image:url("assets/primary-button-v2.webp");
+}
+.selection-terminal,.fleet-terminal,.settings-terminal,.cloud-terminal,
+.result-stats,.result-damage,.result-meta,.display-help > div,
+.fleet-terminal .inspect-unit,.fleet-terminal .inspect-stats,
+.settings-screen .sound-options,.sound-toggle,.inspect-entry,.reroll-button,
+.display-secondary,.cloud-terminal input,.cloud-terminal button {
+  border-radius:4px;
+}
+.selection-terminal .upgrade-card,.selection-terminal .event-card {
+  border-radius:4px;
+}
+.choice-screen .selection-terminal {
+  height:auto;
+  max-height:calc(100dvh - 36px);
+  grid-template-rows:auto auto auto;
+  gap:10px;
+  padding:16px;
+  overflow-y:auto;
+}
+.choice-screen .selection-terminal .upgrade-list {
+  grid-template-rows:repeat(3,minmax(74px,auto));
+  gap:8px;
+}
+.choice-screen .selection-terminal .upgrade-card { padding:10px 12px; }
+.choice-screen .selection-terminal > .station-heading { padding-bottom:9px; }
+
+#app .hud .pause-button,#app .hud .run-readout,#app .hud .hud-stat--right,
+#app .objective,#app .health-wrap,#app .boss-wrap,#app .fullscreen-button,
+#app .controls,#app .touch-hint { border-radius:4px; }
+
+/* The upgrade tray follows the actual copy height, leaving the battle visible. */
+.levelup-screen .selection-terminal {
+  grid-template-rows:auto auto;
+  gap:6px;
+  padding:10px;
+  border-radius:5px;
+}
+.levelup-screen .level-health { border-radius:4px; }
+.levelup-screen .selection-terminal > .levelup-heading { min-height:28px; }
+.levelup-screen .selection-terminal h2 { font-size:20px; }
+.levelup-screen .selection-terminal .inspect-entry { border-radius:3px; }
+.levelup-screen .selection-terminal .upgrade-list {
+  grid-template-rows:auto;
+  align-items:stretch;
+  gap:7px;
+}
+.levelup-screen .selection-terminal .upgrade-card {
+  min-height:120px;
+  gap:3px;
+  padding:10px 5px 9px;
+  border-radius:3px;
+}
+.levelup-screen .selection-terminal .upgrade-icon,
+.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon {
+  width:46px;
+  height:42px;
+}
+.levelup-screen .selection-terminal .upgrade-card h3 {
+  gap:2px;
+  margin-bottom:3px;
+  font-size:12px;
+}
+.levelup-screen .selection-terminal .upgrade-card h3 small { border-radius:2px; }
+
+@media (max-width:359px), (max-height:650px) {
+  .choice-screen .selection-terminal { padding:10px; gap:6px; }
+  .choice-screen .selection-terminal .upgrade-list { gap:5px; grid-template-rows:repeat(3,minmax(66px,auto)); }
+  .levelup-screen .selection-terminal { gap:5px; padding:8px 7px; }
+  .levelup-screen .selection-terminal .upgrade-card { min-height:112px; gap:2px; padding:7px 4px 6px; }
+  .levelup-screen .selection-terminal .upgrade-icon,
+  .levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width:40px; height:34px; }
+}
+@media (max-height:450px) and (min-width:600px) {
+  .choice-screen .selection-terminal { max-height:calc(100dvh - 14px); }
+  .choice-screen .selection-terminal .upgrade-list { grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:auto; }
+  .levelup-screen .selection-terminal .upgrade-card { min-height:100px; padding:5px 9px; }
+  .levelup-screen .selection-terminal .upgrade-icon,
+  .levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width:36px; height:28px; }
+}
