@@ -14,10 +14,13 @@
   <link rel="stylesheet" href="ui-wasteland.css?v=20260923-v090rc4">
   <link rel="stylesheet" href="home.css?v=20260923-ui1">
   <link rel="stylesheet" href="ui-refresh.css?v=20260923-ui1">
+  <link rel="stylesheet" href="battle-ui.css?v=20260923-battle1">
 </head>
 <body>
   <main id="app">
     <header class="hud" aria-label="战斗状态">
+      <button class="pause-button" id="pauseButton" aria-label="暂停游戏" type="button">Ⅱ</button>
+      <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">60.0</strong><small>秒 / 下一站</small></div>
       <div class="brand"><button class="brand-mark" id="gmToggle" type="button" aria-label="GM 模式">ER</button><div><small>SWARM ESCORT</small><strong>荒原轨道</strong></div></div>
       <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
       <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
@@ -31,8 +34,10 @@
       <canvas id="gameCanvas" width="390" height="680" tabindex="0" aria-label="无人机移动战场，按住任意位置滑动或使用方向键移动"></canvas>
       <div class="joystick-base floating-joystick" id="joystickBase" hidden aria-hidden="true"><span class="joystick-cross"></span><span class="joystick-thumb" id="joystickThumb"></span></div>
       <button class="fullscreen-button" id="gameFullscreenButton" aria-label="进入全屏" type="button">⛶</button>
-      <button class="claim-upgrade" id="claimUpgradeButton" type="button" hidden>强化</button>
-      <button class="pause-button" id="pauseButton" aria-label="暂停游戏" type="button">Ⅱ</button>
+      <aside class="skill-rail" aria-label="战斗技能">
+        <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲" type="button"><span class="pulse-ring" aria-hidden="true"><svg viewBox="0 0 48 48"><path d="M25 3 11 25h12l-3 20 18-26H26z"/></svg></span><span>脉冲</span><i id="pulseCooldown"></i></button>
+        <button class="claim-upgrade" id="claimUpgradeButton" type="button" hidden><span aria-hidden="true">✦</span><small>强化</small></button>
+      </aside>
       <div class="command-ring" id="commandRing" aria-hidden="true"></div>
       <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
       <div class="health-wrap"><div class="health-label"><span>列车完整度</span><strong id="healthText">100%</strong></div><div class="health-track"><i id="healthFill"></i></div></div>
@@ -45,10 +50,8 @@
     <footer class="controls">
       <div class="movement-readout"><span>无人机移速</span><strong id="moveSpeedValue">180 px/s</strong><small>滑动 / 方向键</small></div>
       <div class="control-readouts">
-        <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">60.0</strong><small>秒 / 下一站</small></div>
         <div class="drone-readout"><span>蜂群</span><strong id="droneLevel">2 架</strong></div>
       </div>
-      <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲"><span class="pulse-ring">✦</span><span>脉冲</span><i id="pulseCooldown"></i></button>
     </footer>
   </main>
   <section class="gm-panel" id="gmPanel" role="dialog" aria-modal="true" aria-labelledby="gmTitle" hidden><div class="gm-content"><h2 id="gmTitle">GM · 机队调试</h2><p>战斗已暂停 · 输入实际等级 · 0 为下架<br>Lv.10：普攻伤害 +35%，范围 +25%，切换突破皮肤</p><div id="gmControls"></div><div id="gmBonds"></div><button class="primary-button" id="gmClose" type="button">应用并返回</button></div></section>
@@ -114,7 +117,8 @@
 
   <section class="overlay levelup-screen selection-screen" id="levelUpScreen" hidden>
     <div class="selection-terminal">
-    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>组建专机蜂群</h2><p>选择一项武器强化，继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
+    <div class="level-health"><span aria-hidden="true">▣</span><b>列车耐久</b><i><em id="levelTrainHealthFill"></em></i><strong id="levelTrainHealthText">100%</strong></div>
+    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>选择升级</h2><p>选择一项武器强化，继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
     <div class="upgrade-list" id="levelUpList"></div>
     <div class="terminal-footer"><span class="terminal-status">战斗已暂停 · 选择后继续护送</span><span aria-hidden="true">FLEET</span></div>
     </div>

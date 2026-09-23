@@ -5,7 +5,7 @@ if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
     {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
-    {key:"ground",path:"assets/slate-ground-v1.webp",name:"地面"},
+    {key:"ground",path:"assets/desert-ground-v1.webp",name:"地面"},
     {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
     {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/attacks-v3.webp",name:"北辰羁绊与突破攻击"},
     {key:"breakthrough",path:"assets/hover-lv10-v3.webp",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/weapon-lv10-v3.webp",name:"Lv.10突破特效"},
@@ -140,7 +140,7 @@ function drawBackground() {
     const tile=360,drift=motion.worldDrift(1,state.worldDistance);
     const ox=((drift.x%tile)+tile)%tile-tile,oy=((drift.y%tile)+tile)%tile-tile;
     for(let x=ox+Math.floor((view.left-ox)/tile)*tile;x<view.right;x+=tile)for(let y=oy+Math.floor((view.top-oy)/tile)*tile;y<view.bottom;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
-    ctx.fillStyle="#07132430";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
+    ctx.fillStyle="#d9c6a40b";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
     const regionTint={ruins:"#7d99ad12",industrial:"#c7924d13",infection:"#7c4c9818"}[state.expeditionPlan?.regionId];
     if(regionTint){ctx.fillStyle=regionTint;ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);}
     if(state.routeModifiers.weather==="dust"){ctx.fillStyle="#c3a16915";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);}

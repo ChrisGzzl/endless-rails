@@ -1,0 +1,153 @@
+/* Bright battlefield and compact controls. All combat controls keep their original IDs. */
+#app { display:block; background:#ead4af; border-color:#a9c3d2; }
+#app .arena-wrap { position:absolute; inset:0; background:#ecd7b5; }
+#app .arena-wrap::after { box-shadow:inset 0 0 32px #856a4430; }
+#app .hud { position:absolute; z-index:7; top:0; left:0; right:0; display:grid;
+  grid-template-columns:38px 76px minmax(0,1fr) 58px; grid-template-rows:39px 20px;
+  gap:4px 7px; align-items:center; padding:calc(8px + env(safe-area-inset-top)) 10px 7px;
+  background:linear-gradient(#183148ee,#183148a8 82%,transparent); border:0; box-shadow:none; }
+#app .hud .pause-button { position:static; grid-column:1; grid-row:1; width:38px; height:38px;
+  font-size:20px; font-weight:800; border:1px solid #7ca5bf80; border-radius:8px; background:#23475ce8; }
+#app .hud .run-readout { grid-column:2; grid-row:1; gap:0; justify-content:center; height:38px;
+  border-radius:8px; background:#203a4ede; text-align:center; }
+#app .run-readout span,#app .run-readout small { display:none; }
+#app .run-readout strong { font:800 22px/1 ui-monospace,monospace; color:white; }
+#app .run-readout strong::after { content:'s'; margin-left:1px; font-size:11px; color:#a8d1e8; }
+#app .hud .progress-strip { grid-column:3; grid-row:1/3; display:grid; gap:5px; align-self:center; min-width:0; }
+#app .progress-row { display:grid; grid-template-columns:1fr; gap:3px; min-width:0; color:white; }
+#app .progress-row > span { overflow:hidden; text-overflow:ellipsis; font-size:10px; font-weight:700; }
+#app .progress-row small { display:none; }
+#app .progress-row i { width:100%; height:7px; background:#0d2637; border-radius:8px; }
+#app .progress-row b { background:#ecc558; }
+#app .progress-row--xp b { background:#48c4f5; }
+#app .hud .brand { grid-column:1; grid-row:2; min-width:0; justify-content:center; }
+#app .hud .brand-mark { display:grid; width:28px; height:20px; border:0; border-radius:4px;
+  background:#315a72; font-size:9px; }
+#app .hud .brand > div { display:none; }
+#app .hud .hud-stat { grid-column:2; grid-row:2; display:block; text-align:center; line-height:1; }
+#app .hud .hud-stat span { display:none; }
+#app .hud .hud-stat strong { color:#d8e8f0; font-size:12px; }
+#app .hud .hud-stat:not(.hud-stat--right) strong::before { content:'站 '; font-size:10px; color:#a3c7d9; }
+#app .hud .hud-stat--right { grid-column:4; grid-row:1/3; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; height:100%; border-radius:8px; background:#203a4ede; }
+#app .hud .hud-stat--right span { display:block; font-size:10px; color:#b5cbd8; }
+#app .hud .hud-stat--right strong { color:#ffd46c; font-size:16px; }
+#app .objective { top:calc(83px + env(safe-area-inset-top)); left:10px; right:auto; max-width:calc(100% - 68px);
+  padding:7px 10px; border:1px solid #a9cddd4d; background:#16334bd6; border-radius:8px;
+  color:#fff; font-size:12px; font-weight:700; line-height:1.3; text-shadow:none; }
+#app .pulse-dot { width:8px; height:8px; border:2px solid #5bddfa; border-radius:50%; background:none; }
+#app .health-wrap { top:auto; bottom:calc(14px + env(safe-area-inset-bottom)); left:50%; width:min(55%,258px);
+  transform:translateX(-50%); padding:8px 10px; border:1px solid #a8cbd17a; border-radius:8px;
+  background:#173249df; }
+#app .health-label { margin-bottom:5px; color:#e8f5fb; font-size:11px; text-shadow:none; }
+#app .health-label strong { color:white; font-size:11px; }
+#app .health-track { height:8px; background:#0c2833; border-radius:5px; outline:none; overflow:hidden; }
+#app .health-track i { background:#49cb62; }
+#app .boss-wrap { top:calc(126px + env(safe-area-inset-top)); left:10px; right:auto; width:min(58%,245px);
+  padding:7px 9px; background:#18334bdc; border-radius:8px; }
+#app .boss-track i { background:#f17663; }
+#app .fullscreen-button { top:calc(83px + env(safe-area-inset-top)); right:10px; width:36px; height:34px;
+  border-radius:7px; background:#24465cde; font-size:20px; }
+#app .skill-rail { position:absolute; z-index:6; right:9px; bottom:clamp(92px,18dvh,170px);
+  display:flex; flex-direction:column; align-items:center; gap:10px; }
+#app .skill-rail .pulse-button,#app .skill-rail .claim-upgrade { position:relative; inset:auto; display:flex;
+  flex-direction:column; align-items:center; justify-content:center; width:62px; height:62px; padding:5px;
+  border:3px solid #75d8f0; border-radius:50%; box-shadow:0 0 0 3px #193444bd,0 4px 12px #182c4077;
+  background:radial-gradient(circle at 40% 30%,#28677b,#102d44 75%); color:#e5ffff; font-size:10px; font-weight:800; }
+#app .skill-rail .pulse-button svg { display:block; width:28px; height:30px; fill:#45caff; stroke:#d1f6ff; stroke-width:1; }
+#app .skill-rail .pulse-button .pulse-ring { display:block; line-height:1; }
+#app .skill-rail .pulse-button > span:nth-of-type(2) { position:relative; z-index:1; }
+#app .skill-rail .pulse-button i { z-index:0; background:#081c2ccc; }
+#app .skill-rail .pulse-button.cooling { border-color:#8da7b0; }
+#app .skill-rail .pulse-button:disabled { opacity:.6; }
+#app .skill-rail .claim-upgrade { width:54px; height:54px; border-color:#ffd36a; background:#5c3e25; font-size:10px; }
+#app .skill-rail .claim-upgrade::before { content:'✦'; display:block; color:#ffe07b; font-size:21px; line-height:1; }
+#app .controls { position:absolute; z-index:5; left:10px; bottom:calc(17px + env(safe-area-inset-bottom));
+  display:block; width:auto; padding:5px 8px; border:0; border-radius:7px; background:#173249ce; }
+#app .movement-readout { display:none; }
+#app .control-readouts { display:block; }
+#app .control-readouts .drone-readout { display:flex; gap:4px; flex-direction:row; align-items:center; }
+#app .drone-readout span { font-size:10px; }
+#app .drone-readout strong { color:white; font-size:11px; }
+#app .combo { top:calc(146px + env(safe-area-inset-top)); right:12px; color:#fff; text-shadow:0 2px 4px #263342; }
+#app .touch-hint { bottom:19%; padding:7px; border-radius:8px; background:#173249b8; font-size:12px; }
+#app .touch-hint b { color:#caf0fd; font-size:10px; }
+
+/* The paused scene stays visible behind the three cards. */
+.overlay.levelup-screen { display:flex; align-items:flex-end; justify-content:center; padding:0 10px calc(12px + env(safe-area-inset-bottom));
+  overflow:visible; background:#18304324; -webkit-backdrop-filter:none; backdrop-filter:none; }
+.levelup-screen .selection-terminal { position:relative; display:grid; grid-template-rows:auto auto; gap:10px;
+  width:100%; max-width:560px; height:auto; max-height:calc(100dvh - 112px); min-height:0;
+  padding:13px 12px 14px; border:1px solid #779eb3; border-radius:22px 22px 12px 12px;
+  background:#17354beF; color:#fff; box-shadow:0 10px 26px #122b3d75; overflow:visible; }
+.levelup-screen .selection-terminal::before,.levelup-screen .selection-terminal::after { content:none; }
+.levelup-screen .level-health { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:8px; width:min(78%,310px); height:34px; padding:6px 10px;
+  border:1px solid #aac9ce99; border-radius:8px; background:#1c3a4feF; color:#f1fafc; white-space:nowrap;
+  font-size:11px; }
+.level-health > span { font-size:17px; }
+.level-health > b { font-size:11px; }
+.level-health > i { flex:1; height:9px; border-radius:5px; background:#0b2835; overflow:hidden; }
+.level-health em { display:block; width:100%; height:100%; background:#4dcb65; }
+.level-health strong { font:700 10px ui-monospace,monospace; }
+.levelup-screen .selection-terminal > .levelup-heading { position:relative; display:flex; align-items:center;
+  justify-content:center; min-height:32px; padding:0; border:0; }
+.levelup-screen .levelup-heading .eyebrow,.levelup-screen .levelup-heading > p:not(.eyebrow) { display:none; }
+.levelup-screen .selection-terminal h2 { color:#fff; font-size:22px; font-weight:850; line-height:1.15; text-align:center; }
+.levelup-screen .selection-terminal .inspect-entry { position:absolute; top:0; right:0; margin:0;
+  min-height:28px; padding:4px 7px; border:1px solid #5d829a; border-radius:6px;
+  background:#22475f; color:#d7edf4; font-size:10px; }
+.levelup-screen .selection-terminal .upgrade-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-rows:minmax(0,1fr); gap:9px; max-height:none; }
+.levelup-screen[data-choice-count="2"] .selection-terminal .upgrade-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.levelup-screen .selection-terminal .upgrade-card { --card-glow:#39bfff; position:relative; display:flex;
+  flex-direction:column; align-items:center; justify-content:flex-start; gap:5px; min-width:0; min-height:178px;
+  padding:16px 7px 9px; border:2px solid var(--card-glow); border-radius:12px;
+  background:linear-gradient(150deg,#254860,#173d55); color:#fff; text-align:center;
+  box-shadow:inset 0 0 17px #1da4da22,0 0 10px #118cd046; }
+.levelup-screen .upgrade-card:nth-child(2) { --card-glow:#ffbb3e; background:linear-gradient(150deg,#704a22,#5d3d1e); }
+.levelup-screen .upgrade-card:nth-child(3) { --card-glow:#28cc77; background:linear-gradient(150deg,#195f48,#104b3b); }
+.levelup-screen .selection-terminal .upgrade-card::before { content:none; }
+.levelup-screen .selection-terminal .upgrade-card[data-scope]::after { position:absolute; top:4px; right:5px;
+  color:#e1edf2; font-size:8px; }
+.levelup-screen .selection-terminal .upgrade-icon,.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon {
+  display:grid; flex:none; width:54px; height:50px; border:0; border-radius:0; background-color:transparent;
+  box-shadow:none; color:var(--card-glow); font-size:29px; }
+.levelup-screen .selection-terminal .upgrade-card > span:last-child { display:block; width:100%; }
+.levelup-screen .selection-terminal .upgrade-card h3 { display:flex; flex-direction:column; align-items:center;
+  gap:3px; margin:0 0 5px; color:#fff; font-size:13px; font-weight:800; line-height:1.25; }
+.levelup-screen .selection-terminal .upgrade-card h3 small { display:block; padding:2px 6px;
+  border-radius:4px; background:#0d293dbb; color:#f6fdff; font-size:10px; }
+.levelup-screen .selection-terminal .upgrade-card p { color:#eef8ff; font-size:10px; line-height:1.35;
+  display:-webkit-box; -webkit-line-clamp:5; -webkit-box-orient:vertical; overflow:hidden; }
+.levelup-screen .selection-terminal .upgrade-card:hover,.levelup-screen .selection-terminal .upgrade-card:focus-visible {
+  border-color:#fff; box-shadow:0 0 0 2px var(--card-glow),0 0 16px var(--card-glow); }
+.levelup-screen .terminal-footer { display:none; }
+
+@media (max-width:359px), (max-height:650px) {
+  #app .hud { grid-template-columns:34px 67px minmax(0,1fr) 49px; gap:3px 5px; padding-inline:7px; }
+  #app .hud .pause-button { width:34px; height:36px; }
+  #app .run-readout strong { font-size:19px; }
+  #app .hud .hud-stat--right strong { font-size:13px; }
+  #app .skill-rail .pulse-button { width:54px; height:54px; }
+  .overlay.levelup-screen { padding-inline:7px; padding-bottom:7px; }
+  .levelup-screen .selection-terminal { gap:5px; padding:8px 7px 9px; }
+  .levelup-screen .selection-terminal h2 { font-size:18px; }
+  .levelup-screen .selection-terminal .upgrade-list { gap:5px; }
+  .levelup-screen .selection-terminal .upgrade-card { min-height:155px; gap:2px; padding:13px 4px 6px; }
+  .levelup-screen .selection-terminal .upgrade-icon,.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width:43px; height:37px; }
+  .levelup-screen .selection-terminal .upgrade-card h3 { font-size:11px; }
+  .levelup-screen .selection-terminal .upgrade-card p { font-size:9px; }
+}
+@media (max-height:450px) and (min-width:600px) {
+  #app .hud { max-width:none; }
+  #app .objective { top:calc(78px + env(safe-area-inset-top)); }
+  #app .health-wrap { width:200px; }
+  #app .skill-rail { right:12px; bottom:62px; }
+  .overlay.levelup-screen { padding:0 12px 7px; }
+  .levelup-screen .selection-terminal { max-width:710px; max-height:calc(100dvh - 50px); padding:8px 12px 9px; gap:5px; }
+  .levelup-screen .level-health { bottom:calc(100% + 4px); height:28px; }
+  .levelup-screen .selection-terminal .upgrade-card { min-height:117px; padding:8px 12px; }
+  .levelup-screen .selection-terminal .upgrade-icon,.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon { width:38px; height:30px; }
+  .levelup-screen .selection-terminal .upgrade-card p { -webkit-line-clamp:2; }
+}

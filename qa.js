@@ -19,6 +19,7 @@ function scenario(name){
  const s=state();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
  w.beginRoute(w.EndlessRailsRouteEvents.ROUTE_EVENTS[2]);
  if(name==='normal')return;
+ if(name==='levelup'){s.pendingLevelUps=1;w.openLevelUp();w.updateHud();w.draw();return;}
  s.modules={rapid:9,missile:10,incendiary:10,ricochet:10,chain:10,piercing:10,scatter:10,blades:10,wingman:3};s.station=5;
  if(name==='stress'){
    stress=true;s.trainHp=s.maxTrainHp=100000;s.cameraZoom=.85;s.routeElapsed=45;s.spawnClock=Infinity;s.enemies=[];w.syncSwarm();
