@@ -8,6 +8,23 @@
   const screen = $("startScreen"), regionList = $("metaRegionList"), carList = $("metaCarList"), researchList = $("metaResearchList");
   const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton"), trainUpgradeButton = $("metaTrainUpgradeButton");
   if (!screen || !regionList || !carList || !researchList || !startButton) return;
+  // Decorative vectors remain separate from the game data and buying/selection rules.
+  const iconPaths = {
+    hangar:'<circle cx="12" cy="12" r="2"/><path d="m12 10-2-7 2-1 2 1-2 7m-2 2-7 2-1-2 1-2 7 2m4 2 2 7-2 1-2-1 2-7m2-2 7-2 1 2-1 2-7-2"/>',
+    pointDefense:'<path d="M12 3 3 7v6c0 5 4 8 9 9 5-1 9-4 9-9V7zM12 7v10m-5-5h10"/>',
+    storage:'<path d="m3 7 9-4 9 4v11l-9 4-9-4zM3 7l9 5 9-5m-9 5v10"/>',
+    radar:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="m12 12 6-7m-6 7 3 3"/>',
+    repair:'<path d="M14 4a5 5 0 0 0-6 6L3 15a3 3 0 0 0 4 4l5-5a5 5 0 0 0 6-6l-3 3-3-3z"/>',
+    rapid:'<path d="m3 13 17-9-6 16-3-6-8-1zm8 1-2 6"/>',
+    missile:'<path d="M5 15c1-5 6-10 14-11 0 8-5 13-10 14zM13 10l2 2M6 18l-2 3m5-2-1 3"/>',
+    incendiary:'<path d="M12 22c-5 0-8-4-8-8 0-3 2-5 4-8 0 3 2 4 3 5 1-3 2-5 5-8 0 4 4 7 4 11 0 4-3 8-8 8zm0 0c-2 0-3-2-3-4 0-1 1-3 3-5 0 2 3 3 3 5 0 2-1 4-3 4z"/>',
+    ricochet:'<circle cx="12" cy="12" r="3"/><path d="M4 10a8 8 0 0 1 8-7m0 18a9 9 0 0 0 9-9M3 14a9 9 0 0 0 9 7m0-18a9 9 0 0 1 9 9"/>',
+    chain:'<path d="m13 2-9 11h7l-1 9 10-12h-7z"/>',
+    piercing:'<path d="M4 20 20 4m-9 0h9v9M2 13l4-4m1 12 4-4"/>',
+    scatter:'<path d="m12 4 8 7-8 9-8-9zM12 4v16M4 11h16"/>',
+    blades:'<path d="M12 3v18M3 12h18M7 7l10 10M17 7 7 17"/>'
+  };
+  const icon = id => `<svg viewBox="0 0 24 24" aria-hidden="true">${iconPaths[id] || iconPaths.hangar}</svg>`;
 
   function save() { metaApi.saveMeta(storage, meta); }
   function statusFor(region) {
@@ -37,7 +54,7 @@
       if (!meta.unlockedCars.includes(car.id)) continue;
       const button = document.createElement("button"); button.type = "button";
       const active = selected.has(car.id); button.className = "meta-card meta-car" + (active ? " selected" : ""); button.disabled = !!car.fixed;button.setAttribute("aria-pressed",String(active));
-      button.innerHTML = `<span class="meta-card__icon">${car.icon}</span><span><b>${car.name}${car.fixed ? " · 固定" : ""}</b><small>${active ? "已编组" : "未编组"}</small><em>${car.description}</em></span>`;
+      button.innerHTML = `<span class="meta-card__icon">${icon(car.id)}</span><span><b>${car.name}${car.fixed ? " · 固定" : ""}</b><small>${active ? "已编组" : "未编组"}</small><em>${car.description}</em></span>`;
       if (!car.fixed) button.addEventListener("click", () => {
         const next = new Set(meta.loadout.filter(id => id !== "hangar"));
         if (next.has(car.id)) next.delete(car.id); else {
@@ -58,7 +75,7 @@
     for (const id of metaApi.RESEARCH_IDS) {
       const level = meta.research[id] || 0, cost = metaApi.researchCost(meta, id), maxed = !Number.isFinite(cost);
       const row = document.createElement("div"); row.className = "meta-research-row";
-      row.innerHTML = `<span><b>${metaApi.RESEARCH_NAMES[id]}</b><small>研究 Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}${level >= 3 ? " · 专精已解锁" : ""}</small><small>基础伤害 +${level*3}% · Lv.3：${specializations[id]}</small></span><button type="button" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : cost + " 数据"}</button>`;
+      row.innerHTML = `<span class="research-icon" data-weapon="${id}">${icon(id)}</span><span><b>${metaApi.RESEARCH_NAMES[id]}</b><small>研究 Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}${level >= 3 ? " · 专精已解锁" : ""}</small><small>基础伤害 +${level*3}% · Lv.3：${specializations[id]}</small></span><button type="button" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : cost + " 数据"}</button>`;
       row.querySelector("button").addEventListener("click", () => { const result = metaApi.buyResearch(meta, id); meta = result.meta; if (result.purchased) { save(); render(); } });
       researchList.append(row);
     }

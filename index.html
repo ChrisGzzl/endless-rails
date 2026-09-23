@@ -12,7 +12,8 @@
   <title>荒原轨道：无人机守卫</title>
   <link rel="stylesheet" href="styles.css?v=20260923-v090rc4">
   <link rel="stylesheet" href="ui-wasteland.css?v=20260923-v090rc4">
-  <link rel="stylesheet" href="home.css?v=20260923-v090rc4b">
+  <link rel="stylesheet" href="home.css?v=20260923-ui1">
+  <link rel="stylesheet" href="ui-refresh.css?v=20260923-ui1">
 </head>
 <body>
   <main id="app">
@@ -55,17 +56,17 @@
   <section class="overlay start-screen home-hub" id="startScreen" aria-label="远征基地">
     <header class="home-header">
       <div class="home-profile"><span class="home-emblem" aria-hidden="true">ER</span><div><b>荒原轨道</b><small id="homePlayerLevel">列车 Lv.1</small></div></div>
-      <div class="home-wallet" aria-label="长期资源"><span title="废料"><i aria-hidden="true">▰</i><b id="homeScrap">0</b><small>废料</small></span><span title="技术组件"><i aria-hidden="true">⬡</i><b id="homeComponents">0</b><small>组件</small></span><span title="研究数据"><i aria-hidden="true">◇</i><b id="homeData">0</b><small>数据</small></span></div>
+      <div class="home-wallet" aria-label="长期资源"><span title="废料"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6l1 3 2 1 3-1 2 5-2 2v2l2 2-2 5-3-1-2 1-1 2H9l-1-2-2-1-3 1-2-5 2-2v-2l-2-2 2-5 3 1 2-1z"/><circle cx="12" cy="12" r="3"/></svg><b id="homeScrap">0</b><small>废料</small></span><span title="技术组件"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 15 10-11 8 5-10 11zM3 15l8 5m10-11-8-5M8 18l10-11"/></svg><b id="homeComponents">0</b><small>组件</small></span><span title="研究数据"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 8 6-4 13H8L4 8zM4 8h16M8 21l4-13 4 13"/></svg><b id="homeData">0</b><small>数据</small></span></div>
     </header>
     <div class="home-content">
       <section class="home-pane home-battle" id="homeBattle" role="tabpanel" aria-labelledby="homeTabBattle">
         <div class="mission-heading"><p class="eyebrow">RAILWAY EXPEDITION / 铁路远征</p><h1 id="homeRegionName">起始荒原</h1><p id="homeRegionDescription">开阔荒原，护送列车穿越尸潮。</p></div>
-        <div class="home-keyart"><img src="assets/hover-poster-v2.webp" alt="悬浮无人机护送荒原列车" draggable="false" fetchpriority="high" width="1024" height="1536"><span class="home-route-mark" aria-hidden="true">01—05<br>OUTLAND EXPRESS</span><div class="mission-stamp"><span id="homeRegionStatus">已侦察 · 低危铁路</span><b>护送最后一班列车</b></div></div>
+        <div class="home-keyart"><img src="assets/expedition-hero-v1.webp" alt="四架无人机护送装甲列车穿越明亮荒原" draggable="false" fetchpriority="high" width="1448" height="1086"><span class="home-route-mark" aria-hidden="true">01 — 05</span><div class="mission-stamp"><span id="homeRegionStatus">已侦察 · 低危铁路</span><b>护送最后一班列车</b></div></div>
         <div class="mission-launch"><div class="home-regions" id="metaRegionList" aria-label="选择远征区域"></div><p class="mission-loadout" id="homeLoadout">当前编组 · 4 节车厢</p><button class="primary-button" id="startButton" type="button"><span>开始远征</span><span aria-hidden="true">↗</span></button><p class="mission-note">5 段护送 · 每段 60 秒 · 到站可安全撤离</p><p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p><button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button></div>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="metaScreen" role="tabpanel" aria-labelledby="homeTabTrain" hidden>
         <header class="home-page-heading"><p class="eyebrow">TRAIN WORKSHOP</p><h2>列车车间</h2><p>修整编组，为下一次远征做好准备。</p></header>
-        <section class="home-upgrade-card"><div class="home-train-art" aria-hidden="true"><i>ER</i><i>机库</i><i>近防</i><i>仓储</i></div><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaResources"></p><button class="primary-button" id="metaTrainUpgradeButton" type="button">强化列车</button></section>
+        <section class="home-upgrade-card"><div class="home-train-art" aria-hidden="true"><img src="assets/expedition-hero-v1.webp" alt="" loading="lazy"></div><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaResources"></p><button class="primary-button" id="metaTrainUpgradeButton" type="button">强化列车</button></section>
         <div class="meta-section__head"><b>功能车厢</b><span>点击调整编组</span></div><p id="metaLoadoutSummary" class="home-muted"></p><div class="meta-grid" id="metaCarList"></div><button class="home-secondary" id="metaStartButton" type="button">编组完成 · 前往出战 →</button>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="homeResearch" role="tabpanel" aria-labelledby="homeTabResearch" hidden>
