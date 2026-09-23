@@ -1,0 +1,123 @@
+/* Four compact atlases; the generated source art and earlier game assets are untouched. */
+.ui-icon { display:block; flex:none; width:32px; height:32px; background-image:url("assets/icons-base-v1.webp"); background-size:400% 400%; background-repeat:no-repeat; background-position:0 0; }
+.ui-icon--shop { background-position:0 0; }
+.ui-icon--train { background-position:33.333% 0; }
+.ui-icon--battle { background-position:66.667% 0; }
+.ui-icon--research { background-position:100% 0; }
+.ui-icon--settings { background-position:0 33.333%; }
+.ui-icon--scrap { background-position:33.333% 33.333%; }
+.ui-icon--components { background-position:66.667% 33.333%; }
+.ui-icon--data { background-position:100% 33.333%; }
+.ui-icon--hangar { background-position:0 66.667%; }
+.ui-icon--pointDefense { background-position:33.333% 66.667%; }
+.ui-icon--storage { background-position:66.667% 66.667%; }
+.ui-icon--radar { background-position:100% 66.667%; }
+.ui-icon--repair { background-position:0 100%; }
+.ui-icon--pulse { background-position:33.333% 100%; }
+.ui-icon--upgrade { background-position:66.667% 100%; }
+.ui-icon--supply { background-position:100% 100%; }
+
+.ui-icon--rapid,.ui-icon--piercing,.ui-icon--missile,.ui-icon--incendiary,
+.ui-icon--chain,.ui-icon--ricochet,.ui-icon--blades,.ui-icon--scatter { background-image:url("assets/icons-weapons-v1.webp"); background-size:400% 200%; }
+.ui-icon--rapid { background-position:0 0; }
+.ui-icon--piercing { background-position:33.333% 0; }
+.ui-icon--missile { background-position:66.667% 0; }
+.ui-icon--incendiary { background-position:100% 0; }
+.ui-icon--chain { background-position:0 100%; }
+.ui-icon--ricochet { background-position:33.333% 100%; }
+.ui-icon--blades { background-position:66.667% 100%; }
+.ui-icon--scatter { background-position:100% 100%; }
+
+.home-hub .home-wallet .ui-icon { grid-row:1/3; width:21px; height:21px; }
+.home-hub .meta-card__icon .ui-icon { width:38px; height:38px; }
+.home-hub .research-icon .ui-icon { width:39px; height:39px; }
+.home-hub .research-icon[data-weapon="rapid"],.home-hub .research-icon[data-weapon="piercing"] { background:#2a6087; }
+.home-hub .research-icon[data-weapon="missile"],.home-hub .research-icon[data-weapon="incendiary"] { background:#874c43; }
+.home-hub .research-icon[data-weapon="chain"],.home-hub .research-icon[data-weapon="ricochet"] { background:#655489; }
+.home-hub .research-icon[data-weapon="blades"],.home-hub .research-icon[data-weapon="scatter"] { background:#297f81; }
+.shop-coming > .ui-icon { display:block; width:104px; height:104px; margin:2px auto 12px; }
+
+/* Equal-width navigation cells, with a slightly raised center insignia inside the same bar. */
+.home-tabs { grid-template-columns:repeat(5,minmax(0,1fr)); align-items:end; padding:3px 6px env(safe-area-inset-bottom); border-top:2px solid #87978a; background:linear-gradient(#344b4b,#263b3c); }
+.home-tabs button { min-height:65px; gap:1px; color:#c0cec5; font-size:11px; font-weight:700; border:0; background:transparent; transition:background-color .15s,color .15s; }
+.home-tabs button::before { display:none; }
+.home-tabs button[aria-selected="true"]::before { display:none; }
+.home-tabs button::after { content:""; position:absolute; bottom:0; left:23%; right:23%; height:3px; opacity:0; background:#edbd68; }
+.home-tabs button[aria-selected="true"] { color:#ffe3a4; background:#51615a; }
+.home-tabs button[aria-selected="true"]::after { opacity:1; }
+.home-tabs button:not([aria-selected="true"]):hover { color:#f7ecd2; background:#405655; }
+.home-tabs button .ui-icon { width:34px; height:34px; opacity:.84; filter:saturate(.72); transition:opacity .15s,filter .15s; }
+.home-tabs button[aria-selected="true"] .ui-icon { opacity:1; filter:none; }
+.home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] {
+  position:relative; min-height:72px; margin-top:-7px; padding:5px 0 4px; transform:none;
+  border:0; border-radius:0; box-shadow:none; background:transparent; color:#c7d3ca;
+}
+.home-tabs #homeTabBattle::before { display:block; content:""; position:absolute; left:50%; top:2px; width:57px; height:52px;
+  transform:translateX(-50%); clip-path:polygon(16% 0,84% 0,100% 20%,100% 75%,50% 100%,0 75%,0 20%);
+  background:linear-gradient(150deg,#829287,#4b605b 45%,#334b4d); border:0; box-shadow:none; }
+.home-tabs #homeTabBattle .ui-icon { z-index:1; width:43px; height:43px; opacity:.8; filter:grayscale(.5) saturate(.6); background-color:transparent; border:0; border-radius:0; padding:0; }
+.home-tabs #homeTabBattle span { z-index:1; }
+.home-tabs #homeTabBattle[aria-selected="true"] { color:#ffe0a0; background:#455952; }
+.home-tabs #homeTabBattle[aria-selected="true"]::before { background:linear-gradient(145deg,#f3cd83,#b98240 55%,#54665a); }
+.home-tabs #homeTabBattle[aria-selected="true"] .ui-icon { opacity:1; filter:none; }
+.home-tabs #homeTabBattle[aria-selected="false"]:hover { background:#405655; color:#f7ecd2; }
+.home-tabs button:focus-visible { outline:2px solid #f5c86f; outline-offset:-3px; }
+
+/* Weapon atlas preserves the purple / blue / red / cyan bond families in every choice. */
+.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon {
+  font-size:0; background-image:url("assets/icons-weapons-v1.webp"); background-size:400% 200%;
+  background-repeat:no-repeat; background-color:transparent; border:0; box-shadow:none; filter:none;
+}
+.levelup-screen .upgrade-card[data-weapon="rapid"] .upgrade-icon { background-position:0 0; }
+.levelup-screen .upgrade-card[data-weapon="piercing"] .upgrade-icon { background-position:33.333% 0; }
+.levelup-screen .upgrade-card[data-weapon="missile"] .upgrade-icon { background-position:66.667% 0; }
+.levelup-screen .upgrade-card[data-weapon="incendiary"] .upgrade-icon { background-position:100% 0; }
+.levelup-screen .upgrade-card[data-weapon="chain"] .upgrade-icon { background-position:0 100%; }
+.levelup-screen .upgrade-card[data-weapon="ricochet"] .upgrade-icon { background-position:33.333% 100%; }
+.levelup-screen .upgrade-card[data-weapon="blades"] .upgrade-icon { background-position:66.667% 100%; }
+.levelup-screen .upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:100% 100%; }
+.levelup-screen .selection-terminal .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-image:url("assets/icons-base-v1.webp"); background-size:400% 400%; background-position:0 66.667%; }
+.levelup-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon,
+.station-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon,
+.choice-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon {
+  font-size:0; background-image:url("assets/icons-choices-v1.webp"); background-size:400% 400%;
+  background-repeat:no-repeat; background-color:transparent; border:0; box-shadow:none; filter:none;
+}
+.selection-terminal .upgrade-card[data-icon] .upgrade-icon::before,.selection-terminal .upgrade-card[data-icon] .upgrade-icon::after { content:none; }
+.selection-terminal .upgrade-card[data-icon="volatile"] .upgrade-icon { background-position:0 0; }
+.selection-terminal .upgrade-card[data-icon="armor"] .upgrade-icon { background-position:33.333% 0; }
+.selection-terminal .upgrade-card[data-icon="railgun"] .upgrade-icon { background-position:66.667% 0; }
+.selection-terminal .upgrade-card[data-icon="cargo"] .upgrade-icon { background-position:100% 0; }
+.selection-terminal .upgrade-card[data-icon="repair"] .upgrade-icon { background-position:0 33.333%; }
+.selection-terminal .upgrade-card[data-icon="shield"] .upgrade-icon { background-position:33.333% 33.333%; }
+.selection-terminal .upgrade-card[data-icon="magnet"] .upgrade-icon { background-position:66.667% 33.333%; }
+.selection-terminal .upgrade-card[data-icon="overclock"] .upgrade-icon { background-position:100% 33.333%; }
+.selection-terminal .upgrade-card[data-icon="dust"] .upgrade-icon { background-position:0 66.667%; }
+.selection-terminal .upgrade-card[data-icon="sprint"] .upgrade-icon { background-position:33.333% 66.667%; }
+.selection-terminal .upgrade-card[data-icon="freight"] .upgrade-icon { background-position:66.667% 66.667%; }
+.selection-terminal .upgrade-card[data-icon="fragile"] .upgrade-icon,.selection-terminal .upgrade-card[data-icon="pressure"] .upgrade-icon,.selection-terminal .upgrade-card[data-icon="scavenger"] .upgrade-icon { background-position:100% 66.667%; }
+.selection-terminal .upgrade-card[data-icon="cluster"] .upgrade-icon { background-position:0 100%; }
+.selection-terminal .upgrade-card[data-icon="heavy"] .upgrade-icon { background-position:33.333% 100%; }
+.selection-terminal .upgrade-card[data-icon="focus"] .upgrade-icon { background-position:66.667% 100%; }
+.selection-terminal .upgrade-card[data-icon="split"] .upgrade-icon { background-position:100% 100%; }
+
+/* Remaining visible game controls share a fourth sprite atlas. Text remains available to assistive tech. */
+#app .pause-button,#app .fullscreen-button { font-size:0; }
+#app .pause-button::before,#app .fullscreen-button::before,.reroll-button::before {
+  content:""; display:block; width:24px; height:24px; margin:auto;
+  background-image:url("assets/icons-controls-v1.webp"); background-size:400% 200%; background-repeat:no-repeat;
+}
+#app .pause-button::before { background-position:0 0; }
+#app .fullscreen-button::before { background-position:33.333% 0; }
+.reroll-button::before { display:inline-block; width:18px; height:18px; margin:0 6px -4px 0; background-position:0 100%; }
+#app .skill-rail .pulse-button .ui-icon { width:31px; height:31px; }
+#app .skill-rail .claim-upgrade::before { content:""; width:24px; height:24px; background:url("assets/icons-base-v1.webp") 66.667% 100%/400% 400% no-repeat; }
+.levelup-screen .level-health > span { display:block; width:24px; height:24px; font-size:0; background:url("assets/icons-controls-v1.webp") 66.667% 100%/400% 200% no-repeat; }
+.home-settings-actions #startFullscreenButton > span { display:inline-block; width:19px; height:19px; margin:0 0 -4px 3px; font-size:0; background:url("assets/icons-controls-v1.webp") 33.333% 0/400% 200% no-repeat; }
+.result-screen .result-badge { font-size:0; background:#344b4b url("assets/icons-base-v1.webp") 66.667% 0/400% 400% no-repeat; }
+.result-screen .result-badge[data-outcome="lost"] { background-image:url("assets/icons-choices-v1.webp"); background-position:33.333% 0; }
+.result-screen .result-badge[data-outcome="extracted"] { background-position:33.333% 0; }
+
+@media(max-width:360px) { .home-hub .home-wallet .ui-icon { width:17px; height:17px; } .home-hub .research-icon .ui-icon { width:32px; height:32px; } }
+@media(max-height:680px) { .home-tabs button { min-height:56px; } .home-tabs button .ui-icon { width:29px; height:29px; } .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:62px; } .home-tabs #homeTabBattle::before { width:47px; height:44px; } .home-tabs #homeTabBattle .ui-icon { width:35px; height:35px; } }
+@media(max-height:450px) and (min-width:600px) { .home-tabs button { min-height:49px; flex-direction:row; justify-content:center; gap:3px; } .home-tabs button .ui-icon { width:25px; height:25px; } .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:50px; margin-top:0; flex-direction:row; } .home-tabs #homeTabBattle::before { width:42px; height:40px; top:5px; left:34%; } .home-tabs #homeTabBattle .ui-icon { width:30px; height:30px; } }

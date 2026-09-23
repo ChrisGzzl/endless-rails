@@ -575,7 +575,7 @@ function openBreakthroughChoice(id){
   state.mode="levelup";ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
   if(title)title.textContent="Lv10 突破路线";if(copy)copy.textContent=(effects.droneIdentity(id)?.name||id)+" · 选择本局突破方向";
-  choices.forEach(choice=>{const card=document.createElement("button");card.className="upgrade-card";card.dataset.weapon=id;card.dataset.family=upgradeFamily[id];
+  choices.forEach(choice=>{const card=document.createElement("button");card.className="upgrade-card";card.dataset.weapon=id;card.dataset.family=upgradeFamily[id];card.dataset.icon=choice.id;
     card.innerHTML=`<span class="upgrade-icon">${choice.icon}</span><span><h3>${choice.name}</h3><p>${choice.desc}</p></span>`;
     card.addEventListener("click",()=>{state.breakthroughs[id]=choice.id;ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";state.nextUpgradeAt=state.visualTime+15;showToast((effects.droneIdentity(id)?.name||id)+" · "+choice.name);if(state.pendingLevelUps>0)openLevelUp();updateHud();});
     ui.levelUpList.append(card);});
@@ -666,7 +666,7 @@ function renderUpgradeChoices() {
   state.selectedUpgrade=null;ui.continue.disabled=true;ui.continue.textContent="选择一项免费大升级";
   const picks=[...stationUpgradePool].sort(()=>Math.random()-.5).slice(0,3);
   picks.forEach(u=>{
-    const card=document.createElement("button");card.className="upgrade-card";card.dataset.type="train";
+    const card=document.createElement("button");card.className="upgrade-card";card.dataset.type="train";card.dataset.icon=u.id;
     card.innerHTML=`<span class="upgrade-icon">${u.icon}</span><span><h3>${u.name} <small>Lv.${level(u.id)+(u.id==="rapid"?2:1)}</small></h3><p>${u.desc}</p></span>`;
     card.addEventListener("click",()=>{
       state.selectedUpgrade=u;ui.upgrades.querySelectorAll(".upgrade-card").forEach(x=>x.classList.remove("selected"));
@@ -687,8 +687,8 @@ function continueRun() {
   if(u.id==="shield")state.shieldReady=true;
   state.station++;state.selectedUpgrade=null;ui.stationScreen.hidden=true;openRouteEvent();
 }
-function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;const intel=carEnabled("radar")?" · 雷达："+(event.weather==="dust"?"Elite 活跃":event.weather==="speed"?"高速威胁":"资源信号增强")+(longterm.hasBlueprint(state.metaProfile,"radar-pulse")?`，移速 ×${event.enemySpeedMultiplier} / 精英 ×${event.eliteChanceMultiplier} / 核心 ×${event.coreChanceMultiplier}`:""):"";card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+intel+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
-function openContractChoice(){const choices=routeEvents.pickContracts(state.runSeed);if(!choices.length){state.activeContract=routeEvents.CONTRACTS?.[0]||null;openRouteEvent();return}state.mode="contractChoice";state.contractChoices=choices;ui.contractList.innerHTML="";ui.contractScreen.hidden=false;choices.forEach(contract=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type="contract";card.innerHTML='<span class="upgrade-icon">◆</span><span><h3>'+contract.name+"</h3><p>"+contract.description+"</p></span>";card.addEventListener("click",()=>{state.activeContract=contract;ui.contractScreen.hidden=true;openRouteEvent()});ui.contractList.append(card)})}
+function openRouteEvent(){const choices=routeEvents.pickRouteEvents(state.runSeed,state.station);if(!choices.length){beginRoute(null);return}state.mode="routeChoice";state.eventChoices=choices;ui.eventList.innerHTML="";ui.eventScreen.hidden=false;choices.forEach(event=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type=event.weather;card.dataset.icon=event.id;const intel=carEnabled("radar")?" · 雷达："+(event.weather==="dust"?"Elite 活跃":event.weather==="speed"?"高速威胁":"资源信号增强")+(longterm.hasBlueprint(state.metaProfile,"radar-pulse")?`，移速 ×${event.enemySpeedMultiplier} / 精英 ×${event.eliteChanceMultiplier} / 核心 ×${event.coreChanceMultiplier}`:""):"";card.innerHTML='<span class="upgrade-icon">'+(event.weather==="dust"?"≈":event.weather==="speed"?"»":"▣")+"</span><span><h3>"+event.name+"</h3><p>"+event.description+intel+"</p></span>";card.addEventListener("click",()=>{ui.eventScreen.hidden=true;beginRoute(event)});ui.eventList.append(card)})}
+function openContractChoice(){const choices=routeEvents.pickContracts(state.runSeed);if(!choices.length){state.activeContract=routeEvents.CONTRACTS?.[0]||null;openRouteEvent();return}state.mode="contractChoice";state.contractChoices=choices;ui.contractList.innerHTML="";ui.contractScreen.hidden=false;choices.forEach(contract=>{const card=document.createElement("button");card.className="upgrade-card event-card";card.dataset.type="contract";card.dataset.icon=contract.id;card.innerHTML='<span class="upgrade-icon">◆</span><span><h3>'+contract.name+"</h3><p>"+contract.description+"</p></span>";card.addEventListener("click",()=>{state.activeContract=contract;ui.contractScreen.hidden=true;openRouteEvent()});ui.contractList.append(card)})}
 function beginRoute(event) {
   state.activeEvent=event||routeEvents.ROUTE_EVENTS?.[0]||null;
   state.routeModifiers=routeEvents.applyRouteModifiers({routeDistance:balance.routeDuration(state.station),enemySpeed:1,enemyHp:1,eliteChance:1,coreChance:1,rewardMultiplier:1,scrapMultiplier:1},state.activeEvent,state.activeContract);
@@ -727,7 +727,7 @@ function finish(result){
   state.record=runRecord.mergeRecord(state.record,runRecord.buildRunSummary(state));runRecord.saveRecord(metaStorage,state.record);
   ui.result.hidden=false;
   const won=outcome==="won",extracted=outcome==="extracted";
-  $("resultBadge").textContent=won?"◆":extracted?"◇":"×";
+  $("resultBadge").dataset.outcome=outcome;$("resultBadge").textContent="";
   $("resultEyebrow").textContent=won?"远征完成":extracted?"安全撤离":"列车失守";
   $("resultTitle").textContent=won?"列车穿过了黑夜":extracted?"资源已经锁定":"铁轨被荒原吞没";
   $("resultCopy").textContent=won?"你完成了区域远征，并将成果带回列车。":extracted?"你选择在风险继续扩大前返回基地。":"已锁定资源被带回，未保护的风险资源发生损失。";
