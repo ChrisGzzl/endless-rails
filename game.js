@@ -1,7 +1,7 @@
 "use strict";
 const gameAudio=window.EndlessRailsAudio?.createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
-const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,$=id=>document.getElementById(id),motion=window.EndlessRailsMotion||{FORWARD:{x:.5,y:-Math.sqrt(3)/2},spawnPoint(side,width,height,margin,random=Math.random){const along=random()*(side==="top"||side==="bottom"?width+margin*2:height+margin*2)-margin;if(side==="top")return{x:along,y:-margin};if(side==="right")return{x:width+margin,y:along};if(side==="bottom")return{x:along,y:height+margin};return{x:-margin,y:along}},stepChaser(entity,dt,center,driftSpeed){const dx=center.x-entity.x,dy=center.y-entity.y,d=Math.hypot(dx,dy)||1;return{x:entity.x-motion.FORWARD.x*driftSpeed*dt+dx/d*entity.speed*dt,y:entity.y-motion.FORWARD.y*driftSpeed*dt+dy/d*entity.speed*dt}}};
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,$=id=>document.getElementById(id),motion=window.EndlessRailsMotion||{FORWARD:{x:Math.sin(7*Math.PI/180),y:-Math.cos(7*Math.PI/180)},spawnPoint(side,width,height,margin,random=Math.random){const along=random()*(side==="top"||side==="bottom"?width+margin*2:height+margin*2)-margin;if(side==="top")return{x:along,y:-margin};if(side==="right")return{x:width+margin,y:along};if(side==="bottom")return{x:along,y:height+margin};return{x:-margin,y:along}},stepChaser(entity,dt,center,driftSpeed){const dx=center.x-entity.x,dy=center.y-entity.y,d=Math.hypot(dx,dy)||1;return{x:entity.x-motion.FORWARD.x*driftSpeed*dt+dx/d*entity.speed*dt,y:entity.y-motion.FORWARD.y*driftSpeed*dt+dy/d*entity.speed*dt}}};
 let W=canvas.width,H=canvas.height;
 const WORLD_SPEED=88;
 if(!motion.scrollOffset)motion.scrollOffset=(time,speed,multiplier=1)=>Math.max(0,time)*Math.max(0,speed)*Math.max(0,multiplier);
@@ -102,6 +102,7 @@ function resetRun(plan){
   state.record=runRecord.loadRecord(metaStorage);
   state.metaProfile=longterm.loadMeta(metaStorage);
   state.expeditionPlan=plan||longterm.planFor(state.metaProfile);
+  setRegionGround(state.expeditionPlan?.regionId||"wasteland");
   state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
   state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;state.trainDamage=0;
   const metaBonuses=longterm.trainBonuses(state.metaProfile);
@@ -535,6 +536,8 @@ function killEnemy(e, fromBlast=false){
   state.shake=e.elite?7:3;addText("+"+gain,e.x,e.y-15,"#ffb45f");burst(e.x,e.y,e.elite?"#ffb45f":"#b6e36b",e.elite?26:16,e.elite?125:90);showCombo()
 }
 function scopeLabel(scope){return scope==="main-only"?"主机":scope==="escort-only"?"伴飞":scope==="train-only"?"列车":scope==="team-utility"?"全队":"主机"}
+const upgradeBrief={blades:"近战持续切割",incendiary:"燃烧区域封锁",ricochet:"弹跳贯穿尸潮",rapid:"机枪射速提升",scatter:"近程扇形霰弹",piercing:"远程直线贯穿",chain:"连锁电弧",missile:"远程追踪爆破",wingman:"增派机枪僚机"};
+const upgradeFamily={rapid:"blue",wingman:"blue",piercing:"blue",missile:"red",incendiary:"red",chain:"purple",ricochet:"purple",blades:"cyan",scatter:"cyan"};
 function openLevelUp() {
   if(state.mode==="levelup"||state.pendingLevelUps<=0)return;
   const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
@@ -548,8 +551,9 @@ function openLevelUp() {
   const picks=novel?[novel,...pool.filter(u=>u!==novel).slice(0,2)]:pool.slice(0,3);
   picks.forEach(u=>{
     const card=document.createElement("button");card.className="upgrade-card";
-    card.dataset.scope=scopeLabel(effects.weaponOwnership(u.id));card.dataset.weapon=u.id;
-    card.innerHTML=`<span class="upgrade-icon">${u.icon}</span><span><h3>${u.name} <small>Lv.${level(u.id)+(u.id==="rapid"?2:1)}</small></h3><p>${u.desc}</p></span>`;
+    card.dataset.scope=scopeLabel(effects.weaponOwnership(u.id));card.dataset.weapon=u.id;card.dataset.family=upgradeFamily[u.id];
+    card.innerHTML=`<span class="upgrade-icon">${u.icon}</span><span><h3>${u.name} <small>Lv.${level(u.id)+(u.id==="rapid"?2:1)}</small></h3><p>${upgradeBrief[u.id]}</p></span>`;
+    card.title=u.desc;
     card.addEventListener("click",()=>chooseLevelUp(u));ui.levelUpList.append(card);
   });
 }
@@ -571,7 +575,7 @@ function openBreakthroughChoice(id){
   state.mode="levelup";ui.levelUp.hidden=false;ui.levelUpList.innerHTML="";
   const title=ui.levelUp.querySelector("h2"),copy=ui.levelUp.querySelector(".levelup-heading > p:not(.eyebrow)");
   if(title)title.textContent="Lv10 突破路线";if(copy)copy.textContent=(effects.droneIdentity(id)?.name||id)+" · 选择本局突破方向";
-  choices.forEach(choice=>{const card=document.createElement("button");card.className="upgrade-card";card.dataset.weapon=id;
+  choices.forEach(choice=>{const card=document.createElement("button");card.className="upgrade-card";card.dataset.weapon=id;card.dataset.family=upgradeFamily[id];
     card.innerHTML=`<span class="upgrade-icon">${choice.icon}</span><span><h3>${choice.name}</h3><p>${choice.desc}</p></span>`;
     card.addEventListener("click",()=>{state.breakthroughs[id]=choice.id;ui.levelUp.hidden=true;state.mode=state.upgradeReturnMode||"combat";state.nextUpgradeAt=state.visualTime+15;showToast((effects.droneIdentity(id)?.name||id)+" · "+choice.name);if(state.pendingLevelUps>0)openLevelUp();updateHud();});
     ui.levelUpList.append(card);});

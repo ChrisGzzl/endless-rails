@@ -105,14 +105,19 @@
   padding:16px 7px 9px; border:2px solid var(--card-glow); border-radius:12px;
   background:linear-gradient(150deg,#254860,#173d55); color:#fff; text-align:center;
   box-shadow:inset 0 0 17px #1da4da22,0 0 10px #118cd046; }
-.levelup-screen .upgrade-card:nth-child(2) { --card-glow:#ffbb3e; background:linear-gradient(150deg,#704a22,#5d3d1e); }
-.levelup-screen .upgrade-card:nth-child(3) { --card-glow:#28cc77; background:linear-gradient(150deg,#195f48,#104b3b); }
+.levelup-screen .upgrade-card[data-family="blue"] { --card-glow:#48bdff; background:linear-gradient(150deg,#214967,#153852); }
+.levelup-screen .upgrade-card[data-family="purple"] { --card-glow:#bb8aff; background:linear-gradient(150deg,#493566,#342650); }
+.levelup-screen .upgrade-card[data-family="red"] { --card-glow:#ff786e; background:linear-gradient(150deg,#703b40,#542c36); }
+.levelup-screen .upgrade-card[data-family="cyan"] { --card-glow:#48e1db; background:linear-gradient(150deg,#1e5a60,#174450); }
 .levelup-screen .selection-terminal .upgrade-card::before { content:none; }
 .levelup-screen .selection-terminal .upgrade-card[data-scope]::after { position:absolute; top:4px; right:5px;
   color:#e1edf2; font-size:8px; }
 .levelup-screen .selection-terminal .upgrade-icon,.levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon {
   display:grid; flex:none; width:54px; height:50px; border:0; border-radius:0; background-color:transparent;
   box-shadow:none; color:var(--card-glow); font-size:29px; }
+.levelup-screen .upgrade-card[data-weapon="missile"] .upgrade-icon,
+.levelup-screen .upgrade-card[data-weapon="incendiary"] .upgrade-icon { filter:hue-rotate(-36deg) saturate(1.12); }
+.levelup-screen .upgrade-card[data-weapon="scatter"] .upgrade-icon { filter:hue-rotate(152deg) saturate(1.08); }
 .levelup-screen .selection-terminal .upgrade-card > span:last-child { display:block; width:100%; }
 .levelup-screen .selection-terminal .upgrade-card h3 { display:flex; flex-direction:column; align-items:center;
   gap:3px; margin:0 0 5px; color:#fff; font-size:13px; font-weight:800; line-height:1.25; }
@@ -123,6 +128,44 @@
 .levelup-screen .selection-terminal .upgrade-card:hover,.levelup-screen .selection-terminal .upgrade-card:focus-visible {
   border-color:#fff; box-shadow:0 0 0 2px var(--card-glow),0 0 16px var(--card-glow); }
 .levelup-screen .terminal-footer { display:none; }
+
+/* The selected center tab reads as the main launch action at every viewport. */
+.home-tabs { grid-template-columns:1fr 1fr 1.22fr 1fr 1fr; }
+.home-tabs #homeTabBattle { z-index:2; min-height:76px; transform:translateY(-9px); border:2px solid #ffe587;
+  border-radius:18px 18px 9px 9px; background:#25435f; color:#ffe184;
+  box-shadow:0 0 0 3px #18334f,0 5px 11px #081c3488; font-size:13px; font-weight:850; }
+.home-tabs #homeTabBattle svg { width:34px; height:34px; padding:6px; border-radius:50%;
+  background:#ffcd45; fill:none; stroke:#173a5b; stroke-width:2.2; }
+.home-tabs #homeTabBattle[aria-selected="true"] { background:#315576; border-color:#fff2ab; }
+.home-tabs #homeTabBattle[aria-selected="true"]::before { display:none; }
+
+/* Generated art is only the button surface; live labels and focus remain native. */
+.home-hub .primary-button,.selection-terminal .primary-button,.result-screen .primary-button {
+  border:0; border-radius:15px; background-color:transparent;
+  background-image:url("assets/primary-button-v1.webp"); background-size:100% 100%; background-position:center;
+  box-shadow:none; color:#132c4d; text-shadow:none; }
+.home-hub .primary-button:hover:not(:disabled),.selection-terminal .primary-button:hover:not(:disabled),.result-screen .primary-button:hover:not(:disabled) {
+  background-color:transparent; background-image:url("assets/primary-button-v1.webp"); filter:brightness(1.07); }
+.home-hub .primary-button:active,.selection-terminal .primary-button:active { filter:brightness(.95); }
+.home-hub .primary-button:disabled,.selection-terminal .primary-button:disabled { opacity:.55; }
+
+.research-icon[data-weapon="rapid"],.research-icon[data-weapon="piercing"] { background:#2762a0; color:#d5efff; }
+.research-icon[data-weapon="missile"],.research-icon[data-weapon="incendiary"] { background:#a9444b; color:#ffe0dc; }
+.research-icon[data-weapon="ricochet"],.research-icon[data-weapon="chain"] { background:#704a9e; color:#f1ddff; }
+.research-icon[data-weapon="blades"],.research-icon[data-weapon="scatter"] { background:#168a91; color:#daffff; }
+.bond-guide { margin-top:14px; padding:12px; border:1px solid #f4faff; border-radius:11px; background:#e4f1ff; color:#234465; }
+.bond-guide h3 { margin:0 0 9px; font-size:15px; }
+.bond-guide p { display:flex; align-items:center; gap:7px; margin:6px 0; font-size:11px; line-height:1.4; }
+.bond-guide small { display:block; margin-top:9px; color:#587899; font-size:10px; line-height:1.5; }
+.bond-dot { flex:none; width:9px; height:9px; border-radius:50%; }
+.bond-dot--purple { background:#a76be1; }.bond-dot--blue { background:#3facf5; }
+.bond-dot--red { background:#ef6965; }.bond-dot--cyan { background:#33c8c7; }
+
+@media(max-height:680px) { .home-tabs #homeTabBattle { min-height:68px; transform:translateY(-7px); } }
+@media(max-height:450px) and (min-width:600px) {
+  .home-tabs #homeTabBattle { min-height:56px; transform:translateY(-4px); flex-direction:row; }
+  .home-tabs #homeTabBattle svg { width:28px; height:28px; }
+}
 
 @media (max-width:359px), (max-height:650px) {
   #app .hud { grid-template-columns:34px 67px minmax(0,1fr) 49px; gap:3px 5px; padding-inline:7px; }

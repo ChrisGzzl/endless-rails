@@ -15,10 +15,11 @@ function scenario(name){
  for(const el of w.document.querySelectorAll('.overlay,#gmPanel'))el.hidden=true;
  const m=profile(!['fresh','normal'].includes(name));
  if(name==='fresh'||name==='grown'){state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;}
+ if(['ruins','industrial','infection'].includes(name))m.selectedRegion=name;
  w.EndlessRailsGame.startRun(w.EndlessRailsLongterm.planFor(m));
  const s=state();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
  w.beginRoute(w.EndlessRailsRouteEvents.ROUTE_EVENTS[2]);
- if(name==='normal')return;
+ if(name==='normal'||['ruins','industrial','infection'].includes(name))return;
  if(name==='levelup'){s.pendingLevelUps=1;w.openLevelUp();w.updateHud();w.draw();return;}
  s.modules={rapid:9,missile:10,incendiary:10,ricochet:10,chain:10,piercing:10,scatter:10,blades:10,wingman:3};s.station=5;
  if(name==='stress'){

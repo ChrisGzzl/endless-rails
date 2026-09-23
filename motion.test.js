@@ -7,6 +7,8 @@ const center = { x: 195, y: 340 };
 
 assert.ok(motion.FORWARD.x > 0, "train heading must point right");
 assert.ok(motion.FORWARD.y < 0, "train heading must point up");
+assert.ok(Math.abs(Math.atan2(motion.FORWARD.x,-motion.FORWARD.y)*180/Math.PI-7)<.01,
+  "the track should lean about seven degrees from vertical");
 
 const drift = motion.worldDrift(1, 78);
 assert.ok(drift.x < 0, "world drift must move left");

@@ -1,14 +1,14 @@
 "use strict";
 
-const gameArt={atlas:null,ground:null,hover:null,vfx:null,combatVfx:null,bond:null,breakthrough:null,evolvedVfx:null};
+const gameArt={atlas:null,ground:null,regionGround:null,hover:null,vfx:null,combatVfx:null,bond:null,breakthrough:null,evolvedVfx:null};
 if(typeof Image!=="undefined"){
   const assets=[
-    {key:"hover",path:"assets/hover-drones-v2.webp",name:"无人机"},
-    {key:"atlas",path:"assets/sci-fi-atlas-v1.webp",name:"列车与防御塔"},
+    {key:"hover",path:"assets/hover-drones-v2-mobile.webp",name:"无人机"},
+    {key:"atlas",path:"assets/sci-fi-atlas-v1-mobile.webp",name:"列车与防御塔"},
     {key:"ground",path:"assets/desert-ground-v1.webp",name:"地面"},
-    {key:"vfx",path:"assets/weapon-vfx-v1.webp",name:"武器特效"},
-    {key:"combatVfx",path:"assets/missile-arc-vfx-v1.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/attacks-v3.webp",name:"北辰羁绊与突破攻击"},
-    {key:"breakthrough",path:"assets/hover-lv10-v3.webp",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/weapon-lv10-v3.webp",name:"Lv.10突破特效"},
+    {key:"vfx",path:"assets/weapon-vfx-v1-mobile.webp",name:"武器特效"},
+    {key:"combatVfx",path:"assets/missile-arc-vfx-v1-mobile.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/attacks-v3-mobile.webp",name:"北辰羁绊与突破攻击"},
+    {key:"breakthrough",path:"assets/hover-lv10-v3-mobile.webp",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/weapon-lv10-v3-mobile.webp",name:"Lv.10突破特效"},
   ];
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
@@ -56,6 +56,20 @@ if(typeof Image!=="undefined"){
   retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
   for(const asset of assets)loadArt(asset);
 }
+// Other regions fetch their ground only after selection; the original desert remains
+// visible while a region tile decodes, and a failed tile never blocks combat.
+const regionGroundPaths={ruins:"assets/ruins-ground-v1.webp",industrial:"assets/industrial-ground-v1.webp",infection:"assets/infection-ground-v1.webp"};
+const regionGroundCache={};
+let activeGroundRegion="wasteland";
+function setRegionGround(regionId){
+  activeGroundRegion=regionId;
+  gameArt.regionGround=regionGroundCache[regionId]||null;
+  if(!regionGroundPaths[regionId]||regionGroundCache[regionId]||typeof Image==="undefined")return;
+  const picture=new Image();
+  picture.onload=()=>{regionGroundCache[regionId]=picture;if(activeGroundRegion===regionId)gameArt.regionGround=picture;};
+  picture.onerror=()=>{};
+  picture.src=regionGroundPaths[regionId];
+}
 const spriteCells={command:0,gun:1,missile:2,incendiary:3,blades:4,ricochet:5,chain:6,scatter:7,piercing:8};
 // Bounds ignore transparent atlas padding, keeping units readable at gameplay scale.
 const spriteFrames=[[15,18,299,295],[371,28,221,259],[658,36,253,252],[957,19,281,277],[21,336,292,266],[364,336,236,267],[665,321,239,288],[953,326,290,284],[73,630,188,292],[416,630,114,302],[725,628,118,305],[979,628,237,297],[89,983,148,195],[402,989,139,188],[656,951,246,242],[955,941,281,274]];
@@ -66,6 +80,9 @@ function paintSprite(index,x,y,width,height,angle=0,bank=0,stretch=false,breakth
   const scale=Math.min(width/sw,height/sh),dw=stretch?width:sw*scale,dh=stretch?height:sh*scale;
   ctx.save();ctx.translate(x,y);ctx.rotate(angle);
   ctx.transform(1,bank*.14,0,1-Math.abs(bank)*.24,0,0);
+  // Preserve the source art while aligning the three mismatched sprite accents.
+  if(index===2||index===3)ctx.filter="hue-rotate(-36deg) saturate(1.12)";
+  if(index===7)ctx.filter="hue-rotate(152deg) saturate(1.08)";
   ctx.drawImage(img,sx,sy,sw,sh,-dw/2,-dh/2,dw,dh);ctx.restore();return true;
 }
 // Each generated attack cell is packed with a 16px transparent gutter.
@@ -136,10 +153,11 @@ function glow(x, y, radius, color) {
 }
 function drawBackground() {
   const view=cameraView();
-  if(gameArt.ground){
+  const ground=gameArt.regionGround||gameArt.ground;
+  if(ground){
     const tile=360,drift=motion.worldDrift(1,state.worldDistance);
     const ox=((drift.x%tile)+tile)%tile-tile,oy=((drift.y%tile)+tile)%tile-tile;
-    for(let x=ox+Math.floor((view.left-ox)/tile)*tile;x<view.right;x+=tile)for(let y=oy+Math.floor((view.top-oy)/tile)*tile;y<view.bottom;y+=tile)ctx.drawImage(gameArt.ground,x,y,tile+1,tile+1);
+    for(let x=ox+Math.floor((view.left-ox)/tile)*tile;x<view.right;x+=tile)for(let y=oy+Math.floor((view.top-oy)/tile)*tile;y<view.bottom;y+=tile)ctx.drawImage(ground,x,y,tile+1,tile+1);
     ctx.fillStyle="#d9c6a40b";ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);
     const regionTint={ruins:"#7d99ad12",industrial:"#c7924d13",infection:"#7c4c9818"}[state.expeditionPlan?.regionId];
     if(regionTint){ctx.fillStyle=regionTint;ctx.fillRect(view.left,view.top,view.right-view.left,view.bottom-view.top);}

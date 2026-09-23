@@ -26,7 +26,7 @@ hover.onload();ground.onload();vfx.onload();combatVfx.onload();
 assert.equal(app.elements.startButton.disabled,true,"wait for the train/turret atlas too");
 atlas.onerror();
 const retry1=app.requests.at(-1);
-assert.match(retry1.url,/sci-fi-atlas-v1.webp\?v=.*&retry=/,"bypass a stale failed cache entry");
+assert.match(retry1.url,/sci-fi-atlas-v1-mobile.webp\?v=.*&retry=/,"bypass a stale failed cache entry");
 retry1.onerror();app.requests.at(-1).onerror();
 assert.equal(app.requests.length,10,"automatic retries are bounded");
 assert.equal(app.elements.retryArtButton.hidden,false);

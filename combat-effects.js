@@ -23,14 +23,14 @@ const OWNERSHIP = Object.freeze({
 });
 
 const DRONE_TYPES = Object.freeze([
-  {id:"gun", module:"rapid", name:"雨燕", weapon:"机枪", color:"#65e5ff", icon:"ϟ"},
-  {id:"missile", module:"missile", name:"天隼", weapon:"导弹", color:"#ff9c58", icon:"➤"},
-  {id:"incendiary", module:"incendiary", name:"烛龙", weapon:"燃烧", color:"#ffcf5c", icon:"♨"},
-  {id:"ricochet", module:"ricochet", name:"回响", weapon:"跳弹", color:"#d6a0ff", icon:"◉"},
-  {id:"blades", module:"blades", name:"弦月", weapon:"旋刃", color:"#a5f1ff", icon:"✺"},
-  {id:"chain", module:"chain", name:"惊蛰", weapon:"电弧", color:"#8b9dff", icon:"∿"},
-  {id:"scatter", module:"scatter", name:"繁星", weapon:"霰弹", color:"#ff83b7", icon:"✣"},
-  {id:"piercing", module:"piercing", name:"白虹", weapon:"磁轨", color:"#f4f8ff", icon:"↠"},
+  {id:"gun", module:"rapid", name:"雨燕", weapon:"机枪", color:"#45bfff", icon:"ϟ"},
+  {id:"missile", module:"missile", name:"天隼", weapon:"导弹", color:"#ff6e63", icon:"➤"},
+  {id:"incendiary", module:"incendiary", name:"烛龙", weapon:"燃烧", color:"#ff6e63", icon:"♨"},
+  {id:"ricochet", module:"ricochet", name:"回响", weapon:"跳弹", color:"#b68aff", icon:"◉"},
+  {id:"blades", module:"blades", name:"弦月", weapon:"旋刃", color:"#42dfdf", icon:"✺"},
+  {id:"chain", module:"chain", name:"惊蛰", weapon:"电弧", color:"#b68aff", icon:"∿"},
+  {id:"scatter", module:"scatter", name:"繁星", weapon:"霰弹", color:"#42dfdf", icon:"✣"},
+  {id:"piercing", module:"piercing", name:"白虹", weapon:"磁轨", color:"#45bfff", icon:"↠"},
 ]);
 function droneIdentity(id){
   if(id==="command")return {name:"北辰",weapon:"星脉炮"};

@@ -70,12 +70,13 @@
     }
   }
   const specializations={rapid:"射速 +8%",missile:"爆炸半径 +15%，Lv.10 可选集束 / 重型",incendiary:"燃烧半径 +15%",ricochet:"反弹次数 +1",chain:"连锁目标 +1",piercing:"贯穿 +1，Lv.10 可选聚束 / 双轨",scatter:"每轮弹数 +1",blades:"切割范围 +12%"};
+  const weaponDescriptions={rapid:"近程高频点射，升级提高射速与单弹伤害。",missile:"远程追踪弹，高伤爆炸清理尸群。",incendiary:"投掷榴弹；北辰移动方向牵引落点，在地面留下火墙。",ricochet:"中程能量球，反弹并穿过尸群。",chain:"中程连锁电弧，密集目标之间伤害更高。",piercing:"远程磁轨弹；调整角度，让更多敌人排成一线。",scatter:"近程扇形霰弹，贴近尸群集中清扫。",blades:"近战持续切割，主动靠近尸群；升级扩大刀环。"};
   function renderResearch() {
     researchList.innerHTML = "";
     for (const id of metaApi.RESEARCH_IDS) {
       const level = meta.research[id] || 0, cost = metaApi.researchCost(meta, id), maxed = !Number.isFinite(cost);
       const row = document.createElement("div"); row.className = "meta-research-row";
-      row.innerHTML = `<span class="research-icon" data-weapon="${id}">${icon(id)}</span><span><b>${metaApi.RESEARCH_NAMES[id]}</b><small>研究 Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}${level >= 3 ? " · 专精已解锁" : ""}</small><small>基础伤害 +${level*3}% · Lv.3：${specializations[id]}</small></span><button type="button" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : cost + " 数据"}</button>`;
+      row.innerHTML = `<span class="research-icon" data-weapon="${id}">${icon(id)}</span><span><b>${metaApi.RESEARCH_NAMES[id]}</b><small>${weaponDescriptions[id]}</small><small>研究 Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL} · 基础伤害 +${level*3}% · Lv.3：${specializations[id]}</small></span><button type="button" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : cost + " 数据"}</button>`;
       row.querySelector("button").addEventListener("click", () => { const result = metaApi.buyResearch(meta, id); meta = result.meta; if (result.purchased) { save(); render(); } });
       researchList.append(row);
     }

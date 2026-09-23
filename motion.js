@@ -1,6 +1,7 @@
 "use strict";
 
-const FORWARD = Object.freeze({ x: 0.5, y: -Math.sqrt(3) / 2 });
+// A seven-degree lean keeps the track readable while favoring a vertical journey.
+const FORWARD = Object.freeze({ x: Math.sin(7 * Math.PI / 180), y: -Math.cos(7 * Math.PI / 180) });
 
 function worldDrift(dt, speed) {
   return { x: -FORWARD.x * speed * dt, y: -FORWARD.y * speed * dt };
