@@ -15,14 +15,14 @@
 }
 .home-hub .primary-button,.selection-terminal .primary-button,.result-screen .primary-button {
   border-radius:3px;
-  background-image:url("assets/primary-button-v2.webp");
+  background-image:url("assets/primary-button-v2.webp?v=2");
   color:#fff7df;
   text-shadow:0 1px 1px #0b1d29;
 }
 .home-hub .primary-button:hover:not(:disabled),
 .selection-terminal .primary-button:hover:not(:disabled),
 .result-screen .primary-button:hover:not(:disabled) {
-  background-image:url("assets/primary-button-v2.webp");
+  background-image:url("assets/primary-button-v2.webp?v=2");
 }
 .selection-terminal,.fleet-terminal,.settings-terminal,.cloud-terminal,
 .result-stats,.result-damage,.result-meta,.display-help > div,
