@@ -98,6 +98,8 @@ function pointDefenseTick(dt){
   state.pointDefenseClock=.42;
 }
 function resetRun(plan){
+  if(window.EndlessRailsCloud&&!window.EndlessRailsCloud.canStart()){window.EndlessRailsCloud.open();return;}
+  state.record=runRecord.loadRecord(metaStorage);
   state.metaProfile=longterm.loadMeta(metaStorage);
   state.expeditionPlan=plan||longterm.planFor(state.metaProfile);
   state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
@@ -850,7 +852,7 @@ ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",toggl
 $("startButton").addEventListener("click",()=>{if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
 $("restartButton").addEventListener("click",()=>{ui.result.hidden=true;if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
 ui.continue.addEventListener("click",continueRun);ui.extract?.addEventListener("click",extractRun);
-window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now(),lastHud=0,lastDrawMode=null;
+window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state,reloadSave:()=>{if(["menu","result"].includes(state.mode)){state.metaProfile=longterm.loadMeta(metaStorage);state.record=runRecord.loadRecord(metaStorage);}}};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now(),lastHud=0,lastDrawMode=null;
 function frame(now){
   // Substeps preserve wall-clock pacing at 20/30 FPS and keep collision steps small.
   const dt=Math.max(0,Math.min(.25,(now-last)/1000));last=now;

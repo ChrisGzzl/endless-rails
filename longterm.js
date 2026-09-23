@@ -10,7 +10,9 @@ function gameStorage(host) {
     const values = new Map();
     return qaStorage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)) };
   }
-  try { return host?.localStorage || (typeof localStorage !== "undefined" ? localStorage : null); } catch { return null; }
+  try { const raw=host?.localStorage || (typeof localStorage !== "undefined" ? localStorage : null);
+    if(!raw)return null;
+    return {getItem:key=>(host?.EndlessRailsCloudStorage||raw).getItem(key),setItem:(key,value)=>(host?.EndlessRailsCloudStorage||raw).setItem(key,value)}; } catch { return null; }
 }
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 3;

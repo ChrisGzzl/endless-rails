@@ -68,7 +68,7 @@ const sandbox = {
 vm.createContext(sandbox);
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.deepEqual(scriptNames, ["audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "longterm.js", "renderer.js", "game.js", "meta-ui.js", "armory.js", "display.js", "settings.js"], "all runtime modules must load in dependency order");
+assert.deepEqual(scriptNames, ["cloud-config.js", "cloud-sync.js", "audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "longterm.js", "renderer.js", "game.js", "meta-ui.js", "armory.js", "display.js", "settings.js", "cloud-ui.js"], "all runtime modules must load in dependency order");
 for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 

@@ -77,6 +77,7 @@
   function open() { meta = metaApi.loadMeta(storage); render(); screen.hidden = false; $("startScreen").hidden = true; }
   function close() { screen.hidden = true; $("startScreen").hidden = false; }
   function start() {
+    if(window.EndlessRailsCloud&&!window.EndlessRailsCloud.canStart()){window.EndlessRailsCloud.open();return;}
     meta = metaApi.loadMeta(storage); const plan = metaApi.planFor(meta); screen.hidden = true;
     if (window.EndlessRailsGame?.startRun) window.EndlessRailsGame.startRun(plan); else $("startButton")?.click();
   }

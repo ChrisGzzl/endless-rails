@@ -426,3 +426,13 @@ body:has(#settingsScreen:not([hidden])) #pauseScreen { visibility: hidden; }
 @media (max-height: 450px) and (min-width: 600px) {
   [data-choice-count="2"] .upgrade-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
 }
+
+/* Account sheet has its own scrollport so small keyboards cannot hide actions. */
+.cloud-screen { z-index: 95; }
+.cloud-screen .cloud-terminal { height: auto; max-height: 100%; width: min(100%,440px); display: block; overflow-y: auto; padding: 22px; }
+.cloud-terminal p { line-height: 1.6; font-size: 13px; color: #c0d4d9; }
+.cloud-terminal label { display: block; margin: 14px 0 6px; font-size: 13px; }
+.cloud-terminal input { width: 100%; min-height: 44px; box-sizing: border-box; padding: 10px; font: 16px system-ui; color: #e9f5ef; background: #102936; border: 1px solid #7297a2; border-radius: 6px; user-select: text; -webkit-user-select: text; }
+.cloud-terminal button { display: block; width: 100%; min-height: 44px; padding: 10px; margin-top: 10px; font: inherit; color: #e9f5ef; background: #284957; border: 1px solid #7297a2; border-radius: 6px; }
+.cloud-terminal button:disabled { opacity: .45; }
+.cloud-terminal #cloudIdentity { overflow-wrap: anywhere; }

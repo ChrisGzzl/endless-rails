@@ -10,8 +10,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="styles.css?v=20260922-v090rc2">
-  <link rel="stylesheet" href="ui-wasteland.css?v=20260922-v090rc2">
+  <link rel="stylesheet" href="styles.css?v=20260923-v090rc3">
+  <link rel="stylesheet" href="ui-wasteland.css?v=20260923-v090rc3">
 </head>
 <body>
   <main id="app">
@@ -61,8 +61,8 @@
       <button class="primary-button" id="startButton"><span>远征准备</span><span aria-hidden="true">↗</span></button>
       <p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p>
       <button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button>
-      <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button><button id="startSettingsButton" type="button">设置</button></div>
-      <p class="microcopy">铁路远征 <span>·</span> 列车编组 <span>·</span> 长期成长</p><p class="version-label">v0.9.0-rc.2</p>
+      <div class="display-actions"><button id="startFullscreenButton" type="button">全屏游玩</button><button id="startInstallButton" type="button">添加到主屏幕</button><button id="startSettingsButton" type="button">设置</button><button id="cloudButton" type="button" hidden>测试存档</button></div>
+      <p class="microcopy">铁路远征 <span>·</span> 列车编组 <span>·</span> 长期成长</p><p class="version-label">v0.9.0-rc.3</p>
     </div>
   </section>
 
@@ -165,20 +165,34 @@
       <button class="primary-button" id="closeSettingsButton" type="button">完成</button>
     </div>
   </section>
-  <script src="audio.js?v=20260922-v090rc2"></script>
-  <script src="balance.js?v=20260922-v090rc2"></script>
-  <script src="motion.js?v=20260922-v090rc2"></script>
-  <script src="progression.js?v=20260922-v090rc2"></script>
-  <script src="combat-effects.js?v=20260922-v090rc2"></script>
-  <script src="control.js?v=20260922-v090rc2"></script>
-  <script src="route-events.js?v=20260922-v090rc2"></script>
-  <script src="run-record.js?v=20260922-v090rc2"></script>
-  <script src="longterm.js?v=20260922-v090rc2"></script>
-  <script src="renderer.js?v=20260922-v090rc2"></script>
-  <script src="game.js?v=20260922-v090rc2"></script>
-  <script src="meta-ui.js?v=20260922-v090rc2"></script>
-  <script src="armory.js?v=20260922-v090rc2"></script>
-  <script src="display.js?v=20260922-v090rc2"></script>
-  <script src="settings.js?v=20260922-v090rc2"></script>
+  <section class="overlay selection-screen cloud-screen" id="cloudScreen" role="dialog" aria-modal="true" aria-labelledby="cloudTitle" hidden>
+    <div class="selection-terminal cloud-terminal">
+      <header><p class="eyebrow">远征档案</p><h2 id="cloudTitle">测试存档</h2><p id="cloudIdentity"></p><small id="cloudBadge">本机存档</small></header>
+      <p>开发测试用：输入相同 ID 可读取同一份服务器存档，不是真实账号登录。</p>
+      <div id="cloudLogin"><label for="cloudUserId">测试用户 ID</label><input id="cloudUserId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="48" placeholder="例如 player-001"><button id="cloudSelect" type="button">切换到此测试用户</button></div>
+      <div id="cloudAccount" hidden><p>长期成长与战绩会在返回准备页后自动同步。战斗中的位置和敌人不保存。</p><button id="cloudSync" type="button">立即同步</button><button id="cloudImport" type="button">将游客进度导入这个新用户</button><button id="cloudLogout" type="button">返回游客存档</button></div>
+      <div id="cloudConflict" hidden><p id="cloudCompare"></p><p>设备进度不同，自动同步已暂停。选择后会替换另一份进度，不会叠加资源。</p><button id="cloudUseRemote" type="button">使用服务器进度，替换本机</button><button id="cloudUseLocal" type="button">保留本机进度，覆盖服务器</button></div>
+      <p id="cloudStatus" role="status" aria-live="polite">测试存档保存在运行服务的电脑上。</p>
+      <button class="primary-button" id="cloudClose" type="button">返回游戏</button>
+    </div>
+  </section>
+  <script src="cloud-config.js?v=20260923-v090rc3"></script>
+  <script src="cloud-sync.js?v=20260923-v090rc3"></script>
+  <script src="audio.js?v=20260923-v090rc3"></script>
+  <script src="balance.js?v=20260923-v090rc3"></script>
+  <script src="motion.js?v=20260923-v090rc3"></script>
+  <script src="progression.js?v=20260923-v090rc3"></script>
+  <script src="combat-effects.js?v=20260923-v090rc3"></script>
+  <script src="control.js?v=20260923-v090rc3"></script>
+  <script src="route-events.js?v=20260923-v090rc3"></script>
+  <script src="run-record.js?v=20260923-v090rc3"></script>
+  <script src="longterm.js?v=20260923-v090rc3"></script>
+  <script src="renderer.js?v=20260923-v090rc3"></script>
+  <script src="game.js?v=20260923-v090rc3"></script>
+  <script src="meta-ui.js?v=20260923-v090rc3"></script>
+  <script src="armory.js?v=20260923-v090rc3"></script>
+  <script src="display.js?v=20260923-v090rc3"></script>
+  <script src="settings.js?v=20260923-v090rc3"></script>
+  <script src="cloud-ui.js?v=20260923-v090rc3"></script>
 </body>
 </html>
