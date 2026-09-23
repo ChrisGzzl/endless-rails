@@ -6,6 +6,7 @@ const m=meta.emptyMeta();m.resources={scrap:500,components:20,data:100};meta.sav
 const g=require('./test-harness.cjs')({storage}),e=g.elements,home=g.sandbox.window.EndlessRailsMetaUI;
 const tabs=[['shop','homeTabShop','homeShop'],['train','homeTabTrain','metaScreen'],['battle','homeTabBattle','homeBattle'],['research','homeTabResearch','homeResearch'],['settings','startSettingsButton','homeSettings']];
 assert.equal(home.getTab(),'battle');assert.equal(e.homeBattle.hidden,false);assert.equal(e.homeScrap.textContent,'500');
+e.homeLoadout.events.click();assert.equal(home.getTab(),'train');assert.equal(e.metaScreen.hidden,false);e.homeTabBattle.events.click();
 for(const [key,id,panel] of tabs){e[id].events.click();assert.equal(home.getTab(),key);assert.equal(e[panel].hidden,false);for(const [other,otherId,otherPanel] of tabs){assert.equal(e[otherId]['aria-selected'],String(key===other));assert.equal(e[otherPanel].hidden,key!==other);}}
 assert.equal(g.run('settingsOpen'),false,'settings tab is a page, not a blocking modal');
 e.homeTabBattle.events.keydown({code:'ArrowRight',preventDefault(){},stopPropagation(){}});assert.equal(home.getTab(),'research');

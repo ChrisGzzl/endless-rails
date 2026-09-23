@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="ui-refresh.css?v=20260923-ui1">
   <link rel="stylesheet" href="battle-ui.css?v=20260923-battle3">
   <link rel="stylesheet" href="edge-ui.css?v=20260923-edge2">
+  <link rel="stylesheet" href="sand-ui.css?v=20260924-sand1">
 </head>
 <body>
   <main id="app">
@@ -66,12 +67,12 @@
       <section class="home-pane home-battle" id="homeBattle" role="tabpanel" aria-labelledby="homeTabBattle">
         <div class="mission-heading"><p class="eyebrow">RAILWAY EXPEDITION / 铁路远征</p><h1 id="homeRegionName">起始荒原</h1><p id="homeRegionDescription">开阔荒原，护送列车穿越尸潮。</p></div>
         <div class="home-keyart"><img src="assets/expedition-hero-v1.webp" alt="四架无人机护送装甲列车穿越明亮荒原" draggable="false" fetchpriority="high" width="1448" height="1086"><span class="home-route-mark" aria-hidden="true">01 — 05</span><div class="mission-stamp"><span id="homeRegionStatus">已侦察 · 低危铁路</span><b>护送最后一班列车</b></div></div>
-        <div class="mission-launch"><div class="home-regions" id="metaRegionList" aria-label="选择远征区域"></div><p class="mission-loadout" id="homeLoadout">当前编组 · 4 节车厢</p><button class="primary-button" id="startButton" type="button"><span>开始远征</span><span aria-hidden="true">↗</span></button><p class="mission-note">5 段护送 · 每段 60 秒 · 到站可安全撤离</p><p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p><button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button></div>
+        <div class="mission-launch"><div class="home-regions" id="metaRegionList" aria-label="选择远征区域"></div><button class="mission-loadout" id="homeLoadout" type="button">编组 4 节 · 前往列车调整 →</button><button class="primary-button" id="startButton" type="button"><span>开始远征</span><span aria-hidden="true">↗</span></button><p class="mission-note">5 段护送 · 每段 60 秒 · 到站可安全撤离</p><p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p><button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button></div>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="metaScreen" role="tabpanel" aria-labelledby="homeTabTrain" hidden>
         <header class="home-page-heading"><p class="eyebrow">TRAIN WORKSHOP</p><h2>列车车间</h2><p>修整编组，为下一次远征做好准备。</p></header>
-        <section class="home-upgrade-card"><div class="home-train-art" aria-hidden="true"><img src="assets/expedition-hero-v1.webp" alt="" loading="lazy"></div><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaResources"></p><button class="primary-button" id="metaTrainUpgradeButton" type="button">强化列车</button></section>
-        <div class="meta-section__head"><b>功能车厢</b><span>点击调整编组</span></div><p id="metaLoadoutSummary" class="home-muted"></p><div class="meta-grid" id="metaCarList"></div><button class="home-secondary" id="metaStartButton" type="button">编组完成 · 前往出战 →</button>
+        <div class="meta-section__head"><b>功能车厢</b><span>点击调整编组</span></div><p id="metaLoadoutSummary" class="home-muted"></p><div class="meta-grid" id="metaCarList"></div>
+        <section class="home-upgrade-card"><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaResources"></p><button class="primary-button" id="metaTrainUpgradeButton" type="button">强化列车</button></section><button class="home-secondary" id="metaStartButton" type="button">编组完成 · 前往出战 →</button>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="homeResearch" role="tabpanel" aria-labelledby="homeTabResearch" hidden>
         <header class="home-page-heading"><p class="eyebrow">DRONE LABORATORY</p><h2>无人机研究</h2><p>这里可查看专机职责与长期研究效果。</p></header><div class="meta-research" id="metaResearchList"></div><section class="bond-guide" aria-label="无人机编组配色"><h3>编组配色</h3><p><i class="bond-dot bond-dot--purple"></i>紫 · 电弧 + 跳弹：北辰额外发射放电跳弹</p><p><i class="bond-dot bond-dot--blue"></i>蓝 · 机枪 + 磁轨：北辰使用穿透激光</p><p><i class="bond-dot bond-dot--red"></i>红 · 燃烧 + 导弹：北辰发射追踪燃烧弹</p><p><i class="bond-dot bond-dot--cyan"></i>青 · 旋刃 + 霰弹：同色编组</p><small>前三组在两架无人机都达到 Lv.5 后激活。青色当前仅作为编组配色，不改变技能规则。</small></section><section class="home-blueprints"><div class="meta-section__head"><b>已回收蓝图</b><span>永久生效</span></div><div id="metaBlueprintList" class="meta-blueprints"></div></section>

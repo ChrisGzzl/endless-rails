@@ -87,7 +87,7 @@
     for(const [id,key] of [["homeScrap","scrap"],["homeComponents","components"],["homeData","data"]]){$(id).textContent=compact(meta.resources[key]);$(id).setAttribute("aria-label",String(meta.resources[key]));}
     const selected=metaApi.regionById(meta.selectedRegion);
     $("homeRegionName").textContent=selected.name;$("homeRegionDescription").textContent=selected.description;$("homeRegionStatus").textContent=statusFor(selected)+" · "+selected.statusText;
-    $("homeLoadout").textContent="当前编组 · "+metaApi.planFor(meta).trainLength+" 节车厢 · 列车 Lv."+meta.train.level;
+    $("homeLoadout").textContent="编组 "+metaApi.planFor(meta).trainLength+" 节 · 前往列车调整 →";
     meta = metaApi.normalizeMeta(meta);
     const nextXp = metaApi.xpToNext(meta.train.level);
     trainText.textContent = `列车 Lv.${meta.train.level} · ${meta.train.xp}/${nextXp} XP · ${metaApi.trainSlots(meta)} 节远征上限`;
@@ -121,6 +121,7 @@
   function refresh() { meta = metaApi.loadMeta(storage); if (!screen.hidden) render(); }
   trainUpgradeButton?.addEventListener('click',()=>{const result=metaApi.upgradeTrain(meta);meta=result.meta;if(result.purchased){save();render();}});
   startButton.addEventListener('click',()=>selectTab('battle',true));
+  $('homeLoadout').addEventListener('click',()=>selectTab('train',true));
   $('shopToBattle').addEventListener('click',()=>selectTab('battle',true));
   tabs.forEach(([key,id],index)=>{
     $(id).addEventListener('click',()=>selectTab(key));

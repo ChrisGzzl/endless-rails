@@ -1,0 +1,206 @@
+/* Sand, graphite and weathered copper: bright wasteland surfaces with legible ink. */
+:root {
+  --ui-navy:#293b3e;
+  --ui-mid:#4a6060;
+  --ui-muted:#63716a;
+  --ui-blue:#6d9292;
+  --ui-yellow:#c48842;
+  --ui-sky:#ded4c1;
+  --ui-paper:#f4ecdc;
+}
+body { background:#bcb3a1; }
+.overlay.home-hub { color:#273a3d; background:#ddd4c1; background-image:none; }
+.home-header { color:#273a3d; border-color:#b7aa92; }
+.home-profile b,.mission-heading h1,.home-page-heading h2,
+.home-upgrade-card h3,.home-hub .meta-section__head,
+.home-hub .meta-card b,.home-hub .meta-research-row b,
+.home-hub .sound-option h3,.shop-coming h3 { color:#25383b; }
+.home-profile small,.home-hub .eyebrow,.mission-heading > p:last-child,
+.home-page-heading > p:last-child,.mission-note,.home-muted,
+.home-hub .meta-section__head span,.home-hub .meta-card em,
+.home-hub .meta-research-row small,.shop-coming p,
+.home-hub .sound-option p,.home-hub .sound-note,.home-about,
+.home-about .version-label { color:#586a65; }
+.home-wallet > span { background:#35494b; }
+.home-wallet small { color:#e2e8dc; }
+.home-wallet > span:nth-child(2) svg { stroke:#d9d0ae; }
+.home-wallet > span:nth-child(3) svg { stroke:#93c6bd; }
+.home-keyart { border-color:#f5e8ce; }
+.home-regions .meta-region {
+  border-color:#beb39b; background:#eee6d6; color:#344b4b;
+}
+.home-regions .meta-region small { color:#68736b; }
+.home-regions .meta-region.selected {
+  border-color:#bd8748; background:#3a5152; color:#f3e2bd;
+}
+.home-regions .meta-region.selected small { color:#eee4cf; }
+.mission-launch .mission-loadout {
+  display:block; width:100%; margin:7px 0; padding:2px 3px;
+  border:0; background:transparent; color:#3e5b57;
+  font:700 11px/1.45 system-ui; text-align:center; cursor:pointer;
+}
+.mission-launch .mission-loadout:hover { color:#8f562d; text-decoration:underline; }
+.mission-launch .mission-loadout:focus-visible { outline:2px solid #a87538; outline-offset:2px; }
+.home-tabs { background:#293d40; border-color:#65766d; }
+.home-tabs button { color:#c4d0c4; }
+.home-tabs button[aria-selected="true"] { color:#f8d99b; background:#405459; }
+.home-tabs button[aria-selected="true"]::before { background:#dcae62; box-shadow:none; }
+.home-tabs #homeTabBattle,
+.home-tabs #homeTabBattle[aria-selected="false"] {
+  border-color:#70847c; background:#35494d; color:#b9c9be;
+  box-shadow:0 0 0 2px #293d40; font-weight:700;
+}
+.home-tabs #homeTabBattle svg,
+.home-tabs #homeTabBattle[aria-selected="false"] svg {
+  background:#657a75; stroke:#e2e8d9;
+}
+.home-tabs #homeTabBattle[aria-selected="true"] {
+  border-color:#eac879; background:#415658; color:#ffe0a1;
+  box-shadow:0 0 0 2px #293d40,0 4px 10px #17282b55;
+}
+.home-tabs #homeTabBattle[aria-selected="true"] svg { background:#e5b858; stroke:#293d40; }
+
+/* Put the actual car choices first in the workshop; the duplicate hero image is unnecessary. */
+.home-train-art { display:none; }
+.home-upgrade-card {
+  margin:16px 0 8px; padding:12px; border:1px solid #c8b89b;
+  background:#ebe0ca; box-shadow:none;
+}
+.home-upgrade-card p { color:#586a65; }
+.home-hub .meta-car,.home-hub .meta-research-row,
+.home-secondary,.home-blueprints,.bond-guide,.home-hub .sound-options,.shop-coming {
+  border-color:#c9bba2; background:#f1e8d7; color:#273b3c;
+}
+.home-hub .meta-car.selected { border-color:#bd8748; background:#fff5e2; box-shadow:inset 4px 0 #bf8446; }
+.home-hub .meta-card small { color:#397257; }
+.home-hub .meta-car .meta-card__icon { color:#425953; }
+.home-hub .meta-research-row button { background:#d5ad70; border-color:#b98546; color:#293b3e; }
+.home-hub .meta-blueprints,.bond-guide small,.bond-guide { color:#3f5953; }
+.home-hub .sound-option { border-color:#c9bba2; }
+.home-hub .switch-track { background:#bdc4b8; border-color:#89978c; }
+.home-hub .sound-toggle[aria-checked="true"] .switch-track { background:#d2ae6c; border-color:#b88948; }
+.home-hub .switch-value { color:#3c5650; }
+.home-tag { background:#647b6e; }
+
+/* One clean sheet, compact cards and a consistent decision row at the station. */
+.overlay.station-screen,.overlay.choice-screen {
+  background:#26333170; -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px);
+}
+.overlay.station-screen {
+  display:flex; align-items:center; justify-content:center;
+  padding:12px max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom));
+  overflow:hidden;
+}
+.station-screen .selection-terminal,.choice-screen .selection-terminal {
+  border:1px solid #a6977d; border-radius:4px;
+  background:#e9dfcd; color:#293b3d;
+  box-shadow:0 14px 32px #192b2e4d;
+}
+.station-screen .selection-terminal {
+  display:grid; grid-template-rows:auto auto auto; gap:8px;
+  width:100%; max-width:480px; height:auto; max-height:calc(100dvh - 24px);
+  padding:14px; overflow-y:auto;
+}
+.station-screen .selection-terminal > .station-heading,
+.choice-screen .selection-terminal > .station-heading {
+  border-color:#c8bba4; padding-bottom:9px;
+}
+.station-screen .station-heading {
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 6px;
+  align-items:center;
+}
+.station-screen .station-heading .eyebrow { grid-column:1/-1; }
+.station-screen .station-heading h2 { grid-column:1; font-size:25px; line-height:1.15; }
+.station-screen .station-heading > p:not(.eyebrow) { grid-column:1/-1; grid-row:3; margin:0; }
+.station-screen .station-heading .inspect-entry { grid-column:2; grid-row:2; margin:0; }
+.selection-terminal .station-heading h2 { color:#273a3d; }
+.selection-terminal .station-heading .eyebrow { color:#8b6538; }
+.selection-terminal .station-heading .eyebrow::before { background:#ba7a42; }
+.selection-terminal .station-heading > p:not(.eyebrow) { color:#556761; }
+.station-screen .selection-terminal .upgrade-list,
+.choice-screen .selection-terminal .upgrade-list {
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:repeat(3,minmax(0,auto)); gap:6px;
+  max-height:none; overflow:visible;
+}
+.station-screen .selection-terminal .upgrade-card,
+.choice-screen .selection-terminal .upgrade-card {
+  min-height:70px; padding:9px 10px; gap:9px;
+  border:1px solid #ccbea4; border-left:3px solid #a77d4e;
+  background:#f7f0e3; color:#273b3c; box-shadow:none;
+  grid-template-columns:40px minmax(0,1fr); align-content:center;
+}
+.selection-terminal .upgrade-card h3 { color:#27393b; }
+.selection-terminal .upgrade-card p { color:#52645e; }
+.station-screen .selection-terminal .upgrade-icon,
+.choice-screen .selection-terminal .upgrade-icon {
+  width:40px; height:40px; display:grid; place-items:center;
+  background:#e6d7b9; color:#805831; border:1px solid #ccb892;
+  font-size:21px;
+}
+.selection-terminal .event-card[data-type="contract"] .upgrade-icon::before { color:#805831; font-weight:750; font-size:20px; }
+.choice-screen .event-card[data-type="speed"] .upgrade-icon { color:#486e6f; }
+.choice-screen .event-card[data-type="freight"] .upgrade-icon { color:#667e54; }
+.station-screen .selection-terminal .upgrade-card:hover,
+.station-screen .selection-terminal .upgrade-card.selected,
+.choice-screen .selection-terminal .upgrade-card:hover {
+  border-color:#a76b37; border-left-color:#a76b37;
+  background:#f5e4c4; box-shadow:inset 3px 0 #c88945;
+}
+.choice-screen .selection-terminal { max-width:480px; padding:14px; gap:8px; }
+.choice-screen .selection-terminal .terminal-footer { border-color:#c8bba4; color:#546661; }
+.choice-screen .selection-terminal .terminal-footer > :last-child { color:#6b786b; }
+.station-screen .station-actions { grid-template-columns:minmax(0,1fr); gap:6px; }
+.station-screen .station-actions .train-strip { display:none; }
+.station-screen .station-salvage { color:#5a6a61; font-size:10px; line-height:1.3; }
+.selection-terminal .reroll-button,.selection-terminal .inspect-entry,.selection-terminal .display-secondary {
+  border:1px solid #bbab8f; background:#f4ecdc; color:#334b49;
+}
+.selection-terminal .reroll-button:hover:not(:disabled),
+.selection-terminal .inspect-entry:hover,
+.selection-terminal .display-secondary:hover:not(:disabled) { background:#e8d7ba; }
+.station-screen .station-decision-row { grid-template-columns:minmax(88px,.72fr) minmax(0,1.28fr); gap:7px; }
+.station-screen .station-decision-row button { min-width:0; min-height:44px; padding:7px 5px; font-size:12px; }
+.station-screen .selection-terminal .continue-button { line-height:1.2; white-space:normal; }
+
+/* Hover shorthands in older sheets reset background-size to auto. Keep the full sprite. */
+.home-hub .primary-button:hover:not(:disabled),
+.selection-terminal .primary-button:hover:not(:disabled),
+.result-screen .primary-button:hover:not(:disabled),
+.home-hub .primary-button:active:not(:disabled),
+.selection-terminal .primary-button:active:not(:disabled),
+.result-screen .primary-button:active:not(:disabled) {
+  background-image:url("assets/primary-button-v2.webp?v=2");
+  background-size:100% 100%; background-repeat:no-repeat; background-position:center;
+}
+
+.overlay.result-screen { background:#e3d9c7; color:#293b3d; }
+.result-screen h2,.result-screen h3 { color:#293b3d; }
+.result-stats,.result-damage,.result-meta,
+.settings-terminal,.fleet-terminal { background:#f1e8d8; border-color:#c7bba5; color:#293b3d; }
+.result-stats strong { color:#965d30; }
+.settings-screen .sound-options,.fleet-terminal .inspect-unit,
+.fleet-terminal .inspect-stat { background:#f9f1e3; border-color:#d0c2a9; }
+
+@media (max-width:359px), (max-height:650px) {
+  .station-screen .selection-terminal { padding:9px; gap:5px; }
+  .station-screen .station-heading h2 { font-size:21px; }
+  .station-screen .selection-terminal .upgrade-card,
+  .choice-screen .selection-terminal .upgrade-card { min-height:61px; padding:6px 8px; }
+  .station-screen .selection-terminal .upgrade-list,
+  .choice-screen .selection-terminal .upgrade-list { gap:5px; }
+  .station-screen .selection-terminal .upgrade-icon,
+  .choice-screen .selection-terminal .upgrade-icon { width:34px; height:34px; }
+  .station-screen .station-salvage { font-size:9px; }
+}
+@media (max-height:450px) and (min-width:600px) {
+  .station-screen .selection-terminal { max-width:740px; max-height:calc(100dvh - 14px); }
+  .station-screen .selection-terminal .upgrade-list,
+  .choice-screen .selection-terminal .upgrade-list {
+    grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:auto;
+  }
+  .station-screen .selection-terminal .upgrade-card,
+  .choice-screen .selection-terminal .upgrade-card { grid-template-columns:minmax(0,1fr); align-content:center; }
+  .station-screen .station-actions { grid-template-columns:1fr auto minmax(210px,1.2fr); align-items:center; }
+  .station-screen .station-salvage { font-size:9px; }
+}
