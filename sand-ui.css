@@ -75,7 +75,7 @@ body { background:#bcb3a1; }
 .home-hub .meta-card small { color:#397257; }
 .home-hub .meta-car .meta-card__icon { color:#425953; }
 .home-hub .meta-research-row button { background:#d5ad70; border-color:#b98546; color:#293b3e; }
-.home-hub .meta-research-row small { font-size:10px; line-height:1.35; }
+.home-hub .meta-research-row small { font-size:11px; line-height:1.4; font-weight:500; }
 .home-hub .meta-research-row button:disabled {
   opacity:1; background:#e1d7c6; border-color:#c2b49c; color:#69766b;
 }
