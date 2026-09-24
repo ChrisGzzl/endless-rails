@@ -110,6 +110,9 @@
 #app .pause-button::before { background-position:0 0; }
 #app .fullscreen-button::before { background-position:33.333% 0; }
 .reroll-button::before { display:inline-block; width:18px; height:18px; margin:0 6px -4px 0; background-position:0 100%; }
+.inspect-arrows button,.inspect-page-nav button { font-size:0; }
+.inspect-arrows button::before,.inspect-page-nav button::before { content:""; display:block; width:22px; height:22px; margin:auto; background:url("assets/icons-controls-v1.webp") 100% 0/400% 200% no-repeat; }
+#inspectNext::before,#inspectNextPage::before { transform:scaleX(-1); }
 #app .skill-rail .pulse-button .ui-icon { width:31px; height:31px; }
 #app .skill-rail .claim-upgrade::before { content:""; width:24px; height:24px; background:url("assets/icons-base-v1.webp") 66.667% 100%/400% 400% no-repeat; }
 .levelup-screen .level-health > span { display:block; width:24px; height:24px; font-size:0; background:url("assets/icons-controls-v1.webp") 66.667% 100%/400% 200% no-repeat; }
