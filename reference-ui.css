@@ -33,6 +33,7 @@
 .home-regions .meta-region b { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:850; }
 .home-regions .meta-region small { margin-top:2px; color:#537063; font-size:9px; font-weight:650; }
 .home-regions .meta-region.selected { border:2px solid #ecb641; padding:0 2px 4px; background:#1c4049; color:#fce2a0; box-shadow:0 0 0 2px #fff2d3; }
+.home-hub .home-regions .meta-region.selected b { color:#fce2a0; }
 .home-regions .meta-region.selected small { color:#f7ca65; }
 .home-regions .meta-region:disabled { opacity:.65; filter:grayscale(.75); }
 .mission-launch .mission-loadout { display:flex; align-items:center; justify-content:flex-start; gap:10px; min-height:49px; padding:6px 10px; margin:9px 0; border:1px solid #c6b9a2; border-radius:5px; background:#f3ead9; color:#334b4c; font-size:11px; text-align:left; }
@@ -57,7 +58,7 @@
 .home-tabs .ui-icon--research { background-image:url("assets/nav-research-v2.webp"); }
 .home-tabs .ui-icon--settings { background-image:url("assets/nav-settings-v2.webp"); }
 .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:70px; margin-top:-7px; padding:5px 0 3px; transform:none; border:0; border-radius:0; box-shadow:none; background:transparent; color:#d2ded8; }
-.home-tabs #homeTabBattle::before { left:50%; top:0; width:61px; height:55px; background:linear-gradient(#46636a,#284952); clip-path:polygon(18% 0,82% 0,100% 23%,100% 77%,50% 100%,0 77%,0 23%); }
+.home-tabs #homeTabBattle::before { display:block; left:50%; top:0; width:61px; height:55px; background:linear-gradient(#46636a,#284952); clip-path:polygon(18% 0,82% 0,100% 23%,100% 77%,50% 100%,0 77%,0 23%); }
 .home-tabs #homeTabBattle[aria-selected="true"] { background:#244b53; color:#ffd256; }
 .home-tabs #homeTabBattle[aria-selected="true"]::before { background:linear-gradient(#ffd75a,#ad702e 88%); }
 .home-tabs #homeTabBattle .ui-icon { z-index:1; width:40px; height:40px; background-size:contain; filter:grayscale(1) brightness(1.55); opacity:.8; }
@@ -116,6 +117,28 @@
   .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:63px; }
   .home-tabs #homeTabBattle::before { width:51px; height:46px; }
   .home-tabs #homeTabBattle .ui-icon { width:34px; height:34px; }
+}
+@media(max-height:600px) and (max-width:359px) {
+  .home-header { min-height:52px; padding-top:5px; padding-bottom:5px; }
+  .home-battle { grid-template-rows:auto 122px auto; }
+  .mission-heading { padding:7px 14px 5px; }
+  .mission-heading h1 { font-size:23px; }
+  .mission-heading h1::after { height:3px; margin-top:3px; }
+  .mission-heading > p:last-child { margin-top:2px; font-size:10px; }
+  .home-keyart { min-height:122px; }
+  .home-route-mark { top:5px; left:6px; padding:2px 6px; font-size:10px; }
+  .mission-stamp { bottom:5px; left:8px; right:8px; }
+  .mission-stamp span { padding:1px 4px; font-size:9px; }
+  .mission-stamp b { font-size:13px; }
+  .mission-launch { padding:6px 12px; }
+  .home-regions .meta-region,.home-regions .meta-region.selected { min-height:68px; padding-bottom:3px; }
+  .home-regions .meta-region::before { height:29px; margin:2px 0 3px; }
+  .mission-launch .mission-loadout { min-height:39px; margin:5px 0; padding:3px 8px; font-size:10px; }
+  .mission-loadout::before { width:29px; height:28px; }
+  .mission-launch .primary-button { min-height:46px; padding:7px; font-size:17px; }
+  .mission-note { margin-top:4px; font-size:9px; }
+  .home-tabs button { min-height:51px; }
+  .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:57px; }
 }
 @media(max-height:450px) and (min-width:600px) {
   .home-battle { grid-template-columns:1fr 1fr; grid-template-rows:auto minmax(0,1fr); overflow-y:auto; }
