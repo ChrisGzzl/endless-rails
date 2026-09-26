@@ -24,6 +24,7 @@
       const state = meta.regions[region.id], unlocked = !!state?.unlocked;
       const button = document.createElement("button");
       button.type = "button"; button.className = "meta-card meta-region" + (meta.selectedRegion === region.id ? " selected" : "");
+      button.dataset.region = region.id;
       button.disabled = !unlocked;button.setAttribute("aria-pressed",String(meta.selectedRegion===region.id));
       button.innerHTML = `<b>${region.name}</b><small>${unlocked ? statusFor(region) : "未解锁"}</small>`;
       button.setAttribute("aria-label",region.name+" · "+(unlocked?statusFor(region):"未解锁"));
