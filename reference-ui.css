@@ -60,7 +60,7 @@
 .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:70px; margin-top:-7px; padding:5px 0 3px; transform:none; border:0; border-radius:0; box-shadow:none; background:transparent; color:#d2ded8; }
 .home-tabs #homeTabBattle::before { display:block; left:50%; top:0; width:61px; height:55px; background:linear-gradient(#46636a,#284952); clip-path:polygon(18% 0,82% 0,100% 23%,100% 77%,50% 100%,0 77%,0 23%); }
 .home-tabs #homeTabBattle[aria-selected="true"] { background:#244b53; color:#ffd256; }
-.home-tabs #homeTabBattle[aria-selected="true"]::before { background:linear-gradient(#ffd75a,#ad702e 88%); }
+.home-tabs #homeTabBattle[aria-selected="true"]::before { display:block; background:linear-gradient(#ffd75a,#ad702e 88%); }
 .home-tabs #homeTabBattle .ui-icon { z-index:1; width:40px; height:40px; background-size:contain; filter:grayscale(1) brightness(1.55); opacity:.8; }
 .home-tabs #homeTabBattle[aria-selected="true"] .ui-icon { filter:none; opacity:1; }
 .home-tabs #homeTabBattle span { z-index:1; }
