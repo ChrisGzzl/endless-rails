@@ -1,4 +1,6 @@
 "use strict";
+import { $ } from "./dom.js";
+import { state, gameAudio, settingsGate, resetJoystick, updateHud } from "./game.js";
 let settingsReturnFocus=null,settingsPreviousPause=false;
 const settingsInert=[];
 $("settingsScreen").hidden=true;
@@ -13,9 +15,9 @@ function renderSoundSettings(){
   $("homeSoundNote").textContent=$("soundNote").textContent;
 }
 function openSettings(){
-  if(settingsOpen)return;
+  if(settingsGate.open)return;
   settingsReturnFocus=document.activeElement;settingsPreviousPause=state.paused;
-  settingsOpen=true;state.paused=true;resetJoystick();gameAudio?.tick(state.mode,true);
+  settingsGate.open=true;state.paused=true;resetJoystick();gameAudio?.tick(state.mode,true);
   for(const id of ["app","startScreen","pauseScreen","stationScreen","levelUpScreen","eventScreen","contractScreen","resultScreen","gmPanel","displayHelp"]){
     const element=$(id);settingsInert.push([element,!!element.inert]);element.inert=true;
   }
@@ -23,8 +25,8 @@ function openSettings(){
   ($("musicToggle").disabled?$("closeSettingsButton"):$("musicToggle")).focus?.();
 }
 function closeSettings(){
-  if(!settingsOpen)return;
-  $("settingsScreen").hidden=true;settingsOpen=false;state.paused=settingsPreviousPause;
+  if(!settingsGate.open)return;
+  $("settingsScreen").hidden=true;settingsGate.open=false;state.paused=settingsPreviousPause;
   for(const [element,inert] of settingsInert.splice(0))element.inert=inert;
   gameAudio?.tick(state.mode,state.paused);updateHud();settingsReturnFocus?.focus?.();
 }

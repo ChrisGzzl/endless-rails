@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const control = require("./control.js");
+const control = require("./src/core/control.js");
 
 const bounds = { left: 46, right: 344, top: 120, bottom: 570 };
 const train = { x: 195, y: 340 };

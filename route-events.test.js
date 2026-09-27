@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const events = require("./route-events.js");
+const events = require("./src/core/route-events.js");
 const picks = events.pickRouteEvents(1234, 2);
 assert.equal(picks.length, 3);
 assert.equal(new Set(picks.map(event => event.id)).size, 3);

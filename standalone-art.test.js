@@ -13,7 +13,14 @@ test("iOS standalone mode bypasses stale image cache through reload fetch and Bl
     URL:{createObjectURL:()=>"blob:art-"+(++blobId),revokeObjectURL:url=>revoked.push(url)},
     setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);},
     ctx:new Proxy({},{get:(target,key)=>target[key]||(()=>{})})};
-  vm.createContext(context);vm.runInContext(fs.readFileSync(__dirname+"/renderer.js","utf8"),context);
+  vm.createContext(context);
+  // renderer.js is a real ES module; strip import/export syntax as the shared harness does.
+  const source=fs.readFileSync(__dirname+"/src/view/renderer.js","utf8")
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm,"")
+    .replace(/^import\s*["'][^"']+["']\s*;.*$/gm,"")
+    .replace(/^export\s*\{[^}]*\}\s*;.*$/gm,"")
+    .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm,"");
+  vm.runInContext(source,context);
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(fetches.length,8);
   assert.ok(fetches.every(call=>call.options.cache==="reload"&&call.url.includes("standalone=")));

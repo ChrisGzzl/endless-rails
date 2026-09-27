@@ -1,8 +1,20 @@
 "use strict";
+import { $ } from "./dom.js";
+import { uiHooks } from "./hooks.js";
+import "../core/audio.js";
+import "../core/balance.js";
+import "../core/motion.js";
+import "../core/progression.js";
+import "../core/combat-effects.js";
+import "../core/control.js";
+import "../core/route-events.js";
+import "../core/run-record.js";
+import "../meta/longterm.js";
+import { drawBackground, drawRails, drawStation, drawZones, drawTrain, drawEnemies, drawBoss, drawShots, drawHostileShots, drawDrone, drawWeaponEffects, setRegionGround } from "../view/renderer.js";
 const requireModule=(file,value)=>{if(!value)throw new Error(file+" 未加载");return value;};
 const gameAudio=requireModule("audio.js",window.EndlessRailsAudio).createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
-const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,$=id=>document.getElementById(id),motion=requireModule("motion.js",window.EndlessRailsMotion);
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,motion=requireModule("motion.js",window.EndlessRailsMotion);
 let W=canvas.width,H=canvas.height;
 const WORLD_SPEED=88;
 const balance=requireModule("balance.js",window.EndlessRailsBalance);
@@ -838,7 +850,7 @@ function togglePause(){
   $("pauseScreen").hidden=!state.paused;
   ui.pause.textContent=state.paused?"▶":"Ⅱ";
   ui.pause.setAttribute?.("aria-label",state.paused?"继续游戏":"暂停游戏");
-  if(state.paused){renderPause();$("resumeButton").focus?.();}else canvas.focus?.();
+  if(state.paused){uiHooks.renderPause();$("resumeButton").focus?.();}else canvas.focus?.();
   updateHud();
 }
 ui.pulse.addEventListener("click",pulse);ui.pause.addEventListener("click",togglePause);ui.reroll.addEventListener("click",rerollUpgrades);
@@ -846,6 +858,8 @@ $("startButton").addEventListener("click",()=>{if(window.EndlessRailsMetaUI?.sta
 $("restartButton").addEventListener("click",()=>{ui.result.hidden=true;if(window.EndlessRailsMetaUI?.open)window.EndlessRailsMetaUI.open();else resetRun();});
 ui.continue.addEventListener("click",continueRun);ui.extract?.addEventListener("click",extractRun);
 window.EndlessRailsGame={startRun:resetRun,extractRun,getState:()=>state,reloadSave:()=>{if(["menu","result"].includes(state.mode)){state.metaProfile=longterm.loadMeta(metaStorage);state.record=runRecord.loadRecord(metaStorage);}}};window.addEventListener("keydown",e=>{if(e.code==="Space"&&!state.paused&&!settingsOpen){e.preventDefault();pulse()}if((e.code==="KeyP"||e.code==="Escape")&&!e.repeat){e.preventDefault();togglePause()}});let last=performance.now(),lastHud=0,lastDrawMode=null;
+ // QA surface: qa.js inspects the live game through the iframe window.
+Object.assign(window,{update,draw,beginRoute,updateHud,openLevelUp,chooseLevelUp,arriveStation,extractRun,syncSwarm,cameraView});
 function frame(now){
   // Substeps preserve wall-clock pacing at 20/30 FPS and keep collision steps small.
   const dt=Math.max(0,Math.min(.25,(now-last)/1000));last=now;
@@ -916,7 +930,7 @@ function setGMDroneLevel(id,value){
   state.shots=state.shots.filter(s=>s.owner!==id&&!s.bondId);
   state.zones=state.zones.filter(s=>s.owner!==id&&!s.bondId);
   state.weaponFx=[];state.weaponClocks[id]=0;state.weaponClocks.command=0;
-  syncSwarm();updateHud();if(!$("pauseScreen").hidden)renderPause();
+  syncSwarm();updateHud();if(!$("pauseScreen").hidden)uiHooks.renderPause();
   draw();
 }
 function renderGM(){
@@ -946,3 +960,6 @@ function resizeBattlefield(){
   for(const d of state.swarm){d.x=Math.max(view.left+18,Math.min(view.right-18,d.x));d.y=Math.max(view.top+18,Math.min(view.bottom-18,d.y));d.huntTarget=null;d.huntClock=0;}
   if(state.paused)draw();
 }
+
+export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, resetJoystick, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
+export const settingsGate = { get open() { return settingsOpen; }, set open(value) { settingsOpen = value; } };

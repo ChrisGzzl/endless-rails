@@ -1,4 +1,7 @@
 "use strict";
+import { $ } from "./dom.js";
+import { uiHooks } from "./hooks.js";
+import { state, applyResearchProfile, syncSwarm, togglePause, level, upgradePool, experiencePool, effects } from "./game.js";
 const inspector={id:"gun",tab:"weapon",page:0};
 const numberText=value=>Number.isFinite(value)?Number(value.toFixed(2)).toString():"—";
 const withUnit=(value,unit)=>numberText(value)+" "+unit;
@@ -121,6 +124,7 @@ function renderPause(){
   renderPage();
   inspector.layoutKey=layoutKey;inspector.pageSize=pageSize;
 }
+uiHooks.renderPause = renderPause;
 $("inspectSelect").addEventListener("change",e=>{inspector.id=e.target.value;inspector.page=0;renderPause();});
 for(const [id,delta] of [["inspectPrev",-1],["inspectNext",1]])$(id).addEventListener("click",()=>{
   const fleet=inspectFleet(),index=fleet.findIndex(d=>d.id===inspector.id);inspector.id=fleet[(index+delta+fleet.length)%fleet.length].id;inspector.page=0;renderPause();
@@ -138,3 +142,4 @@ $("pauseScreen").addEventListener("keydown",event=>{
   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
 });
+export { renderPause };

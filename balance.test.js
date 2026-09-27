@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const balance = require("./balance.js");
+const balance = require("./src/core/balance.js");
 
 assert.equal(balance.START_TRAIN_LENGTH, 3, "the starting train remains three cars");
 assert.equal(balance.initialWaveCount(1), 2, "opening starts sparse");

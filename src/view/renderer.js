@@ -1,5 +1,7 @@
 "use strict";
 
+import { ctx, TAU, W, H, state, motion, balance, effects, cameraView, carPosition, stationCenter, stationTurrets, bladePositions } from "../app/game.js";
+
 const gameArt={atlas:null,ground:null,regionGround:null,hover:null,vfx:null,combatVfx:null,bond:null,breakthrough:null,evolvedVfx:null};
 if(typeof Image!=="undefined"){
   const assets=[
@@ -563,3 +565,5 @@ function drawInfectionTraits(e,boss){
 function drawHostileShots(){
   for(const s of state.hostileShots){line(s.x,s.y,s.x-s.vx*.06,s.y-s.vy*.06,"#9cb82d",3);ctx.fillStyle="#e8ff74";ctx.beginPath();ctx.arc(s.x,s.y,4,0,TAU);ctx.fill();}
 }
+
+export { drawBackground, drawRails, drawStation, drawZones, drawTrain, drawEnemies, drawBoss, drawShots, drawHostileShots, drawDrone, drawWeaponEffects, setRegionGround };

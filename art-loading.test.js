@@ -13,7 +13,14 @@ function boot(){
   }
   const context={Image,document:{getElementById:id=>elements[id]},setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);},ctx:new Proxy({drawImage(...args){draws.push(args);}},{get:(target,key)=>target[key]||(()=>{})})};
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync(__dirname+"/renderer.js","utf8"),context);
+  // renderer.js is a real ES module; strip its import/export syntax exactly
+  // like test-harness.cjs does before feeding it to the isolated sandbox.
+  const source=fs.readFileSync(__dirname+"/src/view/renderer.js","utf8")
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm,"")
+    .replace(/^import\s*["'][^"']+["']\s*;.*$/gm,"")
+    .replace(/^export\s*\{[^}]*\}\s*;.*$/gm,"")
+    .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm,"");
+  vm.runInContext(source,context);
   return {requests,timers,elements,draws,run:code=>vm.runInContext(code,context)};
 }
 

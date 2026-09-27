@@ -1,8 +1,8 @@
 "use strict";
 const assert=require("node:assert/strict");
 const createGame=require("./test-harness.cjs");
-const balance=require("./balance.js");
-const effects=require("./combat-effects.js");
+const balance=require("./src/core/balance.js");
+const effects=require("./src/core/combat-effects.js");
 
 const opening=balance.difficultyAt(1,0,48),late=balance.difficultyAt(5,72,72);
 assert.ok(late.hp<=opening.hp*2,"late ordinary zombies stay easy to cut down");

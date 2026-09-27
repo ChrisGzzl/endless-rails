@@ -1,4 +1,7 @@
 "use strict";
+import { $ } from "./dom.js";
+import { state, resizeBattlefield, togglePause } from "./game.js";
+import { renderPause } from "./armory.js";
 let installOffer=null,displayReturnFocus=null;
 $("displayHelp").hidden=true;
 function standaloneDisplay(){

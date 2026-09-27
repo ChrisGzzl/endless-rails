@@ -3,7 +3,7 @@ const frameEl=document.getElementById('game');
 let samples=[],costs=[],errors=[],stress=false,previous=0,updateCost=0;
 const resetSamples=()=>{samples=[];costs=[];previous=0;updateCost=0;};
 const gameWindow=()=>frameEl.contentWindow;
-const state=()=>gameWindow().EndlessRailsGame.getState();
+const readState=()=>gameWindow().EndlessRailsGame.getState();
 function profile(grown=false){
  const w=gameWindow(),m=w.EndlessRailsLongterm.emptyMeta();
  if(grown){m.train.level=11;m.resources={scrap:500,components:20,data:100};m.loadout=['hangar','pointDefense','storage','radar','repair'];for(const id in m.research)m.research[id]=3;for(const id in m.regions)m.regions[id].unlocked=true;m.blueprints=['cargo-lock','radar-pulse'];}
@@ -20,12 +20,12 @@ function scenario(name){
    m.regions.wasteland.clears=1;m.regions.ruins.unlocked=true;m.regions.industrial.unlocked=false;m.regions.infection.unlocked=false;
    for(const id in m.research)m.research[id]=id==='rapid'?1:0;
    w.EndlessRailsLongterm.saveMeta(w.EndlessRailsLongterm.gameStorage(w),m);
-   state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;
+   readState().mode='menu';readState().paused=false;w.EndlessRailsMetaUI.open();return;
  }
- if(name==='fresh'||name==='grown'){state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;}
+ if(name==='fresh'||name==='grown'){readState().mode='menu';readState().paused=false;w.EndlessRailsMetaUI.open();return;}
  if(['ruins','industrial','infection'].includes(name))m.selectedRegion=name;
  w.EndlessRailsGame.startRun(w.EndlessRailsLongterm.planFor(m));
- const s=state();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
+ const s=readState();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
  w.beginRoute(w.EndlessRailsRouteEvents.ROUTE_EVENTS[2]);
  if(name==='normal'||['ruins','industrial','infection'].includes(name))return;
  if(name==='levelup'){s.pendingLevelUps=1;w.openLevelUp();w.updateHud();w.draw();return;}
@@ -46,16 +46,16 @@ frameEl.addEventListener('load',()=>{
  const w=gameWindow();
  w.addEventListener('error',e=>errors.push(e.message));
  const update=w.update,draw=w.draw;
- w.update=function(...args){const start=performance.now();if(stress){state().trainHp=state().maxTrainHp;state().routeDistance=60;state().pendingLevelUps=0;for(const e of state().enemies){e.dead=false;e.x=e.qaX;e.y=e.qaY;}}const value=update(...args);updateCost+=performance.now()-start;return value;};
+ w.update=function(...args){const start=performance.now();if(stress){readState().trainHp=readState().maxTrainHp;readState().routeDistance=60;readState().pendingLevelUps=0;for(const e of readState().enemies){e.dead=false;e.x=e.qaX;e.y=e.qaY;}}const value=update(...args);updateCost+=performance.now()-start;return value;};
  w.draw=function(...args){const start=performance.now(),value=draw(...args);costs.push(updateCost+performance.now()-start);if(costs.length>600)costs.shift();updateCost=0;return value;};
- const tick=now=>{if(['combat','docking'].includes(state().mode)&&!state().paused){if(previous)samples.push(now-previous);if(samples.length>600)samples.shift();previous=now;}else previous=0;w.requestAnimationFrame(tick);};w.requestAnimationFrame(tick);
+ const tick=now=>{if(['combat','docking'].includes(readState().mode)&&!readState().paused){if(previous)samples.push(now-previous);if(samples.length>600)samples.shift();previous=now;}else previous=0;w.requestAnimationFrame(tick);};w.requestAnimationFrame(tick);
 });
 for(const button of document.querySelectorAll('[data-size]'))button.onclick=()=>{const [width,height]=button.dataset.size.split(',');frameEl.width=width;frameEl.height=height;resetSamples();};
 for(const button of document.querySelectorAll('[data-case]'))button.onclick=()=>scenario(button.dataset.case);
 document.getElementById('sample').onclick=resetSamples;
 setInterval(()=>{
  const w=gameWindow();if(!w.EndlessRailsGame)return;
- const s=state(),mean=a=>a.length?a.reduce((a,b)=>a+b,0)/a.length:0,p95=a=>a.length?[...a].sort((a,b)=>a-b)[Math.floor((a.length-1)*.95)]:0;
+ const s=readState(),mean=a=>a.length?a.reduce((a,b)=>a+b,0)/a.length:0,p95=a=>a.length?[...a].sort((a,b)=>a-b)[Math.floor((a.length-1)*.95)]:0;
  document.getElementById('metrics').textContent=JSON.stringify({viewport:`${w.innerWidth}×${w.innerHeight}`,mode:s.mode,frames:samples.length,fps:+(1000/(mean(samples)||Infinity)).toFixed(1),frameP95ms:+p95(samples).toFixed(2),workMeanMs:+mean(costs).toFixed(2),workP95Ms:+p95(costs).toFixed(2),enemies:s.enemies.filter(e=>!e.dead).length,shots:s.shots.length,effects:s.weaponFx.length,particles:s.particles.length,zoom:+s.cameraZoom.toFixed(3)},null,2);
  const problems=[];
  for(const panel of w.document.querySelectorAll('.overlay:not([hidden]),#gmPanel:not([hidden])')){

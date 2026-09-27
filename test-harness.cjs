@@ -3,6 +3,7 @@ module.exports = function createGame({context,window:windowOverrides={},storage}
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const path = require("node:path");
 const vm = require("node:vm");
 
 const ids = [
@@ -66,13 +67,68 @@ const sandbox = {
 };
 
 vm.createContext(sandbox);
+
+// The runtime is a native ES module graph rooted at the single module entry in
+// index.html. Parse that graph from the real sources, validate every named
+// import against the exporter's export list, evaluate in depth-first post-order
+// (the browser's own order), and execute each module's source with import /
+// export syntax stripped. What the tests exercise is therefore the real page's
+// module set, graph order and cross-module wiring, not a hand-maintained list.
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
-const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.deepEqual(scriptNames, ["cloud-config.js", "cloud-sync.js", "audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "longterm.js", "renderer.js", "game.js", "meta-ui.js", "armory.js", "display.js", "settings.js", "cloud-ui.js"], "all runtime modules must load in dependency order");
-const versionParams = [...html.matchAll(/[?&]v=([^"&\s]+)/g)].map(match => match[1]);
-assert.ok(versionParams.length > 0, "index.html must carry cache-busting v= params on its assets");
-assert.equal(new Set(versionParams).size, 1, "all v= params in index.html must be one shared value, got: " + [...new Set(versionParams)].join(", "));
-for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
+const entries = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
+assert.equal(entries.length, 1, "index.html must declare exactly one module entry");
+const entryFile = path.resolve(__dirname, entries[0]);
+
+function parseModule(file) {
+  const src = fs.readFileSync(file, "utf8");
+  const imports = [];
+  for (const m of src.matchAll(/^import\s*["']([^"']+)["']\s*;.*$/gm)) imports.push({ specifier: m[1], names: [] });
+  for (const m of src.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']\s*;.*$/gm)) {
+    const names = m[1].split(",").map(s => s.trim()).filter(Boolean).map(s => {
+      const [name, alias] = s.split(/\s+as\s+/);
+      return { name: name.trim(), alias: (alias || name).trim() };
+    });
+    imports.push({ specifier: m[2], names });
+  }
+  const exports = new Set();
+  for (const m of src.matchAll(/^export\s*\{([^}]*)\}\s*;.*$/gm)) {
+    for (const s of m[1].split(",")) { const name = s.split(/\s+as\s+/)[0].trim(); if (name) exports.add(name); }
+  }
+  for (const m of src.matchAll(/^export\s+(?:async\s+)?(?:const|let|var|function\s*\*?|class)\s+([A-Za-z_$][\w$]*)/gm)) exports.add(m[1]);
+  return { file, src, imports, exports };
+}
+
+const modules = new Map();
+const order = [];
+function visit(file, from) {
+  if (modules.has(file)) return;
+  const mod = parseModule(file);
+  modules.set(file, mod);
+  for (const decl of mod.imports) {
+    assert.ok(decl.specifier.startsWith("."), "only relative imports are supported: " + file);
+    const target = path.resolve(path.dirname(file), decl.specifier);
+    visit(target, file);
+    if (decl.names.length) {
+      const targetExports = modules.get(target).exports;
+      for (const { name } of decl.names) {
+        assert.ok(targetExports.has(name), `${path.relative(__dirname, file)} imports "${name}" but ${path.relative(__dirname, target)} does not export it`);
+      }
+    }
+  }
+  order.push(mod);
+}
+visit(entryFile, null);
+const expected = ["src/main.js", "src/app/game.js", "src/view/renderer.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
+for (const rel of expected) assert.ok(modules.has(path.resolve(__dirname, rel)), "module graph must include " + rel);
+
+for (const mod of order) {
+  const stripped = mod.src
+    .replace(/^import\s*["'][^"']+["']\s*;.*$/gm, "")
+    .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm, "")
+    .replace(/^export\s*\{[^}]*\}\s*;.*$/gm, "")
+    .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm, "");
+  vm.runInContext(stripped, sandbox, { filename: path.relative(__dirname, mod.file) });
+}
 
 
 return { sandbox, elements, windowEvents, get scheduledFrames() { return scheduledFrames; }, run: (code, timeout = 3000) => vm.runInContext(code, sandbox, { timeout }) };

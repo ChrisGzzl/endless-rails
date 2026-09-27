@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const effects = require("./combat-effects.js");
+const effects = require("./src/core/combat-effects.js");
 
 const wingmen = effects.wingmanPositions({ x: 195, y: 340 }, 2, 0);
 assert.equal(wingmen.length, 2, "two wingmen create two independent firing positions");

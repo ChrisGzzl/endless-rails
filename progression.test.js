@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const progression = require("./progression.js");
+const progression = require("./src/core/progression.js");
 
 const initial = progression.createProgression({ routeDistanceTotal: 20 });
 assert.equal(initial.experienceToNext, 4);

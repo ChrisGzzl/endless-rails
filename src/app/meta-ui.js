@@ -1,4 +1,5 @@
 "use strict";
+import { metaStorage } from "./game.js";
 (() => {
   const metaApi = window.EndlessRailsLongterm;
   if (!metaApi) return;
