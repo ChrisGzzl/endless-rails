@@ -12,12 +12,15 @@ import "../core/run-record.js";
 import "../meta/longterm.js";
 import { draw, setRegionGround } from "../view/render.js";
 import { updateHud } from "../view/hud.js";
+import { WORLD_SPEED, cameraView, updateCamera, advanceWorld, carPosition, droneBounds } from "../sim/world.js";
+import { showCombo, showToast, addText, updateParticles, burst } from "../sim/fx.js";
+import { spawnWave, spawnEnemy } from "../sim/spawn.js";
+import { stepEnemy, updateHostileShots } from "../sim/enemies.js";
 const requireModule=(file,value)=>{if(!value)throw new Error(file+" 未加载");return value;};
 const gameAudio=requireModule("audio.js",window.EndlessRailsAudio).createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
 const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,motion=requireModule("motion.js",window.EndlessRailsMotion);
 let W=canvas.width,H=canvas.height;
-const WORLD_SPEED=88;
 const balance=requireModule("balance.js",window.EndlessRailsBalance);
 const progression=requireModule("progression.js",window.EndlessRailsProgression);
 const effects=requireModule("combat-effects.js",window.EndlessRailsCombatEffects);
@@ -75,20 +78,6 @@ function releaseCarSuppression(enemy){
   const id=enemy?.suppressedCar;if(!id)return;
   if(!state.enemies.some(other=>other!==enemy&&!other.dead&&other.attached&&other.suppressedCar===id))delete state.disabledCars[id];
 }
-function cameraView(){
-  const zoom=Math.max(.72,state.cameraZoom||1);
-  const tail=state.expeditionPlan?Math.max(0,(state.trainLength||3)-1)*balance.CAR_SPACING:0;
-  const cx=state.train.x-motion.FORWARD.x*tail/2,cy=state.train.y-motion.FORWARD.y*tail/2;
-  return {zoom,cx,cy,left:cx-W/(2*zoom),right:cx+W/(2*zoom),top:cy-H/(2*zoom),bottom:cy+H/(2*zoom)};
-}
-function updateCamera(dt){
-  const n=Math.max(3,state.trainLength||3),base=n<=4?1:n===5?.94:n===6?.89:n===7?.84:n===8?.80:n===9?.76:.72;
-  const curve=balance.difficultyAt?.(state.station,state.routeElapsed,state.routeDistanceTotal)||{cap:30};
-  const pressure=Math.min(1,state.enemies.length/Math.max(1,curve.cap||30));
-  const dynamic=(state.boss?.dead===false)?0.06:(pressure>.78?0.04:0);
-  state.targetCameraZoom=Math.max(.72,base-dynamic);
-  state.cameraZoom+=(state.targetCameraZoom-state.cameraZoom)*(1-Math.exp(-dt*3.5));
-}
 function pointDefenseTick(dt){
   state.pointDefenseClock=Math.max(0,(state.pointDefenseClock||0)-dt);
   if(!carEnabled("pointDefense")||state.pointDefenseClock>0)return;
@@ -109,27 +98,6 @@ function resetRun(plan){
   state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;state.trainDamage=0;
   const metaBonuses=longterm.trainBonuses(state.metaProfile);
 gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
-function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
-function spawnEnemy(delay=0) {
-  const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
-  const sides = ["top", "right", "bottom", "left"], side = sides[Math.floor(Math.random()*4)];
-  const view=cameraView();
-  const point = motion.spawnPoint(side, view.right-view.left, view.bottom-view.top, 34);
-  point.x+=view.left;point.y+=view.top;
-  const region=state.expeditionPlan?.region||{elite:1};
-  const elite = Math.random() < curve.eliteChance * (state.activeEvent?.eliteChanceMultiplier || 1) * (region.elite||1);
-  const kind=balance.enemyTypeAt(state.station,state.routeElapsed,elite),type=balance.ENEMY_TYPES[kind];
-  const hp = curve.hp * type.hp * state.routeModifiers.enemyHp;
-  const enemy={ ...point,kind,spitClock:1.5+Math.random(),r:type.r,hp,maxHp:hp,
-    speed: curve.speed * type.speed * state.routeModifiers.enemySpeed,
-    hue: Math.random(), elite, side, delay, hit: 0, dead: false };
-  if(kind==="climber"){
-    const cars=(state.expeditionPlan?.cars||[]).map((id,index)=>({id,index:index+1})).filter(car=>car.id!=="hangar");
-    const target=cars[Math.floor(Math.random()*Math.max(1,cars.length))]||{id:"hangar",index:1};
-    enemy.targetCarIndex=target.index;enemy.targetCarId=target.id;
-  }
-  state.enemies.push(enemy);
-}
 function update(dt, refreshHud=true) {
   gameAudio?.tick(state.mode,state.paused);
   if(state.trainHp<audioTrainHp)gameAudio?.play("hurt");
@@ -255,15 +223,6 @@ function fireProfile(origin,profile,color){
       life:profile.life||1,remainingRange:profile.range,damage:profile.damage,pierce:profile.pierce,
       chain:profile.chain,coreArc:!!profile.coreArc,color,breakthrough:!!profile.breakthrough,owner:origin.id||"train"});
   }
-}
-function advanceWorld(distance) {
-  state.worldDistance+=distance;
-  const drift=motion.worldDrift(1,distance);
-  for(const z of state.zones){
-    z.x+=drift.x;z.y+=drift.y;
-    if(z.flight>0){z.sx+=drift.x;z.sy+=drift.y;}
-  }
-  for(const drop of state.drops){drop.x+=drift.x;drop.y+=drift.y;}
 }
 function syncSwarm() {
   const old=new Map(state.swarm.map(d=>[d.id,d]));
@@ -740,13 +699,8 @@ function finish(result){
   if(ui.resultMeta)ui.resultMeta.textContent=`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${settlement?.trainXp||0}`+(bps.length?" · 新蓝图："+bps.map(id=>longterm.blueprintById(id)?.name||id).join(" / "):"");
   ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀";
 }
-function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
-function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
-function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
 
 
-function carPosition(i){const {x:fx,y:fy}=motion.FORWARD;return{x:state.train.x-fx*i*balance.CAR_SPACING,y:state.train.y-fy*i*balance.CAR_SPACING}}
-function droneBounds(){const v=cameraView();return{left:v.left+24/v.zoom,right:v.right-24/v.zoom,top:v.top+24/v.zoom,bottom:v.bottom-24/v.zoom}}
 function setCommand(vector) {
   if (!canUseJoystick()) return;
   state.moveInput = { x: vector.x, y: vector.y };
@@ -859,45 +813,6 @@ for(const surface of [$("app"),$("startScreen"),$("metaScreen"),$("pauseScreen")
   for(const type of ["dragstart","selectstart","contextmenu"])surface.addEventListener(type,event=>event.preventDefault());
 }
 
-function stepEnemy(e,dt){
-  if(e.kind==="climber"){
-    const target=carPosition(Math.max(1,Math.min(state.trainLength-1,e.targetCarIndex||1)));
-    if(e.attached){
-      e.x=target.x+Math.sin(e.hue*TAU)*10;e.y=target.y+Math.cos(e.hue*TAU)*8;
-      if(e.targetCarId)state.disabledCars[e.targetCarId]=true;
-      return;
-    }
-    Object.assign(e,motion.stepChaser(e,dt,target,WORLD_SPEED*.08));
-    if(Math.hypot(e.x-target.x,e.y-target.y)<20){
-      e.attached=true;e.suppressedCar=e.targetCarId;if(e.suppressedCar)state.disabledCars[e.suppressedCar]=true;
-      showToast("攀爬感染者压制 · "+(longterm.CAR_DEFS?.find?.(c=>c.id===e.suppressedCar)?.name||"功能车厢"));
-    }
-    return;
-  }
-  const distance=Math.hypot(e.x-state.train.x,e.y-state.train.y);
-  if(e.kind==="spitter"&&distance>90&&distance<210){
-    e.spitClock-=dt;
-    if(e.spitClock<=0&&state.hostileShots.length<32){
-      const a=Math.atan2(state.train.y-e.y,state.train.x-e.x);
-      state.hostileShots.push({x:e.x,y:e.y,vx:Math.cos(a)*150,vy:Math.sin(a)*150,life:2.5,damage:2.5});
-      e.spitClock=2.8;e.spitFlash=.25;
-    }
-  }else{
-    const target=e.kind==="crawler"?{x:state.train.x+Math.sin(state.visualTime*2.2+e.hue*TAU)*32,y:state.train.y}:state.train;
-    Object.assign(e,motion.stepChaser(e,dt,target,WORLD_SPEED*.3));
-  }
-  e.spitFlash=Math.max(0,(e.spitFlash||0)-dt);
-}
-function updateHostileShots(dt){
-  for(const s of state.hostileShots){
-    s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
-    if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
-      state.trainHp=Math.max(0,state.trainHp-s.damage*(1-Math.min(.36,level("armor")*.12)));
-      state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
-    }
-  }
-  state.hostileShots=state.hostileShots.filter(s=>s.life>0);
-}
 $("claimUpgradeButton").addEventListener("click",()=>{if(state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0)openLevelUp();});
 // GM values are actual displayed drone levels. Zero undeploys a specialist.
 let gmPreviousPause=false,gmOpen=false;
@@ -944,5 +859,5 @@ function resizeBattlefield(){
   if(state.paused)draw();
 }
 
-export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, ui, syncJoystick, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, resetJoystick, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
+export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, ui, syncJoystick, longterm, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, resetJoystick, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
 export const settingsGate = { get open() { return settingsOpen; }, set open(value) { settingsOpen = value; } };
