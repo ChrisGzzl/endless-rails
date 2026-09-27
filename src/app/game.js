@@ -11,6 +11,7 @@ import "../core/route-events.js";
 import "../core/run-record.js";
 import "../meta/longterm.js";
 import { draw, setRegionGround } from "../view/render.js";
+import { updateHud } from "../view/hud.js";
 const requireModule=(file,value)=>{if(!value)throw new Error(file+" 未加载");return value;};
 const gameAudio=requireModule("audio.js",window.EndlessRailsAudio).createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
@@ -739,20 +740,6 @@ function finish(result){
   if(ui.resultMeta)ui.resultMeta.textContent=`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${settlement?.trainXp||0}`+(bps.length?" · 新蓝图："+bps.map(id=>longterm.blueprintById(id)?.name||id).join(" / "):"");
   ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀";
 }
-function updateHud(){syncJoystick();$("claimUpgradeButton").hidden=state.pendingLevelUps<=0||state.mode!=="combat"||state.paused;$("claimUpgradeButton").textContent="强化 ×"+state.pendingLevelUps;ui.station.textContent=String(Math.min(state.station,5)).padStart(2,"0")+" / 05";ui.scrap.textContent=String(state.scrap).padStart(3,"0");ui.health.textContent=Math.ceil(state.trainHp)+"/"+state.maxTrainHp;ui.healthFill.style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";$("levelTrainHealthText").textContent=Math.ceil(state.trainHp)+" / "+state.maxTrainHp;$("levelTrainHealthFill").style.width=Math.min(100,Math.max(0,state.trainHp/state.maxTrainHp*100))+"%";ui.timer.textContent=Math.max(0,state.timer).toFixed(1);ui.phase.textContent=state.paused?"暂停中":state.mode==="combat"?"行驶中":state.mode==="levelup"?"战斗升级":state.mode==="routeChoice"?"路线选择":state.mode==="contractChoice"?"远征契约":state.mode==="docking"?"进站清场":state.mode==="station"?"安全停靠":"待命";$("moveSpeedValue").textContent=state.drone.moveSpeed+" px/s";ui.drone.textContent=(1+effects.swarmRoster(state.modules).length)+" 架";ui.pulseCooldown.style.height=state.pulseClock?state.pulseClock/7*100+"%":"0%";ui.pulse.classList.toggle("cooling",state.pulseClock>0);ui.objective.textContent=state.mode==="docking"?"防卫炮台清场 · 列车减速进站":state.mode==="station"?"安全区 · 列车已停稳":state.station===5?"守住列车，抵达终点防区":"护送列车抵达下一站";updateProgressHud();if(state.boss){ui.bossText.textContent=Math.max(0,Math.ceil(state.boss.hp/state.boss.maxHp*100))+"%";ui.bossFill.style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+"%"}}
-// Both instruments fill left to right: completed travel and earned experience.
-function updateProgressHud(){
-  const arrived=state.mode==="docking"||state.mode==="station";
-  const total=Math.max(1,state.routeDistanceTotal||0);
-  const routePercent=arrived?100:Math.min(100,Math.max(0,(total-state.routeDistance)/total*100));
-  const xpPercent=Math.min(100,Math.max(0,state.experience/Math.max(1,state.experienceToNext)*100));
-  ui.routeLabel.textContent=arrived?"行程 · 已抵达车站":`行程 · 已完成 ${Math.floor(routePercent)}%`;
-  ui.routeFill.style.width=routePercent+"%";
-  ui.xpLabel.textContent=`经验 Lv.${state.level} · ${Math.floor(state.experience)} / ${state.experienceToNext}`;
-  ui.xpFill.style.width=xpPercent+"%";
-  $("routeProgressTrack").setAttribute?.("aria-valuenow",String(Math.round(routePercent)));
-  $("experienceProgressTrack").setAttribute?.("aria-valuenow",String(Math.round(xpPercent)));
-}
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
 function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
@@ -957,5 +944,5 @@ function resizeBattlefield(){
   if(state.paused)draw();
 }
 
-export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, resetJoystick, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
+export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, ui, syncJoystick, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, resetJoystick, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
 export const settingsGate = { get open() { return settingsOpen; }, set open(value) { settingsOpen = value; } };
