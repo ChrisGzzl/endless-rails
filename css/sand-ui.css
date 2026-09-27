@@ -179,7 +179,7 @@ body { background:#bcb3a1; }
 .home-hub .primary-button:active:not(:disabled),
 .selection-terminal .primary-button:active:not(:disabled),
 .result-screen .primary-button:active:not(:disabled) {
-  background-image:url("assets/primary-button-v2.webp?v=2");
+  background-image:url("../assets/primary-button-v2.webp?v=2");
   background-size:100% 100%; background-repeat:no-repeat; background-position:center;
 }
 

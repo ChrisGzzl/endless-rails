@@ -1,5 +1,5 @@
 /* Four compact atlases; the generated source art and earlier game assets are untouched. */
-.ui-icon { display:block; flex:none; width:32px; height:32px; background-image:url("assets/icons-base-v1.webp"); background-size:400% 400%; background-repeat:no-repeat; background-position:0 0; }
+.ui-icon { display:block; flex:none; width:32px; height:32px; background-image:url("../assets/icons-base-v1.webp"); background-size:400% 400%; background-repeat:no-repeat; background-position:0 0; }
 .ui-icon--shop { background-position:0 0; }
 .ui-icon--train { background-position:33.333% 0; }
 .ui-icon--battle { background-position:66.667% 0; }
@@ -18,7 +18,7 @@
 .ui-icon--supply { background-position:100% 100%; }
 
 .ui-icon--rapid,.ui-icon--piercing,.ui-icon--missile,.ui-icon--incendiary,
-.ui-icon--chain,.ui-icon--ricochet,.ui-icon--blades,.ui-icon--scatter { background-image:url("assets/icons-weapons-v1.webp"); background-size:400% 200%; }
+.ui-icon--chain,.ui-icon--ricochet,.ui-icon--blades,.ui-icon--scatter { background-image:url("../assets/icons-weapons-v1.webp"); background-size:400% 200%; }
 .ui-icon--rapid { background-position:0 0; }
 .ui-icon--piercing { background-position:33.333% 0; }
 .ui-icon--missile { background-position:66.667% 0; }
@@ -65,7 +65,7 @@
 
 /* Weapon atlas preserves the purple / blue / red / cyan bond families in every choice. */
 .levelup-screen .selection-terminal .upgrade-card[data-weapon] .upgrade-icon {
-  font-size:0; background-image:url("assets/icons-weapons-v1.webp"); background-size:400% 200%;
+  font-size:0; background-image:url("../assets/icons-weapons-v1.webp"); background-size:400% 200%;
   background-repeat:no-repeat; background-color:transparent; border:0; box-shadow:none; filter:none;
 }
 .levelup-screen .upgrade-card[data-weapon="rapid"] .upgrade-icon { background-position:0 0; }
@@ -76,11 +76,11 @@
 .levelup-screen .upgrade-card[data-weapon="ricochet"] .upgrade-icon { background-position:33.333% 100%; }
 .levelup-screen .upgrade-card[data-weapon="blades"] .upgrade-icon { background-position:66.667% 100%; }
 .levelup-screen .upgrade-card[data-weapon="scatter"] .upgrade-icon { background-position:100% 100%; }
-.levelup-screen .selection-terminal .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-image:url("assets/icons-base-v1.webp"); background-size:400% 400%; background-position:0 66.667%; }
+.levelup-screen .selection-terminal .upgrade-card[data-weapon="wingman"] .upgrade-icon { background-image:url("../assets/icons-base-v1.webp"); background-size:400% 400%; background-position:0 66.667%; }
 .levelup-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon,
 .station-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon,
 .choice-screen .selection-terminal .upgrade-card[data-icon] .upgrade-icon {
-  font-size:0; background-image:url("assets/icons-choices-v1.webp"); background-size:400% 400%;
+  font-size:0; background-image:url("../assets/icons-choices-v1.webp"); background-size:400% 400%;
   background-repeat:no-repeat; background-color:transparent; border:0; box-shadow:none; filter:none;
 }
 .selection-terminal .upgrade-card[data-icon] .upgrade-icon::before,.selection-terminal .upgrade-card[data-icon] .upgrade-icon::after { content:none; }
@@ -105,20 +105,20 @@
 #app .pause-button,#app .fullscreen-button { font-size:0; }
 #app .pause-button::before,#app .fullscreen-button::before,.reroll-button::before {
   content:""; display:block; width:24px; height:24px; margin:auto;
-  background-image:url("assets/icons-controls-v1.webp"); background-size:400% 200%; background-repeat:no-repeat;
+  background-image:url("../assets/icons-controls-v1.webp"); background-size:400% 200%; background-repeat:no-repeat;
 }
 #app .pause-button::before { background-position:0 0; }
 #app .fullscreen-button::before { background-position:33.333% 0; }
 .reroll-button::before { display:inline-block; width:18px; height:18px; margin:0 6px -4px 0; background-position:0 100%; }
 .inspect-arrows button,.inspect-page-nav button { font-size:0; }
-.inspect-arrows button::before,.inspect-page-nav button::before { content:""; display:block; width:22px; height:22px; margin:auto; background:url("assets/icons-controls-v1.webp") 100% 0/400% 200% no-repeat; }
+.inspect-arrows button::before,.inspect-page-nav button::before { content:""; display:block; width:22px; height:22px; margin:auto; background:url("../assets/icons-controls-v1.webp") 100% 0/400% 200% no-repeat; }
 #inspectNext::before,#inspectNextPage::before { transform:scaleX(-1); }
 #app .skill-rail .pulse-button .ui-icon { width:31px; height:31px; }
-#app .skill-rail .claim-upgrade::before { content:""; width:24px; height:24px; background:url("assets/icons-base-v1.webp") 66.667% 100%/400% 400% no-repeat; }
-.levelup-screen .level-health > span { display:block; width:24px; height:24px; font-size:0; background:url("assets/icons-controls-v1.webp") 66.667% 100%/400% 200% no-repeat; }
-.home-settings-actions #startFullscreenButton > span { display:inline-block; width:19px; height:19px; margin:0 0 -4px 3px; font-size:0; background:url("assets/icons-controls-v1.webp") 33.333% 0/400% 200% no-repeat; }
-.result-screen .result-badge { font-size:0; background:#344b4b url("assets/icons-base-v1.webp") 66.667% 0/400% 400% no-repeat; }
-.result-screen .result-badge[data-outcome="lost"] { background-image:url("assets/icons-choices-v1.webp"); background-position:33.333% 0; }
+#app .skill-rail .claim-upgrade::before { content:""; width:24px; height:24px; background:url("../assets/icons-base-v1.webp") 66.667% 100%/400% 400% no-repeat; }
+.levelup-screen .level-health > span { display:block; width:24px; height:24px; font-size:0; background:url("../assets/icons-controls-v1.webp") 66.667% 100%/400% 200% no-repeat; }
+.home-settings-actions #startFullscreenButton > span { display:inline-block; width:19px; height:19px; margin:0 0 -4px 3px; font-size:0; background:url("../assets/icons-controls-v1.webp") 33.333% 0/400% 200% no-repeat; }
+.result-screen .result-badge { font-size:0; background:#344b4b url("../assets/icons-base-v1.webp") 66.667% 0/400% 400% no-repeat; }
+.result-screen .result-badge[data-outcome="lost"] { background-image:url("../assets/icons-choices-v1.webp"); background-position:33.333% 0; }
 .result-screen .result-badge[data-outcome="extracted"] { background-position:33.333% 0; }
 
 @media(max-width:360px) { .home-hub .home-wallet .ui-icon { width:17px; height:17px; } .home-hub .research-icon .ui-icon { width:32px; height:32px; } }

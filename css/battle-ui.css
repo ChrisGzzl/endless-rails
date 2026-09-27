@@ -142,10 +142,10 @@
 /* Generated art is only the button surface; live labels and focus remain native. */
 .home-hub .primary-button,.selection-terminal .primary-button,.result-screen .primary-button {
   border:0; border-radius:15px; background-color:transparent;
-  background-image:url("assets/primary-button-v1.webp"); background-size:100% 100%; background-position:center;
+  background-image:url("../assets/primary-button-v1.webp"); background-size:100% 100%; background-position:center;
   box-shadow:none; color:#132c4d; text-shadow:none; }
 .home-hub .primary-button:hover:not(:disabled),.selection-terminal .primary-button:hover:not(:disabled),.result-screen .primary-button:hover:not(:disabled) {
-  background-color:transparent; background-image:url("assets/primary-button-v1.webp"); filter:brightness(1.07); }
+  background-color:transparent; background-image:url("../assets/primary-button-v1.webp"); filter:brightness(1.07); }
 .home-hub .primary-button:active,.selection-terminal .primary-button:active { filter:brightness(.95); }
 .home-hub .primary-button:disabled,.selection-terminal .primary-button:disabled { opacity:.55; }
 
