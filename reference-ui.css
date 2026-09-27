@@ -63,14 +63,14 @@ body { background:#a5a394; }
 .home-hub .primary-button { border:0; border-radius:0; background:#21333a url('assets/primary-button-v2.webp') center/100% 100% no-repeat; box-shadow:0 4px 7px #1b2b3529; color:#ffe7a6; text-shadow:0 1px 1px #14252b; }
 .home-hub .primary-button:hover:not(:disabled),.home-hub .primary-button:active:not(:disabled) { background:#21333a url('assets/primary-button-v2.webp') center/100% 100% no-repeat; filter:brightness(1.08); }
 .mission-launch .primary-button { min-height:59px; display:flex; justify-content:center; gap:17px; padding:10px 16px; font-size:26px; letter-spacing:.03em; font-style:italic; font-weight:900; clip-path:polygon(4% 0,96% 0,100% 20%,100% 80%,96% 100%,4% 100%,0 80%,0 20%); }
-.mission-launch .primary-button::before { content:""; width:35px; height:35px; background:url('assets/ui-mobile-v3.webp') 71.428571% 100%/800% 500% no-repeat; }
+.mission-launch .primary-button::before { content:""; width:35px; height:35px; background:url('assets/ui-mobile-v4.webp') 71.428571% 100%/800% 500% no-repeat; }
 .mission-launch .primary-button > span:last-child { font-size:32px; font-style:normal; line-height:1; }
 .mission-note { margin:9px 0 0; color:var(--muted); font-size:10px; font-weight:650; }
 /* A single shared dock. Raised center remains neutral outside its selected state. */
 .home-tabs { grid-template-columns:repeat(5,minmax(0,1fr)); align-items:end; padding:0 5px env(safe-area-inset-bottom); border-top:2px solid #628d91; background:linear-gradient(#1b434c,#102e37); }
 .home-tabs button,.home-tabs button[aria-selected="true"] { isolation:isolate; min-height:66px; padding:6px 0; gap:1px; color:#c7d5d1; background:transparent; font-size:12px; font-weight:750; }
 .home-tabs button[aria-selected="true"] { color:#ffdc70; }
-.home-tabs button .ui-icon { width:32px; height:32px; background-image:url('assets/ui-mobile-v3.webp'); background-size:800% 500%; background-position:var(--icon-x) var(--icon-y); opacity:.84; filter:grayscale(.85) brightness(1.08); }
+.home-tabs button .ui-icon { width:32px; height:32px; background-image:url('assets/ui-mobile-v4.webp'); background-size:800% 500%; background-position:var(--icon-x) var(--icon-y); opacity:.84; filter:grayscale(.85) brightness(1.08); }
 .home-tabs button[aria-selected="true"] .ui-icon { opacity:1; filter:drop-shadow(0 0 4px #ffc43f50); }
 .home-tabs button::before,.home-tabs button[aria-selected="true"]::before { content:""; display:block; position:absolute; inset:2px 2px 3px; width:auto; height:auto; transform:none; z-index:-2; border:0; border-radius:0; box-shadow:none; opacity:0; background:#ffca4c; clip-path:polygon(14% 0,86% 0,100% 15%,100% 85%,86% 100%,14% 100%,0 85%,0 15%); }
 .home-tabs button::after,.home-tabs button[aria-selected="true"]::after { content:""; display:block; position:absolute; inset:4px 4px 5px; width:auto; height:auto; z-index:-1; opacity:0; background:radial-gradient(ellipse at bottom,#907532,#24424a 78%); clip-path:polygon(14% 0,86% 0,100% 15%,100% 85%,86% 100%,14% 100%,0 85%,0 15%); }
@@ -244,4 +244,55 @@ body { background:#a5a394; }
  .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:48px; margin-top:-4px; flex-direction:row; font-size:12px; padding:4px; }
  .home-tabs #homeTabBattle .ui-icon { width:30px; height:30px; }
  #app .skill-rail .pulse-button { width:47px; height:47px; }
+}
+
+/* Train cards need an explicit icon column; the older 38px grid survived the art resize. */
+.home-hub .meta-grid { gap:8px; }
+.home-hub .meta-car { grid-template-columns:64px minmax(0,1fr); align-items:center; min-width:0; min-height:78px; }
+.home-hub .meta-car > span:last-child { min-width:0; }
+.home-hub .meta-car .meta-card__icon { width:62px; height:58px; }
+.home-hub .meta-car .meta-card__icon .ui-icon { width:56px; height:52px; }
+.home-hub .meta-car b,.home-hub .meta-car em { overflow-wrap:anywhere; }
+.home-hub .meta-car em { margin-top:3px; }
+
+/* Train upgrade is a normal control, sized with its card and its actual hit area. */
+.home-hub .home-upgrade-card #metaTrainUpgradeButton,
+.home-hub .home-upgrade-card #metaTrainUpgradeButton:hover:not(:disabled),
+.home-hub .home-upgrade-card #metaTrainUpgradeButton:active:not(:disabled) {
+  width:100%; min-height:48px; margin-top:5px; padding:9px 12px;
+  border:2px solid #b98730; border-radius:4px; clip-path:none;
+  background:linear-gradient(180deg,#274850,#132f39); color:#ffe6a0;
+  box-shadow:inset 0 0 0 1px #f6d78b55,0 2px 4px #142b3033;
+  text-shadow:none; font-size:13px; font-weight:800; letter-spacing:0;
+}
+.home-hub .home-upgrade-card #metaTrainUpgradeButton:hover:not(:disabled) { background:linear-gradient(180deg,#345b62,#1d4049); }
+.home-hub .home-upgrade-card #metaTrainUpgradeButton:disabled { opacity:.58; filter:none; cursor:default; }
+
+/* The dock keeps one height on every tab. Only the selected departure badge rises. */
+.home-tabs { height:68px; box-sizing:content-box; align-items:stretch; }
+.home-tabs button,.home-tabs button[aria-selected="true"] { min-height:0; height:68px; box-sizing:border-box; margin-top:0; }
+.home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] {
+  min-height:0; height:68px; margin-top:0; padding:6px 0; background:transparent; color:#c7d5d1;
+}
+.home-tabs #homeTabBattle[aria-selected="false"]::before,
+.home-tabs #homeTabBattle[aria-selected="false"]::after { inset:3px 2px; opacity:0; }
+.home-tabs #homeTabBattle[aria-selected="true"]::before { inset:-8px 0 2px; opacity:1; }
+.home-tabs #homeTabBattle[aria-selected="true"]::after { inset:-6px 2px 4px; opacity:1; }
+.home-tabs #homeTabBattle[aria-selected="false"] .ui-icon { filter:grayscale(1) brightness(1.05); opacity:.85; }
+.home-tabs #homeTabBattle[aria-selected="false"]:hover,
+.home-tabs #homeTabBattle[aria-selected="false"]:active { background:transparent; color:#c7d5d1; }
+.home-tabs #homeTabBattle[aria-selected="false"]:hover .ui-icon { filter:grayscale(1) brightness(1.05); opacity:.85; }
+@media(max-height:700px) and (max-width:599px) {
+  .home-tabs { height:57px; }
+  .home-tabs button,.home-tabs button[aria-selected="true"],
+  .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:0; height:57px; margin-top:0; }
+  .home-tabs #homeTabBattle[aria-selected="true"]::before { inset:-7px 0 2px; }
+  .home-tabs #homeTabBattle[aria-selected="true"]::after { inset:-5px 2px 4px; }
+}
+@media(max-height:450px) and (min-width:600px) {
+  .home-tabs { height:49px; }
+  .home-tabs button,.home-tabs button[aria-selected="true"],
+  .home-tabs #homeTabBattle,.home-tabs #homeTabBattle[aria-selected="false"],.home-tabs #homeTabBattle[aria-selected="true"] { min-height:0; height:49px; margin-top:0; }
+  .home-tabs #homeTabBattle[aria-selected="true"]::before { inset:1px; }
+  .home-tabs #homeTabBattle[aria-selected="true"]::after { inset:3px; }
 }
