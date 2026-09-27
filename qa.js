@@ -14,6 +14,14 @@ function scenario(name){
  stress=false;resetSamples();
  for(const el of w.document.querySelectorAll('.overlay,#gmPanel'))el.hidden=true;
  const m=profile(!['fresh','normal'].includes(name));
+ if(name==='reference'){
+   m.train={level:3,xp:51};m.resources={scrap:5116,components:56,data:26};
+   m.selectedRegion='ruins';m.loadout=['hangar','storage','repair'];
+   m.regions.wasteland.clears=1;m.regions.ruins.unlocked=true;m.regions.industrial.unlocked=false;m.regions.infection.unlocked=false;
+   for(const id in m.research)m.research[id]=id==='rapid'?1:0;
+   w.EndlessRailsLongterm.saveMeta(w.EndlessRailsLongterm.gameStorage(w),m);
+   state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;
+ }
  if(name==='fresh'||name==='grown'){state().mode='menu';state().paused=false;w.EndlessRailsMetaUI.open();return;}
  if(['ruins','industrial','infection'].includes(name))m.selectedRegion=name;
  w.EndlessRailsGame.startRun(w.EndlessRailsLongterm.planFor(m));

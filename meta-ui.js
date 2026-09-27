@@ -55,16 +55,18 @@
     }
   }
   const specializations={rapid:"射速 +8%",missile:"爆炸半径 +15%，Lv.10 可选集束 / 重型",incendiary:"燃烧半径 +15%",ricochet:"反弹次数 +1",chain:"连锁目标 +1",piercing:"贯穿 +1，Lv.10 可选聚束 / 双轨",scatter:"每轮弹数 +1",blades:"切割范围 +12%"};
+  const compactDescriptions={rapid:"近程高频点射，提高射速与伤害。",missile:"远程追踪弹，高伤爆炸清理尸群。",incendiary:"投掷燃烧弹，在地面留下火墙。",ricochet:"中程能量球，反弹穿过尸群。",chain:"连锁电弧，密集目标伤害更高。",piercing:"远程磁轨弹，贯穿多个敌人。",scatter:"近程扇形霰弹，贴近尸群清扫。",blades:"近战持续切割，主动靠近尸群。"};
   const weaponDescriptions={rapid:"近程高频点射，升级提高射速与单弹伤害。",missile:"远程追踪弹，高伤爆炸清理尸群。",incendiary:"投掷榴弹；北辰移动方向牵引落点，在地面留下火墙。",ricochet:"中程能量球，反弹并穿过尸群。",chain:"中程连锁电弧，密集目标之间伤害更高。",piercing:"远程磁轨弹；调整角度，让更多敌人排成一线。",scatter:"近程扇形霰弹，贴近尸群集中清扫。",blades:"近战持续切割，主动靠近尸群；升级扩大刀环。"};
   function renderResearch() {
     researchList.innerHTML = "";
     for (const id of metaApi.RESEARCH_IDS) {
       const level = meta.research[id] || 0, cost = metaApi.researchCost(meta, id), maxed = !Number.isFinite(cost);
       const row = document.createElement("div"); row.className = "meta-research-row";
-      row.innerHTML = `<span class="research-icon" data-weapon="${id}">${icon(id)}</span><span><b>${metaApi.RESEARCH_NAMES[id]}</b><small>${weaponDescriptions[id]}</small><small>研究 Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL} · 基础伤害 +${level*3}% · Lv.3：${specializations[id]}</small></span><button type="button" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : cost + " 数据"}</button>`;
+      row.innerHTML = `<span class="research-icon" data-weapon="${id}">${icon(id)}</span><span class="research-copy"><b>${metaApi.RESEARCH_NAMES[id]}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}</small><small>${compactDescriptions[id]}</small></span><button type="button" aria-label="研究${metaApi.RESEARCH_NAMES[id]}，${maxed ? '已完成' : cost+'数据'}" ${maxed || meta.resources.data < cost ? "disabled" : ""}>${maxed ? "已完成" : icon('data')+'<b>'+cost+'</b><small>研究</small>'}</button>`;
       row.querySelector("button").addEventListener("click", () => { const result = metaApi.buyResearch(meta, id); meta = result.meta; if (result.purchased) { save(); render(); } });
       researchList.append(row);
     }
+    $("researchDetails").innerHTML=metaApi.RESEARCH_IDS.map(id=>`<p><b>${metaApi.RESEARCH_NAMES[id]} · 基础伤害 +${(meta.research[id]||0)*3}%</b><br>${weaponDescriptions[id]}<br>研究 Lv.3：${specializations[id]}</p>`).join('');
   }
   function render() {
     const compact=n=>n>=1000000?(n/1000000).toFixed(1)+"m":n>=10000?(n/1000).toFixed(1)+"k":String(n);
@@ -72,11 +74,21 @@
     for(const [id,key] of [["homeScrap","scrap"],["homeComponents","components"],["homeData","data"]]){$(id).textContent=compact(meta.resources[key]);$(id).setAttribute("aria-label",String(meta.resources[key]));}
     const selected=metaApi.regionById(meta.selectedRegion);
     $("homeRegionName").textContent=selected.name;$("homeRegionDescription").textContent=selected.description;$("homeRegionStatus").textContent=statusFor(selected)+" · "+selected.statusText;
-    $("homeLoadout").textContent="编组 "+metaApi.planFor(meta).trainLength+" 节 · 前往列车调整 →";
+    screen.dataset.region=selected.id;
+    const hero=$("homeHeroImage"), heroPath="assets/hero-"+selected.id+"-v3.webp";
+    if(hero.getAttribute('src')!==heroPath)hero.setAttribute('src',heroPath);
+    hero.setAttribute('alt',"四架无人机护送装甲列车穿越"+selected.name);
+    const trainLength=metaApi.planFor(meta).trainLength;
+    $("homeLoadout").innerHTML=icon('train')+`<span class="loadout-copy"><b>编组 ${trainLength} 节</b><small>前往列车调整 →</small></span><span class="loadout-cars" aria-hidden="true">${Array.from({length:Math.min(4,trainLength)},()=>icon('train')).join('')}${trainLength>4?'<small>+'+(trainLength-4)+'</small>':''}</span><span class="loadout-arrow" aria-hidden="true">›</span>`;
+    $("homeLoadout").setAttribute('aria-label',`编组 ${trainLength} 节，前往列车调整`);
     meta = metaApi.normalizeMeta(meta);
     const nextXp = metaApi.xpToNext(meta.train.level);
     trainText.textContent = `列车 Lv.${meta.train.level} · ${meta.train.xp}/${nextXp} XP · ${metaApi.trainSlots(meta)} 节远征上限`;
-    resourceText.textContent = `废料 ${meta.resources.scrap} · 技术组件 ${meta.resources.components} · 研究数据 ${meta.resources.data} · 蓝图 ${meta.blueprints.length}`;
+    resourceText.innerHTML = [['scrap','废料'],['components','组件'],['data','数据']].map(([key,label])=>`<span>${icon(key)}<b>${compact(meta.resources[key])}</b><small>${label}</small></span>`).join('');
+    $("metaTrainProgressFill").style.width=Math.min(100,meta.train.xp/nextXp*100)+'%';
+    $("metaTrainProgress").setAttribute('aria-valuemin','0');
+    $("metaTrainProgress").setAttribute('aria-valuemax',String(nextXp));
+    $("metaTrainProgress").setAttribute('aria-valuenow',String(meta.train.xp));
     if(trainUpgradeButton){const cost=metaApi.trainUpgradeCost(meta),maxed=!Number.isFinite(cost.scrap);trainUpgradeButton.disabled=maxed||meta.resources.scrap<cost.scrap||meta.resources.components<cost.components;trainUpgradeButton.textContent=maxed?"列车等级已满":`强化列车 · 废料 ${cost.scrap} + 组件 ${cost.components}`;}
     const plan = metaApi.planFor(meta);
     loadoutText.textContent = `当前编组 ${plan.trainLength}/${plan.slots} 节 · ${plan.cars.map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ")}`;
