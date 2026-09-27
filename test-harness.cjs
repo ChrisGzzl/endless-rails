@@ -69,6 +69,9 @@ vm.createContext(sandbox);
 const html = fs.readFileSync(__dirname + "/index.html", "utf8");
 const scriptNames = [...html.matchAll(/<script src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
 assert.deepEqual(scriptNames, ["cloud-config.js", "cloud-sync.js", "audio.js", "balance.js", "motion.js", "progression.js", "combat-effects.js", "control.js", "route-events.js", "run-record.js", "longterm.js", "renderer.js", "game.js", "meta-ui.js", "armory.js", "display.js", "settings.js", "cloud-ui.js"], "all runtime modules must load in dependency order");
+const versionParams = [...html.matchAll(/[?&]v=([^"&\s]+)/g)].map(match => match[1]);
+assert.ok(versionParams.length > 0, "index.html must carry cache-busting v= params on its assets");
+assert.equal(new Set(versionParams).size, 1, "all v= params in index.html must be one shared value, got: " + [...new Set(versionParams)].join(", "));
 for (const name of scriptNames) vm.runInContext(fs.readFileSync(__dirname + "/" + name, "utf8"), sandbox, { filename: name });
 
 
