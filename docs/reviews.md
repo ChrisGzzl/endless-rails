@@ -155,6 +155,25 @@ worklog 是 39KB 的纯追加时间线，没有顶部状态区。而它自我声
 
 ---
 
+## 六、整改记录（2026-09-28）
+
+上述问题已按评审建议整改完毕，运行时迁移为原生 ESM（无打包器）。逐项状态：
+
+1. **版本参数**——已统一为单一 `?v=` 值；test-harness 新增断言：index.html 中所有 `v=` 参数必须一致，漏改会直接测试失败。
+2. **降级桩**——8 处桩全部改为 `requireModule` 显式抛错，audio 加载同样变响；顺带删除了 motion 死代码补丁（`scrollOffset`/`projectLandmark` 早已在 motion.js 中定义）。
+3. **updateHud**——独立为 `src/view/hud.js`，全部 textContent/style/aria 写入经缓存脏值比较，值不变不写 DOM。
+4. **qa.js 的 `state`**——已改名 `readState`，最后一处全局重名消除。
+5. **加载顺序**——18 个 script 标签收敛为单一 module 入口 `src/main.js`；harness 改为从 index.html 解析真实 import 图、校验每个具名导入与导出匹配、按浏览器深度优先顺序求值，顺序契约由图自动保证。注意：ESM 下不能再用 `file://` 直接打开页面，需本地静态服务器；qa.js 依赖的 iframe window 桥接（`EndlessRailsGame` 等）由 game.js 显式挂载保留。
+6. **单行压缩**——新拆分模块均正常换行；`game.js` 由 961 行缩至约 190 行组合根。
+
+目录结构：`src/core/`（10 个 UMD 模块，保留 window 挂载供 CJS 测试使用）、`src/meta/`（longterm）、`src/view/`（atlas/render/hud）、`src/sim/`（world/spawn/fx/enemies/combat/weapons/docking/station/run）、`src/app/`（game 组合根、flows 屏幕流、input、gm、dom、hooks、界面面板）。`game.js` 的 QA 函数经 `Object.assign(window, …)` 显式发布供 qa.js 使用。
+
+验证：25 个测试文件全绿；浏览器实测覆盖 菜单→契约→路线事件→战斗→升级→进站→车站升级→第 2 站战斗、暂停机检面板、设置面板、qa.html 全场景（脚本错误"无"）。
+
+遗留：3.3 的 worklog 顶部状态区未做——worklog.md 不在当前仓库中；后续若恢复该文件再补。
+
+---
+
 ## 五、值得保留的设计
 
 - `cloud-sync.js` 把同步逻辑写成不依赖 DOM 的纯核心（`createStore({storage, defaults, uuid, changed})`），`cloud-ui.js` 只做界面，`cloud-config.js` 一行开关在 Pages 上关闭。分层干净。
