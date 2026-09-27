@@ -22,6 +22,8 @@ import { syncSwarm, updateSwarm, beginRoute, pulse, settleLongterm } from "../si
 import { stationCenter, stationTurrets, startDocking, updateDocking } from "../sim/docking.js";
 import { upgradePool, experiencePool } from "../sim/station.js";
 import { openLevelUp, chooseLevelUp, arriveStation, extractRun, continueRun, openRouteEvent, openContractChoice, rerollUpgrades, renderDamageSummary, finish } from "../app/flows.js";
+import { resetJoystick, syncJoystick } from "./input.js";
+import { gmGate } from "./gm.js";
 const requireModule=(file,value)=>{if(!value)throw new Error(file+" 未加载");return value;};
 const gameAudio=requireModule("audio.js",window.EndlessRailsAudio).createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
@@ -48,7 +50,7 @@ function resetRun(plan){
   state.longtermRun=longterm.createRun(state.metaProfile,state.expeditionPlan);
   state.metaSettlement=null;state.metaSettled=false;state.disabledCars={};state.breakthroughs={};state.cameraZoom=1;state.targetCameraZoom=1;state.pointDefenseClock=0;state.trainDamage=0;
   const metaBonuses=longterm.trainBonuses(state.metaProfile);
-gameAudio?.unlock();gmOpen=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
+gameAudio?.unlock();gmGate.open=false;$("gmPanel").hidden=true;$("pauseScreen").hidden=true;ui.pause.textContent="Ⅱ";ui.pause.setAttribute?.("aria-label","暂停游戏");resetJoystick();const seed=routeEvents.createSeed(Date.now());Object.assign(state,{nextUpgradeAt:0,upgradeReturnMode:"combat",hostileShots:[],weaponStats:{},bondStats:{},worldDistance:0,comboFxAt:-1,swarm:[],routeElapsed:0,docking:null,zones:[],weaponFx:[],weaponClocks:{},mode:"contractChoice",visualTime:0,paused:false,runSeed:seed,activeEvent:null,activeContract:null,routeModifiers:{routeDistance:60,enemySpeed:1,enemyHp:1,eliteChance:.07,coreChance:1,rewardMultiplier:1,scrapMultiplier:1,weather:"clear"},station:1,timer:60,maxTrainHp:Math.round(100*metaBonuses.hpMultiplier),trainHp:Math.round(100*metaBonuses.hpMultiplier),scrap:0,kills:0,combo:0,bestCombo:0,score:0,droneLevel:1,trainLength:state.expeditionPlan?.trainLength||balance.START_TRAIN_LENGTH,fireClock:0,escortClock:.2,missileClock:0,spawnClock:.2,pulseClock:0,railClock:0,hurtFlash:0,shake:0,coreHitCounter:0,enemies:[],shots:[],particles:[],texts:[],selectedUpgrade:null,modules:{},boss:null,shieldReady:false,commandRing:null,rerollUsed:false,...progression.createProgression({routeDistanceTotal:60})});state.train.x=W/2;state.train.y=H/2;Object.assign(state.drone,{x:W/2+45,y:H/2-40,moveSpeed:control.DRONE_MOVE_SPEED,flightAngle:-Math.PI/2,direction:0,bank:0,thrust:0,vx:0,vy:0});ui.start.hidden=true;ui.stationScreen.hidden=true;ui.levelUp.hidden=true;ui.result.hidden=true;ui.eventScreen.hidden=true;ui.contractScreen.hidden=true;ui.hint.style.opacity=.8;openContractChoice();updateHud()}
 function update(dt, refreshHud=true) {
   gameAudio?.tick(state.mode,state.paused);
   if(state.trainHp<audioTrainHp)gameAudio?.play("hurt");
@@ -131,87 +133,9 @@ function update(dt, refreshHud=true) {
 // A coarse density grid avoids an all-pairs search as the horde grows.
 
 
-function setCommand(vector) {
-  if (!canUseJoystick()) return;
-  state.moveInput = { x: vector.x, y: vector.y };
-  if (vector.strength) ui.hint.style.opacity = 0;
-}
-const joystickBase = $("joystickBase"), joystickThumb = $("joystickThumb");
-const joystickState = { pointerId: null, center: null, radius: 0, keys: new Set() };
-const joystickKeys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], KeyW: [0, -1], KeyS: [0, 1], KeyA: [-1, 0], KeyD: [1, 0] };
-function canUseJoystick() { return state.mode === "combat" && !state.paused; }
-function resetJoystick() {
-  const pointerId = joystickState.pointerId;
-  joystickState.pointerId = null;
-  joystickState.center = null;
-  joystickState.keys.clear();
-  state.moveInput = { x: 0, y: 0 };
-  joystickBase.hidden = true;
-  joystickThumb.style.transform = "translate(0px, 0px)";
-  joystickBase.classList.remove("active");
-  if (pointerId !== null && canvas.hasPointerCapture?.(pointerId)) canvas.releasePointerCapture(pointerId);
-}
-function syncJoystick() {
-  const enabled = canUseJoystick();
-  canvas.setAttribute?.("aria-disabled", String(!enabled));
-  ui.pulse.disabled = !enabled;
-  if (!enabled) resetJoystick();
-}
-function showJoystickVector(vector, radius) {
-  joystickThumb.style.transform = "translate(" + vector.x * radius + "px, " + vector.y * radius + "px)";
-  joystickBase.classList.add("active");
-  setCommand(vector);
-}
-function moveJoystick(event) {
-  if (event.pointerId !== joystickState.pointerId) return;
-  if (!canUseJoystick()) { resetJoystick(); return; }
-  event.preventDefault();
-  const vector = control.joystickVector({ x: event.clientX, y: event.clientY }, joystickState.center, joystickState.radius);
-  showJoystickVector(vector, joystickState.radius);
-}
-canvas.addEventListener("pointerdown", event => {
-  if (!canUseJoystick() || joystickState.pointerId !== null || (event.pointerType === "mouse" && event.button !== 0)) return;
-  event.preventDefault();
-  joystickState.keys.clear();
-  const rect = canvas.getBoundingClientRect();
-  joystickState.center = { x: event.clientX, y: event.clientY };
-  joystickState.radius = 36;
-  joystickBase.style.left = (event.clientX - rect.left) + "px";
-  joystickBase.style.top = (event.clientY - rect.top) + "px";
-  joystickBase.hidden = false;
-  canvas.focus?.({ preventScroll: true });
-  joystickState.pointerId = event.pointerId;
-  canvas.setPointerCapture(event.pointerId);
-  moveJoystick(event);
-});
-canvas.addEventListener("pointermove", moveJoystick);
-for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) canvas.addEventListener(type, event => {
-  if (event.pointerId === joystickState.pointerId) resetJoystick();
-});
-function moveKeyboardJoystick() {
-  let x = 0, y = 0;
-  for (const key of joystickState.keys) { x += joystickKeys[key][0]; y += joystickKeys[key][1]; }
-  const vector = control.joystickVector({ x, y }, { x: 0, y: 0 }, 1, 0);
-  setCommand(vector);
-}
-window.addEventListener("keydown", event => {
-  if (!joystickKeys[event.code] || !canUseJoystick() || joystickState.pointerId !== null) return;
-  event.preventDefault();
-  joystickState.keys.add(event.code);
-  moveKeyboardJoystick();
-});
-window.addEventListener("keyup", event => {
-  if (!joystickKeys[event.code] || !joystickState.keys.has(event.code)) return;
-  event.preventDefault();
-  joystickState.keys.delete(event.code);
-  if (!canUseJoystick()) resetJoystick(); else moveKeyboardJoystick();
-});
-window.addEventListener("blur",()=>{resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();});
-window.addEventListener("resize", resetJoystick);
-document.addEventListener?.("visibilitychange", () => { if(document.hidden){resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();} });
 function togglePause(){
   if(settingsOpen)return;
-  if(gmOpen){closeGM();return;}
+  if(gmGate.open){gmGate.close();return;}
   if(!["combat","docking","station","levelup"].includes(state.mode)||!$("displayHelp").hidden)return;
   state.paused=!state.paused;resetJoystick();
   $("pauseScreen").hidden=!state.paused;
@@ -245,37 +169,6 @@ for(const surface of [$("app"),$("startScreen"),$("metaScreen"),$("pauseScreen")
 
 $("claimUpgradeButton").addEventListener("click",()=>{if(state.mode==="combat"&&!state.paused&&state.pendingLevelUps>0)openLevelUp();});
 // GM values are actual displayed drone levels. Zero undeploys a specialist.
-let gmPreviousPause=false,gmOpen=false;
-function setGMDroneLevel(id,value){
-  const n=Math.max(0,Math.min(30,Math.floor(Number(value)||0)));
-  if(id==="gun"||id==="rapid"){
-    state.modules.rapid=Math.max(0,n-1);
-    if(n===0)state.modules.gunDisabled=1;else delete state.modules.gunDisabled;
-    id="gun";
-  }else if(id==="wingman"){state.modules.wingman=Math.min(3,n);}
-  else if(effects.DRONE_TYPES.some(d=>d.id===id))state.modules[id]=n;else return;
-  // A GM edit applies to existing projectiles immediately rather than leaving old test attacks alive.
-  state.shots=state.shots.filter(s=>s.owner!==id&&!s.bondId);
-  state.zones=state.zones.filter(s=>s.owner!==id&&!s.bondId);
-  state.weaponFx=[];state.weaponClocks[id]=0;state.weaponClocks.command=0;
-  syncSwarm();updateHud();if(!$("pauseScreen").hidden)uiHooks.renderPause();
-  draw();
-}
-function renderGM(){
-  const wrap=$("gmControls");
-  wrap.innerHTML=effects.DRONE_TYPES.map(d=>`<label>${effects.droneLabel(d.id)}<input aria-label="${d.name}等级" data-gm-id="${d.id}" type="number" min="0" max="30" value="${effects.droneLevel(state.modules,d.id)}"></label>`).join("")+
-    `<label>雨燕僚机数量<input aria-label="僚机数量" data-gm-id="wingman" type="number" min="0" max="3" value="${level("wingman")}"></label>`;
-  wrap.querySelectorAll("input[data-gm-id]").forEach(input=>input.addEventListener("change",()=>{setGMDroneLevel(input.dataset.gmId,input.value);input.value=input.dataset.gmId==="wingman"?level("wingman"):effects.droneLevel(state.modules,input.dataset.gmId);renderGMBonds();}));
-  renderGMBonds();
-}
-function renderGMBonds(){
-  $("gmBonds").innerHTML=effects.bondStates(state.modules).map(b=>`<div><b>${b.name} · ${b.active?"Lv."+b.level:"未激活"}</b><small>${b.pair.map((id,i)=>effects.droneIdentity(id).name+" Lv."+b.levels[i]).join(" + ")}</small></div>`).join("");
-}
-function openGM(){gmOpen=true;gmPreviousPause=state.paused;state.paused=true;resetJoystick();$("gmPanel").hidden=false;renderGM();}
-function closeGM(){if(!gmOpen)return;gmOpen=false;$("gmPanel").hidden=true;state.paused=gmPreviousPause;updateHud();canvas.focus?.();}
-$("gmToggle")?.addEventListener("click",()=>{gmOpen?closeGM():openGM();});
-$("gmClose")?.addEventListener("click",closeGM);
-$("gmPanel").addEventListener("keydown",e=>{e.stopPropagation?.();if(e.code==="Escape"){e.preventDefault();closeGM();}});
 function resizeBattlefield(){
   const box=canvas.getBoundingClientRect();if(!box.width||!box.height)return;
   const scale=390/Math.min(box.width,box.height),nextWidth=Math.round(box.width*scale),nextHeight=Math.round(box.height*scale);if(nextHeight===H&&nextWidth===W)return;
@@ -289,5 +182,5 @@ function resizeBattlefield(){
   if(state.paused)draw();
 }
 
-export { state, metaStorage, gameAudio, ctx, TAU, W, H, motion, balance, effects, ui, syncJoystick, longterm, progression, routeEvents, runRecord, carEnabled, resetJoystick, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
+export { state, metaStorage, gameAudio, canvas, ctx, TAU, W, H, motion, balance, control, effects, ui, syncJoystick, longterm, progression, routeEvents, runRecord, carEnabled, resetJoystick, cameraView, carPosition, stationCenter, stationTurrets, bladePositions, togglePause, resizeBattlefield, updateHud, applyResearchProfile, syncSwarm, level, upgradePool, experiencePool };
 export const settingsGate = { get open() { return settingsOpen; }, set open(value) { settingsOpen = value; } };
