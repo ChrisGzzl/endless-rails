@@ -1,8 +1,8 @@
 "use strict";
 const assert=require('node:assert/strict');
-const effects=require('./src/core/combat-effects');
+const effects=require('../src/core/combat-effects');
 const createGame=require('./test-harness.cjs');
-const record=require('./src/core/run-record');
+const record=require('../src/core/run-record');
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 for(const rule of effects.BOND_RULES){
   for(const [a,b,want] of [[4,5,0],[5,4,0],[5,5,1],[6,5,2],[6,6,3],[10,10,11],[0,10,0]]){

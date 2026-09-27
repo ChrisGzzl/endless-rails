@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const effects=require("./src/core/combat-effects.js");
+const effects=require("../src/core/combat-effects.js");
 const createGame=require("./test-harness.cjs");
 
 for(let direction=0;direction<8;direction++){

@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
-const effects=require("./src/core/combat-effects.js");
-const motion=require("./src/core/motion.js");
+const effects=require("../src/core/combat-effects.js");
+const motion=require("../src/core/motion.js");
 const createGame=require("./test-harness.cjs");
 const {run,sandbox}=createGame();
 

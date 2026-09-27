@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const meta=require('./src/meta/longterm');
+const meta=require('../src/meta/longterm');
 const values=new Map(),storage={getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,String(v))};
 const m=meta.emptyMeta();m.resources={scrap:500,components:20,data:100};meta.saveMeta(storage,m);
 const g=require('./test-harness.cjs')({storage}),e=g.elements,home=g.sandbox.window.EndlessRailsMetaUI;

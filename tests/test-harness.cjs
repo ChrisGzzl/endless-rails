@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const projectRoot = path.resolve(__dirname, "..");
 
 const ids = [
   "gameCanvas", "stationValue", "scrapValue", "healthText", "healthFill", "timerValue", "phaseLabel",
@@ -50,7 +51,7 @@ function createElement(id) {
   };
 }
 
-const elements = Object.fromEntries([...fs.readFileSync(__dirname + '/index.html','utf8').matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
+const elements = Object.fromEntries([...fs.readFileSync(path.join(__dirname, "..", "index.html"),'utf8').matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
 Object.assign(elements.gameCanvas, { width: 390, height: 680 });
 let scheduledFrames = 0;
 const windowEvents = {};
@@ -74,10 +75,10 @@ vm.createContext(sandbox);
 // (the browser's own order), and execute each module's source with import /
 // export syntax stripped. What the tests exercise is therefore the real page's
 // module set, graph order and cross-module wiring, not a hand-maintained list.
-const html = fs.readFileSync(__dirname + "/index.html", "utf8");
+const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const entries = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
 assert.equal(entries.length, 1, "index.html must declare exactly one module entry");
-const entryFile = path.resolve(__dirname, entries[0]);
+const entryFile = path.resolve(projectRoot, entries[0]);
 
 function parseModule(file) {
   const src = fs.readFileSync(file, "utf8");
@@ -111,7 +112,7 @@ function visit(file, from) {
     if (decl.names.length) {
       const targetExports = modules.get(target).exports;
       for (const { name } of decl.names) {
-        assert.ok(targetExports.has(name), `${path.relative(__dirname, file)} imports "${name}" but ${path.relative(__dirname, target)} does not export it`);
+        assert.ok(targetExports.has(name), `${path.relative(projectRoot, file)} imports "${name}" but ${path.relative(projectRoot, target)} does not export it`);
       }
     }
   }
@@ -119,7 +120,7 @@ function visit(file, from) {
 }
 visit(entryFile, null);
 const expected = ["src/main.js", "src/app/game.js", "src/view/atlas.js", "src/view/render.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
-for (const rel of expected) assert.ok(modules.has(path.resolve(__dirname, rel)), "module graph must include " + rel);
+for (const rel of expected) assert.ok(modules.has(path.resolve(projectRoot, rel)), "module graph must include " + rel);
 
 for (const mod of order) {
   const stripped = mod.src
@@ -127,7 +128,7 @@ for (const mod of order) {
     .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm, "")
     .replace(/^export\s*\{[^}]*\}\s*;.*$/gm, "")
     .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm, "");
-  vm.runInContext(stripped, sandbox, { filename: path.relative(__dirname, mod.file) });
+  vm.runInContext(stripped, sandbox, { filename: path.relative(projectRoot, mod.file) });
 }
 
 

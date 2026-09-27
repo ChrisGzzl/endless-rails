@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const meta=require('./src/meta/longterm');
+const meta=require('../src/meta/longterm');
 const createGame=require('./test-harness.cjs');
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 const values=new Map(),storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)};

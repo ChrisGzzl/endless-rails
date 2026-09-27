@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const effects=require("./src/core/combat-effects.js");
+const effects=require("../src/core/combat-effects.js");
 const createGame=require("./test-harness.cjs");
 const gun=effects.weaponProfile("gun"),missile=effects.weaponProfile("missile"),arc=effects.weaponProfile("chain");
 assert.ok(gun.damage<arc.damage&&arc.damage<missile.damage);

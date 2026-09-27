@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const {createAudio,STORAGE_KEY}=require("./src/core/audio");
+const {createAudio,STORAGE_KEY}=require("../src/core/audio");
 const createGame=require("./test-harness.cjs");
 class Param{
   constructor(){this.value=0;this.events=[];}

@@ -15,7 +15,7 @@ test("iOS standalone mode bypasses stale image cache through reload fetch and Bl
     ctx:new Proxy({},{get:(target,key)=>target[key]||(()=>{})})};
   vm.createContext(context);
   // renderer.js is a real ES module; strip import/export syntax as the shared harness does.
-  const source=fs.readFileSync(__dirname+"/src/view/atlas.js","utf8")
+  const source=fs.readFileSync(__dirname+"/../src/view/atlas.js","utf8")
     .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm,"")
     .replace(/^import\s*["'][^"']+["']\s*;.*$/gm,"")
     .replace(/^export\s*\{[^}]*\}\s*;.*$/gm,"")

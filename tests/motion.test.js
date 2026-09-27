@@ -1,7 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const motion = require("./src/core/motion.js");
+const motion = require("../src/core/motion.js");
 
 const center = { x: 195, y: 340 };
 

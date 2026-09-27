@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
 const createGame=require("./test-harness.cjs");
-const balance=require("./src/core/balance.js"),progression=require("./src/core/progression.js"),events=require("./src/core/route-events.js");
+const balance=require("../src/core/balance.js"),progression=require("../src/core/progression.js"),events=require("../src/core/route-events.js");
 for(let station=1;station<=5;station++)for(const event of events.ROUTE_EVENTS){
   const {run}=createGame();
   run(`state.station=${station};beginRoute(routeEvents.ROUTE_EVENTS.find(e=>e.id==="${event.id}"));`);
