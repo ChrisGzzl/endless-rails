@@ -96,7 +96,7 @@ for (const handler of windowEvents.blur) handler();
 assert.equal(vm.runInContext("state.moveInput.x", sandbox), 0, "blur clears velocity input");
 assert.equal(elements.joystickBase.hidden, true);
 
-const css = fs.readFileSync(__dirname + "/../styles.css", "utf8");
+const css = fs.readFileSync(__dirname + "/../css/styles.css", "utf8");
 for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {
   assert.match(html, new RegExp(`id=\\"${id}\\"`), `${id} must exist in the HUD`);
 }
