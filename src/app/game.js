@@ -10,7 +10,7 @@ import "../core/control.js";
 import "../core/route-events.js";
 import "../core/run-record.js";
 import "../meta/longterm.js";
-import { drawBackground, drawRails, drawStation, drawZones, drawTrain, drawEnemies, drawBoss, drawShots, drawHostileShots, drawDrone, drawWeaponEffects, setRegionGround } from "../view/renderer.js";
+import { draw, setRegionGround } from "../view/render.js";
 const requireModule=(file,value)=>{if(!value)throw new Error(file+" 未加载");return value;};
 const gameAudio=requireModule("audio.js",window.EndlessRailsAudio).createAudio(window);
 let settingsOpen=false,audioTrainHp=100;
@@ -756,10 +756,7 @@ function updateProgressHud(){
 function showCombo(){if(state.combo<2||state.visualTime<(state.comboFxAt??-1))return;state.comboFxAt=state.visualTime+.15;ui.combo.textContent="连杀 ×"+state.combo;ui.combo.classList.remove("show");void ui.combo.offsetWidth;ui.combo.classList.add("show")}
 function showToast(text){ui.toast.textContent=text;ui.toast.classList.remove("show");void ui.toast.offsetWidth;ui.toast.classList.add("show")}
 function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.push({text,x,y,color,life:1})}function updateParticles(dt){for(const p of state.particles){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.98;p.vy*=.98}state.particles=state.particles.filter(p=>p.life>0);for(const t of state.texts){t.life-=dt;t.y-=24*dt}state.texts=state.texts.filter(t=>t.life>0)}function burst(x,y,color,count,speed){const available=Math.min(count,420-state.particles.length);for(let i=0;i<available;i++){const a=Math.random()*TAU,v=speed*(.35+Math.random()*.65);state.particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,size:2+Math.random()*4,life:.25+Math.random()*.45,color})}}
-function draw(){ctx.save();if(state.shake&&!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches)ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);ctx.save();const view=cameraView();ctx.translate(W/2,H/2);ctx.scale(view.zoom,view.zoom);ctx.translate(-view.cx,-view.cy);drawBackground();drawRails();drawStation();drawZones();drawTrain();drawDrops();drawEnemies();drawBoss();drawShots();drawHostileShots();drawDrone();drawWeaponEffects();drawCommandRing();drawParticles();ctx.restore();ctx.restore();if(state.hurtFlash){ctx.fillStyle=`rgba(241,109,99,${state.hurtFlash*.18})`;ctx.fillRect(0,0,W,H)}}
-function drawDrops(){for(const drop of state.drops){const pulse=1+Math.sin(performance.now()/140)*.14;const color=drop.type==="meta-tech"?"#78e6ff":drop.type==="research-data"?"#c39cff":drop.type==="repair-kit"?"#9be88f":drop.type==="blueprint"?"#ffd36b":drop.type==="overdrive"?"#ffb45f":drop.type==="scatter"?"#b6e36b":"#5de1df";ctx.save();ctx.translate(drop.x,drop.y);ctx.rotate(Math.PI/4);ctx.scale(pulse,pulse);ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=14;ctx.fillRect(-8,-8,16,16);ctx.restore();ctx.strokeStyle="rgba(237,245,231,.55)";ctx.lineWidth=2;ctx.beginPath();ctx.arc(drop.x,drop.y,14,0,TAU*(drop.life/10));ctx.stroke();if(drop.type==="blueprint"){ctx.fillStyle="#fff0b8";ctx.font="bold 8px sans-serif";ctx.textAlign="center";ctx.fillText("BP",drop.x,drop.y+3)}}}
 
-function drawParticles(){for(const p of state.particles){ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;ctx.font="bold 12px ui-monospace,monospace";ctx.textAlign="center";for(const t of state.texts){ctx.globalAlpha=Math.min(1,t.life*2);ctx.fillStyle=t.color;ctx.fillText(t.text,t.x,t.y)}ctx.globalAlpha=1}
 
 function carPosition(i){const {x:fx,y:fy}=motion.FORWARD;return{x:state.train.x-fx*i*balance.CAR_SPACING,y:state.train.y-fy*i*balance.CAR_SPACING}}
 function droneBounds(){const v=cameraView();return{left:v.left+24/v.zoom,right:v.right-24/v.zoom,top:v.top+24/v.zoom,bottom:v.bottom-24/v.zoom}}
@@ -841,7 +838,6 @@ window.addEventListener("keyup", event => {
 window.addEventListener("blur",()=>{resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();});
 window.addEventListener("resize", resetJoystick);
 document.addEventListener?.("visibilitychange", () => { if(document.hidden){resetJoystick();if(!state.paused&&["combat","docking"].includes(state.mode))togglePause();} });
-function drawCommandRing(){const ring=state.commandRing;if(!ring)return;const alpha=Math.min(1,ring.life/.45);ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle="#5de1df";ctx.lineWidth=2;ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(ring.target.x,ring.target.y,17+(1-alpha)*13,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.moveTo(ring.target.x-6,ring.target.y);ctx.lineTo(ring.target.x+6,ring.target.y);ctx.moveTo(ring.target.x,ring.target.y-6);ctx.lineTo(ring.target.x,ring.target.y+6);ctx.stroke();ctx.restore()}
 function togglePause(){
   if(settingsOpen)return;
   if(gmOpen){closeGM();return;}

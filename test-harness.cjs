@@ -118,7 +118,7 @@ function visit(file, from) {
   order.push(mod);
 }
 visit(entryFile, null);
-const expected = ["src/main.js", "src/app/game.js", "src/view/renderer.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
+const expected = ["src/main.js", "src/app/game.js", "src/view/atlas.js", "src/view/render.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
 for (const rel of expected) assert.ok(modules.has(path.resolve(__dirname, rel)), "module graph must include " + rel);
 
 for (const mod of order) {

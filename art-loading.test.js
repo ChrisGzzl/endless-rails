@@ -15,7 +15,7 @@ function boot(){
   vm.createContext(context);
   // renderer.js is a real ES module; strip its import/export syntax exactly
   // like test-harness.cjs does before feeding it to the isolated sandbox.
-  const source=fs.readFileSync(__dirname+"/src/view/renderer.js","utf8")
+  const source=fs.readFileSync(__dirname+"/src/view/atlas.js","utf8")
     .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm,"")
     .replace(/^import\s*["'][^"']+["']\s*;.*$/gm,"")
     .replace(/^export\s*\{[^}]*\}\s*;.*$/gm,"")
