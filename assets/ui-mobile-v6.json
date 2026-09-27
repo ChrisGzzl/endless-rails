@@ -1,0 +1,160 @@
+{
+  "cell": 96,
+  "columns": 8,
+  "rows": 5,
+  "icons": {
+    "shop": {
+      "column": 0,
+      "row": 0
+    },
+    "train": {
+      "column": 1,
+      "row": 0
+    },
+    "research": {
+      "column": 2,
+      "row": 0
+    },
+    "settings": {
+      "column": 3,
+      "row": 0
+    },
+    "scrap": {
+      "column": 4,
+      "row": 0
+    },
+    "components": {
+      "column": 5,
+      "row": 0
+    },
+    "data": {
+      "column": 6,
+      "row": 0
+    },
+    "supply": {
+      "column": 7,
+      "row": 0
+    },
+    "pointDefense": {
+      "column": 0,
+      "row": 1
+    },
+    "storage": {
+      "column": 1,
+      "row": 1
+    },
+    "radar": {
+      "column": 2,
+      "row": 1
+    },
+    "repair": {
+      "column": 3,
+      "row": 1
+    },
+    "rapid": {
+      "column": 4,
+      "row": 1
+    },
+    "piercing": {
+      "column": 5,
+      "row": 1
+    },
+    "missile": {
+      "column": 6,
+      "row": 1
+    },
+    "incendiary": {
+      "column": 7,
+      "row": 1
+    },
+    "chain": {
+      "column": 0,
+      "row": 2
+    },
+    "ricochet": {
+      "column": 1,
+      "row": 2
+    },
+    "blades": {
+      "column": 2,
+      "row": 2
+    },
+    "scatter": {
+      "column": 3,
+      "row": 2
+    },
+    "scavenger": {
+      "column": 4,
+      "row": 2
+    },
+    "fragile": {
+      "column": 5,
+      "row": 2
+    },
+    "pressure": {
+      "column": 6,
+      "row": 2
+    },
+    "armor": {
+      "column": 7,
+      "row": 2
+    },
+    "wrench": {
+      "column": 0,
+      "row": 3
+    },
+    "shield": {
+      "column": 1,
+      "row": 3
+    },
+    "magnet": {
+      "column": 2,
+      "row": 3
+    },
+    "upgrade": {
+      "column": 3,
+      "row": 3
+    },
+    "pause": {
+      "column": 4,
+      "row": 3
+    },
+    "fullscreen": {
+      "column": 5,
+      "row": 3
+    },
+    "back": {
+      "column": 6,
+      "row": 3
+    },
+    "reroll": {
+      "column": 7,
+      "row": 3
+    },
+    "pulse": {
+      "column": 0,
+      "row": 4
+    },
+    "battle": {
+      "column": 1,
+      "row": 4
+    },
+    "cluster": {
+      "column": 2,
+      "row": 4
+    },
+    "split": {
+      "column": 3,
+      "row": 4
+    },
+    "hangar": {
+      "column": 4,
+      "row": 4
+    },
+    "trainNav": {
+      "column": 5,
+      "row": 4
+    }
+  },
+  "bytes": 120940
+}
