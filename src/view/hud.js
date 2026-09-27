@@ -24,8 +24,8 @@ function setAttr(node, name, value) {
 function updateHud() {
   syncJoystick();
   const claim = $("claimUpgradeButton");
-  const claimVisible = !(state.pendingLevelUps <= 0 || state.mode !== "combat" || state.paused);
-  if (claim.hidden !== claimVisible) claim.hidden = claimVisible;
+  const claimHidden = state.pendingLevelUps <= 0 || state.mode !== "combat" || state.paused;
+  if (claim.hidden !== claimHidden) claim.hidden = claimHidden;
   setText(claim, "强化 ×" + state.pendingLevelUps);
   setText(ui.station, String(Math.min(state.station, 5)).padStart(2, "0") + " / 05");
   setText(ui.scrap, String(state.scrap).padStart(3, "0"));
