@@ -515,11 +515,12 @@ function setLoadout(meta, ids) {
 
 function refitCost(meta) { return 10 + Math.ceil(Math.max(1, Math.floor(Number(meta?.train?.level) || 1)) / 2); }
 // A paid change withdraws points or swaps a purchased spec (§14.2); adding to
-// untouched nodes, loadout edits and renames stay free.
+// untouched nodes, loadout edits and renames stay free. Picking a spec for an
+// owned spec node that had none chosen yet is a first choice, not a swap.
 function refitIsPaid(currentTalents, nextTalents) {
   const before = currentTalents.nodes, after = nextTalents.nodes;
   for (const node of TALENT_NODES) if ((after[node.id] || 0) < (before[node.id] || 0)) return true;
-  for (const branch of TALENT_BRANCHES) if ((before[SPEC_NODE[branch.id]] || 0) > 0 && (after[SPEC_NODE[branch.id]] || 0) > 0 && currentTalents.specs[branch.id] !== nextTalents.specs[branch.id]) return true;
+  for (const branch of TALENT_BRANCHES) if ((before[SPEC_NODE[branch.id]] || 0) > 0 && (after[SPEC_NODE[branch.id]] || 0) > 0 && currentTalents.specs[branch.id] && currentTalents.specs[branch.id] !== nextTalents.specs[branch.id]) return true;
   return false;
 }
 function applyTalents(meta, draftTalents, options = {}) {

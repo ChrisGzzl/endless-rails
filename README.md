@@ -18,12 +18,12 @@
   export/                供稿目录（全局 agent.md 标准）：manifest.yaml + worklog.md（工作记录：继续工作前先读，改动后追加条目）
   minigame/              微信小游戏/TapTap 构建产物（node tools/build-minigame.cjs 生成 bundle；适配骨架 game.js）
   src/                   游戏运行时代码（原生 ES Module，见下）
-  tests/                 29 个测试 + test-harness.cjs；根目录 node --test 递归执行
+  tests/                 33 个测试 + test-harness.cjs；根目录 node --test 递归执行
   tools/                 图集打包脚本（pack-ui-v3~v7.py）、pacing-check.cjs、dev-server.cjs、build-minigame.cjs
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.10.1.1`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.10.1.2`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 ## 本地运行
 
@@ -44,7 +44,7 @@ python3 -m http.server 8123     # 或 npx serve 等价
 node --test
 ```
 
-29 个测试文件全绿为改动的验收线（42 项 = 游戏 + 天赋/研究回归 + canvas 启动/纯度 + 小游戏 bundle 冒烟 + 12 个存档服务测试）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：假 DOM 的元素集合与模块加载图都解析自真实的 index.html（`entry` 可换 canvas.html），模块图中每条具名导入都会校验目标确实导出——"测试里有、页面上没有"或反向的脱节会直接测试失败。canvas-purity 测试在完全不提供 `document` 的沙箱里跑通整条 canvas 路径，守住"共享模块不得直引 DOM"的红线。
+33 个测试文件全绿为改动的验收线（46 项 = 游戏 + 天赋/研究回归 + canvas 启动/纯度 + 小游戏 bundle 冒烟 + 12 个存档服务测试）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：假 DOM 的元素集合与模块加载图都解析自真实的 index.html（`entry` 可换 canvas.html），模块图中每条具名导入都会校验目标确实导出——"测试里有、页面上没有"或反向的脱节会直接测试失败。canvas-purity 测试在完全不提供 `document` 的沙箱里跑通整条 canvas 路径，守住"共享模块不得直引 DOM"的红线。
 
 ## src/ 结构
 

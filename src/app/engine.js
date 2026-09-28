@@ -116,7 +116,7 @@ function update(dt, refreshHud = true) {
       // bio-scan was retired into migration compensation (需求 §21/§24.3):
       // the drop stays a flat 1 data, no account-state read mid-combat.
       if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
-      if (drop.type === "repair-kit") { state.trainHp = Math.min(state.maxTrainHp, state.trainHp + 12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
+      if (drop.type === "repair-kit") { healTrain(12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
       if (drop.type === "blueprint") { longterm.addBlueprintRisk(state.longtermRun, drop.blueprintId); state.drops.splice(i, 1); showToast("发现蓝图 · " + (longterm.blueprintById(drop.blueprintId)?.name || "未知")); continue; }
       const picked = progression.collectCore(state, drop.type);
       Object.assign(state, picked.state); state.scrap += picked.scrap; state.drops.splice(i, 1);
@@ -150,7 +150,7 @@ function update(dt, refreshHud = true) {
       b.summon = 6; showToast("感染巨兽召集尸群");
     }
     if (Math.hypot(b.x - state.train.x, b.y - state.train.y) < 55) {
-      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1)); state.hurtFlash = .1;
+      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1) * (state.activeContract?.trainDamageMultiplier ?? 1)); state.hurtFlash = .1;
     }
   }
   updateHostileShots(dt);

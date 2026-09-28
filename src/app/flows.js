@@ -85,9 +85,10 @@ function renderUpgradeChoices(picks) {
 function renderTrainPreview(){ui.trainLength.textContent=state.trainLength+" 节车厢";ui.miniTrain.innerHTML="";for(let i=0;i<Math.min(7,state.trainLength);i++){const car=document.createElement("i");car.className="mini-car"+(i===0?" mini-car--cab":"");car.textContent=i===0?"◆":i%2?"▦":"▤";ui.miniTrain.append(car)}}
 function extractRun(){
   if(state.mode!=="station")return;
-  ui.stationScreen.hidden=true;
+  // Keep the station open if the save write fails, so the player can retry.
   const data=settleFinish("extracted");
-  if(data)renderResultDom(data);
+  if(!data)return;
+  ui.stationScreen.hidden=true;renderResultDom(data);
 }
 function continueRun() {
   const u=state.selectedUpgrade;if(!u||state.mode!=="station")return;

@@ -16,12 +16,15 @@ import { metaStorage } from "./game.js";
 
   // -- talent draft (需求 §14.1): edits are free previews; the single apply
   // call validates, charges and commits atomically.
-  let draft = null, branch = "hull", presetNotice = "";
-  function draftFromMeta() { draft = { nodes: { ...meta.talents.nodes }, specs: { ...meta.talents.specs } }; presetNotice = ""; }
+  // draftLoadout is null while the lineup follows the save; loading a preset
+  // drafts the preset's cars too (需求 §14.3), committed by the same apply.
+  let draft = null, draftLoadout = null, branch = "hull", presetNotice = "";
+  function draftFromMeta() { draft = { nodes: { ...meta.talents.nodes }, specs: { ...meta.talents.specs } }; draftLoadout = null; presetNotice = ""; }
+  const sameCars = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
   function draftDirty() {
     for (const node of metaApi.TALENT_NODES) if ((draft.nodes[node.id] || 0) !== (meta.talents.nodes[node.id] || 0)) return true;
     for (const key in draft.specs) if (draft.specs[key] !== meta.talents.specs[key]) return true;
-    return false;
+    return !!draftLoadout && !sameCars(draftLoadout, meta.loadout);
   }
   // Withdrawing a prerequisite cascades to its dependents (需求 §26.1).
   function withdrawNode(nodeId) {
@@ -70,24 +73,28 @@ import { metaStorage } from "./game.js";
     }
   }
   function renderCars() {
-    const slots = metaApi.carSlots(meta), selected = new Set(meta.loadout);
+    // With a preset lineup drafted, the car list edits that draft; unlocks
+    // follow the drafted talents because apply commits both together.
+    const cars = draftLoadout || meta.loadout, unlockMeta = draftLoadout ? { ...meta, talents: draft } : meta;
+    const slots = metaApi.carSlots(meta), selected = new Set(cars);
     carList.innerHTML = "";
     for (const car of metaApi.CAR_DEFS) {
       if (car.fixed) continue;
-      const unlocked = metaApi.carUnlocked(meta, car.id);
+      const unlocked = metaApi.carUnlocked(unlockMeta, car.id);
       const button = document.createElement("button"); button.type = "button";
       const active = selected.has(car.id); button.className = "meta-card meta-car" + (active ? " selected" : "");
       button.disabled = !unlocked;button.setAttribute("aria-pressed",String(active));
       const stateText = !unlocked ? `需先购买${metaApi.NODE_BY_ID[metaApi.CAR_UNLOCK_NODE[car.id]].name}` : active ? "已编组" : "未编组";
       button.innerHTML = `<span class="meta-card__icon">${icon(car.id)}</span><span><b>${car.name}</b><small>${stateText}</small><em>${car.description}</em></span>`;
       if (unlocked) button.addEventListener("click", () => {
-        const next = new Set(meta.loadout.filter(id => id !== "hangar"));
+        const next = new Set(cars.filter(id => id !== "hangar"));
         if (next.has(car.id)) next.delete(car.id); else {
           if (next.size >= slots) {
             const first = next.values().next().value; if (first) next.delete(first);
           }
           next.add(car.id);
         }
+        if (draftLoadout) { draftLoadout = ["hangar", ...next]; render(); return; }
         meta = metaApi.setLoadout(meta, [...next]); save(); render();
       });
       carList.append(button);
@@ -96,7 +103,7 @@ import { metaStorage } from "./game.js";
 
   // -- talent panels ---------------------------------------------------------
   const BRANCH_CARS = { hull: null, pointDefense: "pointDefense", repair: "repair", radar: "radar", storage: "storage" };
-  function branchActive(branchId) { const car = BRANCH_CARS[branchId]; return !car || meta.loadout.includes(car); }
+  function branchActive(branchId) { const car = BRANCH_CARS[branchId]; return !car || (draftLoadout || meta.loadout).includes(car); }
 
   function renderBranchTabs() {
     const bar = $("talentBranchTabs");
@@ -172,6 +179,7 @@ import { metaStorage } from "./game.js";
       load.addEventListener("click", () => {
         const result = metaApi.loadPreset(meta, index);
         draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
+        draftLoadout = [...result.loadout];
         presetNotice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
         render();
       });
@@ -182,7 +190,7 @@ import { metaStorage } from "./game.js";
       const keep = document.createElement("button");
       keep.type = "button"; keep.className = "talent-preset__save"; keep.textContent = "保存";
       keep.setAttribute("aria-label", `保存当前草稿到${preset.name}`);
-      keep.addEventListener("click", () => { meta = metaApi.savePreset(meta, index, draft, meta.loadout); save(); presetNotice = `草稿已存入 ${preset.name}`; render(); });
+      keep.addEventListener("click", () => { meta = metaApi.savePreset(meta, index, draft, draftLoadout || meta.loadout); save(); presetNotice = `草稿已存入 ${preset.name}`; render(); });
       chip.append(load, keep);
       bar.append(chip);
     });
@@ -190,7 +198,7 @@ import { metaStorage } from "./game.js";
   // Key stat diff for the fixed bottom strip (需求 §22.1).
   function summaryRows() {
     const current = metaApi.buildStats(meta);
-    const next = metaApi.buildStats({ ...meta, talents: draft });
+    const next = metaApi.buildStats({ ...meta, talents: draft, loadout: draftLoadout || meta.loadout });
     const rows = [`最大耐久 ${Math.round(current.maxHp)} → ${Math.round(next.maxHp)}`];
     if (current.pd || next.pd) rows.push(`近防 ${current.pd ? `伤害${pct(current.pd.damageMul)}·间隔${(current.pd.intervalMul).toFixed(2)}` : "无"} → ${next.pd ? `伤害${pct(next.pd.damageMul)}·间隔${(next.pd.intervalMul).toFixed(2)}` : "无"}`);
     if (current.repairCar || next.repairCar) rows.push(`到站维修车 ${current.repairCar ? `+${Math.round(current.repairCar.flat * current.repairCar.mul)}固定` : "无"} → ${next.repairCar ? `+${Math.round(next.repairCar.flat * next.repairCar.mul)}固定` : "无"}`);
@@ -331,13 +339,14 @@ import { metaStorage } from "./game.js";
   startButton.addEventListener('click',()=>selectTab('battle',true));
   $("talentReset").addEventListener("click", () => { draftFromMeta(); render(); });
   $("talentApply").addEventListener("click", () => {
-    const result = metaApi.applyTalents(meta, draft);
+    const result = metaApi.applyTalents(meta, draft, { loadout: draftLoadout || meta.loadout });
     if (!result.applied) { presetNotice = result.problems.join("；"); render(); return; }
     meta = result.meta;
+    save(); draftFromMeta();
+    // The confirmation is set after the draft reset, which clears notices.
     if (result.charged) presetNotice = `已支付改装费 ${result.charged} 废料`;
     else if (result.paid) presetNotice = `已消耗 1 次免费重构（剩 ${result.freeRefits} 次）`;
-    else presetNotice = "";
-    save(); draftFromMeta(); render();
+    render();
   });
   $('homeLoadout').addEventListener('click',()=>selectTab('train',true));
   $('shopToBattle').addEventListener('click',()=>selectTab('battle',true));

@@ -27,7 +27,8 @@ function settleFinish(result) {
 function eventIntel(event) {
   if (!carEnabled("radar")) return "";
   const base = event.weather === "dust" ? " · 雷达：Elite 活跃" : event.weather === "speed" ? " · 雷达：高速威胁" : " · 雷达：资源信号增强";
-  return longterm.hasBlueprint(state.metaProfile, "radar-pulse")
+  // 情报蓝图同样按出发快照读取 (需求 §20.1 / 修订方案 §4)，不查询局内账号。
+  return state.runStats?.ownedBlueprints?.includes("radar-pulse")
     ? base + `，移速 ×${event.enemySpeedMultiplier} / 精英 ×${event.eliteChanceMultiplier} / 核心 ×${event.coreChanceMultiplier}`
     : base;
 }

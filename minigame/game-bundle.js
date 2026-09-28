@@ -604,11 +604,11 @@ function drawTrainTab(u, host, registerRegion) {
   y += Y(52) + Y(14);
   // Cars.
   y = sectionHead(u, y, "功能车厢", "点击调整编组");
-  text(c, `当前编组 ${host.loadoutCars.length}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
+  text(c, `当前编组 ${Math.max(0, host.loadoutCars.length - 1)}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
   y += Y(28);
   for (const car of host.carDefs) {
     const unlocked = host.unlockedCars.includes(car.id);
-    const active = host.meta.loadout.includes(car.id);
+    const active = (host.talent?.loadout || host.meta.loadout).includes(car.id);
     const h = Y(70);
     fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
     c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
@@ -1651,7 +1651,7 @@ const ROUTE_EVENTS = Object.freeze([
 ]);
 
 const CONTRACTS = Object.freeze([
-  { id: "fragile", name: "脆弱护送", description: "列车更脆弱，废料更丰厚。", rewardMultiplier: 1.2, enemyHpMultiplier: 1, scrapMultiplier: 1.25 },
+  { id: "fragile", name: "脆弱护送", description: "列车受到的直接伤害 +20%，废料更丰厚。", rewardMultiplier: 1.2, enemyHpMultiplier: 1, scrapMultiplier: 1.25, trainDamageMultiplier: 1.2 },
   { id: "pressure", name: "高压推进", description: "敌人更坚韧，路线奖励提升。", rewardMultiplier: 1.3, enemyHpMultiplier: 1.18, scrapMultiplier: 1.12 },
   { id: "scavenger", name: "拾荒协议", description: "核心机会增加，击破收益稳定。", rewardMultiplier: 1.1, enemyHpMultiplier: 1.06, scrapMultiplier: 1.18 },
 ]);
@@ -2228,11 +2228,12 @@ function setLoadout(meta, ids) {
 
 function refitCost(meta) { return 10 + Math.ceil(Math.max(1, Math.floor(Number(meta?.train?.level) || 1)) / 2); }
 // A paid change withdraws points or swaps a purchased spec (§14.2); adding to
-// untouched nodes, loadout edits and renames stay free.
+// untouched nodes, loadout edits and renames stay free. Picking a spec for an
+// owned spec node that had none chosen yet is a first choice, not a swap.
 function refitIsPaid(currentTalents, nextTalents) {
   const before = currentTalents.nodes, after = nextTalents.nodes;
   for (const node of TALENT_NODES) if ((after[node.id] || 0) < (before[node.id] || 0)) return true;
-  for (const branch of TALENT_BRANCHES) if ((before[SPEC_NODE[branch.id]] || 0) > 0 && (after[SPEC_NODE[branch.id]] || 0) > 0 && currentTalents.specs[branch.id] !== nextTalents.specs[branch.id]) return true;
+  for (const branch of TALENT_BRANCHES) if ((before[SPEC_NODE[branch.id]] || 0) > 0 && (after[SPEC_NODE[branch.id]] || 0) > 0 && currentTalents.specs[branch.id] && currentTalents.specs[branch.id] !== nextTalents.specs[branch.id]) return true;
   return false;
 }
 function applyTalents(meta, draftTalents, options = {}) {
@@ -2568,7 +2569,7 @@ function nearestTarget(origin,range=Infinity){
   if(boss&&!boss.dead){const squared=(boss.x-origin.x)**2+(boss.y-origin.y)**2;if(squared<distance&&squared<=(range+(boss.r||0))**2)nearest=boss;}
   return nearest;
 }
-function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12))*(state.runStats?.damageTakenMul??1);applyTrainDamage(damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12))*(state.runStats?.damageTakenMul??1)*(state.activeContract?.trainDamageMultiplier??1);applyTrainDamage(damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
 // All direct train damage funnels through here so 冲击缓冲/装甲材料 and the
 // one-shot 应急储备 trigger from a single place (需求 §8/§17).
 function applyTrainDamage(amount){
@@ -2759,7 +2760,8 @@ function settleFinish(result) {
 function eventIntel(event) {
   if (!carEnabled("radar")) return "";
   const base = event.weather === "dust" ? " · 雷达：Elite 活跃" : event.weather === "speed" ? " · 雷达：高速威胁" : " · 雷达：资源信号增强";
-  return longterm.hasBlueprint(state.metaProfile, "radar-pulse")
+  // 情报蓝图同样按出发快照读取 (需求 §20.1 / 修订方案 §4)，不查询局内账号。
+  return state.runStats?.ownedBlueprints?.includes("radar-pulse")
     ? base + `，移速 ×${event.enemySpeedMultiplier} / 精英 ×${event.eliteChanceMultiplier} / 核心 ×${event.coreChanceMultiplier}`
     : base;
 }
@@ -3765,7 +3767,7 @@ function updateHostileShots(dt){
   for(const s of state.hostileShots){
     s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
     if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
-      applyTrainDamage(s.damage*(1-Math.min(.36,state.modules.armor||0)*.12)*(state.runStats?.damageTakenMul??1));
+      applyTrainDamage(s.damage*(1-Math.min(.36,(state.modules.armor||0)*.12))*(state.runStats?.damageTakenMul??1)*(state.activeContract?.trainDamageMultiplier??1));
       state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
     }
   }
@@ -3894,7 +3896,7 @@ function update(dt, refreshHud = true) {
       // bio-scan was retired into migration compensation (需求 §21/§24.3):
       // the drop stays a flat 1 data, no account-state read mid-combat.
       if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
-      if (drop.type === "repair-kit") { state.trainHp = Math.min(state.maxTrainHp, state.trainHp + 12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
+      if (drop.type === "repair-kit") { healTrain(12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
       if (drop.type === "blueprint") { longterm.addBlueprintRisk(state.longtermRun, drop.blueprintId); state.drops.splice(i, 1); showToast("发现蓝图 · " + (longterm.blueprintById(drop.blueprintId)?.name || "未知")); continue; }
       const picked = progression.collectCore(state, drop.type);
       Object.assign(state, picked.state); state.scrap += picked.scrap; state.drops.splice(i, 1);
@@ -3928,7 +3930,7 @@ function update(dt, refreshHud = true) {
       b.summon = 6; showToast("感染巨兽召集尸群");
     }
     if (Math.hypot(b.x - state.train.x, b.y - state.train.y) < 55) {
-      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1)); state.hurtFlash = .1;
+      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1) * (state.activeContract?.trainDamageMultiplier ?? 1)); state.hurtFlash = .1;
     }
   }
   updateHostileShots(dt);
@@ -4757,11 +4759,11 @@ const host = {
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
   trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
-  talent: { branch: "hull", draft: null, notice: "" },
+  talent: { branch: "hull", draft: null, loadout: null, notice: "" },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.1",
+  version: "v0.10.1.2",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -4773,7 +4775,7 @@ let regions = [];
 const RESEARCH_COPY = {
   fireControl: "提高北辰与所有无人机的伤害。",
   cycleControl: "缩短无人机普通攻击的基础间隔。",
-  rangeCalibration: "扩大无人机索敌与攻击射程。",
+  rangeCalibration: "扩大无人机索敌与攻击射程（不扩大爆炸/燃烧范围）。",
   hullEngineering: "提高列车最大耐久。",
   armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
   repairEngineering: "提高所有到站维修与应急储备的维修量。",
@@ -4796,6 +4798,7 @@ function regionStatus(meta, regionId) {
 function draftFromProfile() {
   const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
   host.talent.draft = { nodes, specs };
+  host.talent.loadout = null;
 }
 function draftDirty() {
   const current = host.meta?.talents;
@@ -4803,7 +4806,8 @@ function draftDirty() {
   for (const node of (longterm.TALENT_NODES || []))
     if ((host.talent.draft.nodes[node.id] || 0) !== (current.nodes[node.id] || 0)) return true;
   for (const key in host.talent.draft.specs) if (host.talent.draft.specs[key] !== current.specs[key]) return true;
-  return false;
+  const cars = host.talent.loadout, saved = host.meta.loadout || [];
+  return !!cars && (cars.length !== saved.length || cars.some((id, i) => id !== saved[i]));
 }
 function withdrawNode(nodeId) {
   const draft = host.talent.draft;
@@ -4836,13 +4840,13 @@ function refreshHostData() {
   host.talentPoints = longterm.talentPoints(profile);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
-  host.unlockedCars = longterm.unlockedCars(profile);
-  host.loadoutCars = (profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
+  host.unlockedCars = longterm.unlockedCars(host.talent.loadout ? { ...profile, talents: host.talent.draft } : profile);
+  host.loadoutCars = (host.talent.loadout || profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
   // Talent panel data for the canvas painter.
   host.branchRows = (longterm.TALENT_BRANCHES || []).map(branch => ({
     id: branch.id, name: branch.name, cap: branch.cap,
     spent: longterm.branchSpent(host.talent.draft, branch.id),
-    equipped: !branch.car || (profile.loadout || []).includes(branch.car),
+    equipped: !branch.car || (host.talent.loadout || profile.loadout || []).includes(branch.car),
     active: host.talent.branch === branch.id,
   }));
   host.nodeRows = (longterm.TALENT_NODES || []).filter(node => node.branch === host.talent.branch).map(node => ({
@@ -4864,7 +4868,7 @@ function refreshHostData() {
   const paid = dirty && longterm.refitIsPaid(profile.talents, host.talent.draft);
   const cost = longterm.refitCost(profile);
   const currentStats = longterm.buildStats(profile);
-  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft }) : currentStats;
+  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft, loadout: host.talent.loadout || profile.loadout }) : currentStats;
   host.talentSummary = {
     points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
     dirty, problems,
@@ -5045,10 +5049,18 @@ function applyAction(action) {
       setRegionGround(action.selectRegion);
     }
   } else if (action.toggleCar) {
-    const cars = state.metaProfile.loadout.includes(action.toggleCar)
-      ? state.metaProfile.loadout.filter(id => id !== action.toggleCar)
-      : [...state.metaProfile.loadout, action.toggleCar];
-    if (cars.length > 1) {
+    // Same rule as the DOM car list: a full lineup swaps out its oldest car;
+    // with a preset lineup drafted, edits stay in that draft until apply.
+    const base = (host.talent.loadout || state.metaProfile.loadout).filter(id => id !== "hangar");
+    let cars;
+    if (base.includes(action.toggleCar)) cars = base.filter(id => id !== action.toggleCar);
+    else {
+      cars = [...base];
+      if (cars.length >= longterm.carSlots(state.metaProfile)) cars.shift();
+      cars.push(action.toggleCar);
+    }
+    if (host.talent.loadout) host.talent.loadout = ["hangar", ...cars];
+    else {
       const next = longterm.setLoadout(state.metaProfile, cars);
       if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
     }
@@ -5064,16 +5076,17 @@ function applyAction(action) {
   } else if (action.presetLoad !== undefined) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
+    host.talent.loadout = [...result.loadout];
     host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
   } else if (action.presetSave !== undefined) {
-    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, state.metaProfile.loadout);
+    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
     longterm.saveMeta(metaStorage, state.metaProfile);
     host.talent.notice = "草稿已存入方案";
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
   } else if (action.talentApply) {
-    const result = longterm.applyTalents(state.metaProfile, host.talent.draft);
+    const result = longterm.applyTalents(state.metaProfile, host.talent.draft, { loadout: host.talent.loadout || state.metaProfile.loadout });
     if (result.applied) {
       state.metaProfile = result.meta;
       longterm.saveMeta(metaStorage, state.metaProfile);

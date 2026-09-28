@@ -322,11 +322,11 @@ function drawTrainTab(u, host, registerRegion) {
   y += Y(52) + Y(14);
   // Cars.
   y = sectionHead(u, y, "功能车厢", "点击调整编组");
-  text(c, `当前编组 ${host.loadoutCars.length}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
+  text(c, `当前编组 ${Math.max(0, host.loadoutCars.length - 1)}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
   y += Y(28);
   for (const car of host.carDefs) {
     const unlocked = host.unlockedCars.includes(car.id);
-    const active = host.meta.loadout.includes(car.id);
+    const active = (host.talent?.loadout || host.meta.loadout).includes(car.id);
     const h = Y(70);
     fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
     c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();

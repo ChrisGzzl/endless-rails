@@ -7,7 +7,7 @@ const ROUTE_EVENTS = Object.freeze([
 ]);
 
 const CONTRACTS = Object.freeze([
-  { id: "fragile", name: "脆弱护送", description: "列车更脆弱，废料更丰厚。", rewardMultiplier: 1.2, enemyHpMultiplier: 1, scrapMultiplier: 1.25 },
+  { id: "fragile", name: "脆弱护送", description: "列车受到的直接伤害 +20%，废料更丰厚。", rewardMultiplier: 1.2, enemyHpMultiplier: 1, scrapMultiplier: 1.25, trainDamageMultiplier: 1.2 },
   { id: "pressure", name: "高压推进", description: "敌人更坚韧，路线奖励提升。", rewardMultiplier: 1.3, enemyHpMultiplier: 1.18, scrapMultiplier: 1.12 },
   { id: "scavenger", name: "拾荒协议", description: "核心机会增加，击破收益稳定。", rewardMultiplier: 1.1, enemyHpMultiplier: 1.06, scrapMultiplier: 1.18 },
 ]);

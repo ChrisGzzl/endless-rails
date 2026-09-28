@@ -31,11 +31,11 @@ const host = {
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
   trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
-  talent: { branch: "hull", draft: null, notice: "" },
+  talent: { branch: "hull", draft: null, loadout: null, notice: "" },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.1",
+  version: "v0.10.1.2",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -47,7 +47,7 @@ let regions = [];
 const RESEARCH_COPY = {
   fireControl: "提高北辰与所有无人机的伤害。",
   cycleControl: "缩短无人机普通攻击的基础间隔。",
-  rangeCalibration: "扩大无人机索敌与攻击射程。",
+  rangeCalibration: "扩大无人机索敌与攻击射程（不扩大爆炸/燃烧范围）。",
   hullEngineering: "提高列车最大耐久。",
   armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
   repairEngineering: "提高所有到站维修与应急储备的维修量。",
@@ -70,6 +70,7 @@ function regionStatus(meta, regionId) {
 function draftFromProfile() {
   const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
   host.talent.draft = { nodes, specs };
+  host.talent.loadout = null;
 }
 function draftDirty() {
   const current = host.meta?.talents;
@@ -77,7 +78,8 @@ function draftDirty() {
   for (const node of (longterm.TALENT_NODES || []))
     if ((host.talent.draft.nodes[node.id] || 0) !== (current.nodes[node.id] || 0)) return true;
   for (const key in host.talent.draft.specs) if (host.talent.draft.specs[key] !== current.specs[key]) return true;
-  return false;
+  const cars = host.talent.loadout, saved = host.meta.loadout || [];
+  return !!cars && (cars.length !== saved.length || cars.some((id, i) => id !== saved[i]));
 }
 function withdrawNode(nodeId) {
   const draft = host.talent.draft;
@@ -110,13 +112,13 @@ function refreshHostData() {
   host.talentPoints = longterm.talentPoints(profile);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
-  host.unlockedCars = longterm.unlockedCars(profile);
-  host.loadoutCars = (profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
+  host.unlockedCars = longterm.unlockedCars(host.talent.loadout ? { ...profile, talents: host.talent.draft } : profile);
+  host.loadoutCars = (host.talent.loadout || profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
   // Talent panel data for the canvas painter.
   host.branchRows = (longterm.TALENT_BRANCHES || []).map(branch => ({
     id: branch.id, name: branch.name, cap: branch.cap,
     spent: longterm.branchSpent(host.talent.draft, branch.id),
-    equipped: !branch.car || (profile.loadout || []).includes(branch.car),
+    equipped: !branch.car || (host.talent.loadout || profile.loadout || []).includes(branch.car),
     active: host.talent.branch === branch.id,
   }));
   host.nodeRows = (longterm.TALENT_NODES || []).filter(node => node.branch === host.talent.branch).map(node => ({
@@ -138,7 +140,7 @@ function refreshHostData() {
   const paid = dirty && longterm.refitIsPaid(profile.talents, host.talent.draft);
   const cost = longterm.refitCost(profile);
   const currentStats = longterm.buildStats(profile);
-  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft }) : currentStats;
+  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft, loadout: host.talent.loadout || profile.loadout }) : currentStats;
   host.talentSummary = {
     points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
     dirty, problems,
@@ -319,10 +321,18 @@ function applyAction(action) {
       setRegionGround(action.selectRegion);
     }
   } else if (action.toggleCar) {
-    const cars = state.metaProfile.loadout.includes(action.toggleCar)
-      ? state.metaProfile.loadout.filter(id => id !== action.toggleCar)
-      : [...state.metaProfile.loadout, action.toggleCar];
-    if (cars.length > 1) {
+    // Same rule as the DOM car list: a full lineup swaps out its oldest car;
+    // with a preset lineup drafted, edits stay in that draft until apply.
+    const base = (host.talent.loadout || state.metaProfile.loadout).filter(id => id !== "hangar");
+    let cars;
+    if (base.includes(action.toggleCar)) cars = base.filter(id => id !== action.toggleCar);
+    else {
+      cars = [...base];
+      if (cars.length >= longterm.carSlots(state.metaProfile)) cars.shift();
+      cars.push(action.toggleCar);
+    }
+    if (host.talent.loadout) host.talent.loadout = ["hangar", ...cars];
+    else {
       const next = longterm.setLoadout(state.metaProfile, cars);
       if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
     }
@@ -338,16 +348,17 @@ function applyAction(action) {
   } else if (action.presetLoad !== undefined) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
+    host.talent.loadout = [...result.loadout];
     host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
   } else if (action.presetSave !== undefined) {
-    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, state.metaProfile.loadout);
+    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
     longterm.saveMeta(metaStorage, state.metaProfile);
     host.talent.notice = "草稿已存入方案";
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
   } else if (action.talentApply) {
-    const result = longterm.applyTalents(state.metaProfile, host.talent.draft);
+    const result = longterm.applyTalents(state.metaProfile, host.talent.draft, { loadout: host.talent.loadout || state.metaProfile.loadout });
     if (result.applied) {
       state.metaProfile = result.meta;
       longterm.saveMeta(metaStorage, state.metaProfile);

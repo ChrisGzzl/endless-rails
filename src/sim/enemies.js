@@ -39,7 +39,7 @@ function updateHostileShots(dt){
   for(const s of state.hostileShots){
     s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
     if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
-      applyTrainDamage(s.damage*(1-Math.min(.36,state.modules.armor||0)*.12)*(state.runStats?.damageTakenMul??1));
+      applyTrainDamage(s.damage*(1-Math.min(.36,(state.modules.armor||0)*.12))*(state.runStats?.damageTakenMul??1)*(state.activeContract?.trainDamageMultiplier??1));
       state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
     }
   }
