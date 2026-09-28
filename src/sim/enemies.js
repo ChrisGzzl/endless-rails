@@ -1,6 +1,7 @@
 "use strict";
 
-import { state, TAU, motion, level, longterm } from "../app/game.js";
+import { state, motion, level, longterm } from "../app/engine.js";
+import { TAU } from "../view/surface.js";
 import { WORLD_SPEED, carPosition } from "./world.js";
 import { burst, showToast } from "./fx.js";
 

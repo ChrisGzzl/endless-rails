@@ -1,6 +1,7 @@
 "use strict";
 
-import { state, W, H, motion, balance } from "../app/game.js";
+import { state, motion, balance } from "../app/engine.js";
+import { W, H } from "../view/surface.js";
 
 function carPosition(i){const {x:fx,y:fy}=motion.FORWARD;return{x:state.train.x-fx*i*balance.CAR_SPACING,y:state.train.y-fy*i*balance.CAR_SPACING}}
 function droneBounds(){const v=cameraView();return{left:v.left+24/v.zoom,right:v.right-24/v.zoom,top:v.top+24/v.zoom,bottom:v.bottom-24/v.zoom}}

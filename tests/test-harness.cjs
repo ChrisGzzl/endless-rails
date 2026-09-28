@@ -1,5 +1,5 @@
 "use strict";
-module.exports = function createGame({context,window:windowOverrides={},storage} = {}) {
+module.exports = function createGame({context,window:windowOverrides={},storage,entry="index.html",omitDocument=false} = {}) {
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -45,19 +45,19 @@ function createElement(id) {
       return new Proxy({}, { get: (target, property) => {
         if(property in target)return target[property];
         if (property === "createLinearGradient" || property === "createRadialGradient") return () => ({ addColorStop() {} });
+      if (property === "measureText") return () => ({ width: 0 });
         return () => {};
       } });
     },
   };
 }
 
-const elements = Object.fromEntries([...fs.readFileSync(path.join(__dirname, "..", "index.html"),'utf8').matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
+const elements = Object.fromEntries([...fs.readFileSync(path.join(__dirname, "..", entry),'utf8').matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
 Object.assign(elements.gameCanvas, { width: 390, height: 680 });
 let scheduledFrames = 0;
 const windowEvents = {};
 const sandbox = {
   localStorage: storage,
-  document: { getElementById: id => elements[id], createElement: tag => createElement(tag) },
   window: { ...windowOverrides, addEventListener(type, handler) { (windowEvents[type] ||= []).push(handler); } },
   performance: { now: () => 0 },
   requestAnimationFrame(callback) {
@@ -66,6 +66,12 @@ const sandbox = {
   },
   console,
 };
+if (!omitDocument) sandbox.document = { getElementById: id => elements[id], createElement: tag => createElement(tag) };
+if (entry !== "index.html") {
+  // Canvas-only boots receive the surface through the adapter contract instead
+  // of querying the document; hand them the fake canvas the same way.
+  sandbox.window.__endlessRailsCanvas = elements.gameCanvas;
+}
 
 vm.createContext(sandbox);
 
@@ -75,9 +81,9 @@ vm.createContext(sandbox);
 // (the browser's own order), and execute each module's source with import /
 // export syntax stripped. What the tests exercise is therefore the real page's
 // module set, graph order and cross-module wiring, not a hand-maintained list.
-const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+const html = fs.readFileSync(path.join(__dirname, "..", entry), "utf8");
 const entries = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.equal(entries.length, 1, "index.html must declare exactly one module entry");
+assert.equal(entries.length, 1, entry + " must declare exactly one module entry");
 const entryFile = path.resolve(projectRoot, entries[0]);
 
 function parseModule(file) {
@@ -120,7 +126,7 @@ function visit(file, from) {
 }
 visit(entryFile, null);
 const expected = ["src/main.js", "src/app/game.js", "src/view/atlas.js", "src/view/render.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
-for (const rel of expected) assert.ok(modules.has(path.resolve(projectRoot, rel)), "module graph must include " + rel);
+if (entry === "index.html") for (const rel of expected) assert.ok(modules.has(path.resolve(projectRoot, rel)), "module graph must include " + rel);
 
 for (const mod of order) {
   const stripped = mod.src

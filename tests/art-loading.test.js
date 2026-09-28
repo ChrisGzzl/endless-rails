@@ -27,7 +27,7 @@ function boot(){
 // A missing atlas must never silently leave a whole run using line-art turrets.
 const app=boot();
 assert.equal(app.elements.startButton.disabled,true);
-assert.equal(app.requests.length,8);
+assert.equal(app.requests.length,12);
 const [hover,atlas,ground,vfx,combatVfx]=app.requests;
 hover.onload();ground.onload();vfx.onload();combatVfx.onload();
 assert.equal(app.elements.startButton.disabled,true,"wait for the train/turret atlas too");
@@ -35,7 +35,7 @@ atlas.onerror();
 const retry1=app.requests.at(-1);
 assert.match(retry1.url,/sci-fi-atlas-v1-mobile.webp\?v=.*&retry=/,"bypass a stale failed cache entry");
 retry1.onerror();app.requests.at(-1).onerror();
-assert.equal(app.requests.length,10,"automatic retries are bounded");
+assert.equal(app.requests.length,14,"automatic retries are bounded");
 assert.equal(app.elements.retryArtButton.hidden,false);
 assert.match(app.elements.artStatus.textContent,/列车与防御塔/);
 app.elements.retryArtButton.events.click();
@@ -43,7 +43,7 @@ const recovered=app.requests.at(-1);recovered.onload();
 assert.equal(app.elements.startButton.disabled,false);
 assert.equal(app.elements.artStatus.hidden,true);
 assert.equal(app.elements.retryArtButton.hidden,true);
-assert.equal(app.timers.size,3,"optional skill art may still be decoding");
+assert.equal(app.timers.size,7,"optional skill art may still be decoding");
 assert.equal(app.run("paintSprite(0,0,0,80,80)"),true);
 assert.equal(app.run("paintSprite(11,0,0,37,42)"),true);
 assert.equal(app.draws[0][0],hover,"command drone uses the designed hover sheet");
@@ -57,7 +57,7 @@ const replacement=stalled.requests.at(-1);replacement.onload();oldLoad();
 assert.equal(stalled.run("gameArt.hover") ,replacement);
 stalled.requests[1].onload();stalled.requests[2].onload();stalled.requests[3].onload();stalled.requests[4].onload();stalled.requests[5].onload();
 assert.equal(stalled.elements.startButton.disabled,false);
-assert.equal(stalled.timers.size,2);
+assert.equal(stalled.timers.size,6);
 // Optional skins never block a basic run, but failures remain visible and retryable.
 const optional=boot();optional.requests.slice(0,5).forEach(i=>i.onload());
 optional.requests[5].onerror();optional.requests.at(-1).onerror();optional.requests.at(-1).onerror();

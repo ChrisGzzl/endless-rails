@@ -10,14 +10,21 @@ if(typeof Image!=="undefined"){
     {key:"vfx",path:"assets/weapon-vfx-v1-mobile.webp",name:"武器特效"},
     {key:"combatVfx",path:"assets/missile-arc-vfx-v1-mobile.webp",name:"导弹与电弧特效"},{key:"bond",path:"assets/attacks-v3-mobile.webp",name:"北辰羁绊与突破攻击"},
     {key:"breakthrough",path:"assets/hover-lv10-v3-mobile.webp",name:"Lv.10突破无人机"},{key:"evolvedVfx",path:"assets/weapon-lv10-v3-mobile.webp",name:"Lv.10突破特效"},
+    {key:"heroWasteland",path:"assets/hero-wasteland-v3.webp",name:"起始荒原主视觉"},{key:"heroRuins",path:"assets/hero-ruins-v3.webp",name:"废墟城市主视觉"},
+    {key:"heroIndustrial",path:"assets/hero-industrial-v3.webp",name:"工业区主视觉"},{key:"heroInfection",path:"assets/hero-infection-v3.webp",name:"感染区主视觉"},
   ];
+  const optionalKeys=new Set(["bond","breakthrough","evolvedVfx","heroWasteland","heroRuins","heroIndustrial","heroInfection"]);
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
   const artObjectUrls=[];
-  const start=document.getElementById("startButton"),status=document.getElementById("artStatus"),retry=document.getElementById("retryArtButton");
+  // Art status wiring is optional: DOM-free hosts (canvas-only boot, mini-game)
+  // load the same assets without a start button or status line to update.
+  const start=typeof document!=="undefined"?document.getElementById("startButton"):null,
+    status=typeof document!=="undefined"?document.getElementById("artStatus"):null,
+    retry=typeof document!=="undefined"?document.getElementById("retryArtButton"):null;
   function updateArtStatus(){
+    if(!start||!status||!retry)return;
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
-    const optionalKeys=new Set(["bond","breakthrough","evolvedVfx"]);
     const failed=assets.filter(asset=>asset.failed);
     const required=assets.filter(asset=>!optionalKeys.has(asset.key));
     start.disabled=required.some(asset=>!gameArt[asset.key]);
@@ -54,12 +61,14 @@ if(typeof Image!=="undefined"){
     }else picture.src=requestUrl;
   }
   if(typeof window!=="undefined")window.addEventListener?.("pagehide",()=>{for(const url of artObjectUrls)URL.revokeObjectURL?.(url);});
-  retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
+  if(start&&status&&retry)retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
   for(const asset of assets)loadArt(asset);
 }
 // Other regions fetch their ground only after selection; the original desert remains
 // visible while a region tile decodes, and a failed tile never blocks combat.
 const regionGroundPaths={ruins:"assets/ruins-ground-v1.webp",industrial:"assets/industrial-ground-v1.webp",infection:"assets/infection-ground-v1.webp"};
+const heroArtKeys={wasteland:"heroWasteland",ruins:"heroRuins",industrial:"heroIndustrial",infection:"heroInfection"};
+function heroArtFor(regionId){return gameArt[heroArtKeys[regionId]||"heroWasteland"]||null;}
 const regionGroundCache={};
 let activeGroundRegion="wasteland";
 function setRegionGround(regionId){
@@ -121,6 +130,6 @@ function paintCombatVfx(row,phase,x,y,width,height=width,opacity=1,angle=0,loop=
   }
   ctx.restore();return true;
 }
-import { ctx } from "../app/game.js";
+import { ctx } from "./surface.js";
 
-export { gameArt, spriteCells, paintSprite, paintAttack, paintWeaponVfx, paintCombatVfx, setRegionGround };
+export { gameArt, spriteCells, paintSprite, paintAttack, paintWeaponVfx, paintCombatVfx, setRegionGround, heroArtFor };

@@ -1,12 +1,11 @@
 "use strict";
 
-import { state, motion, ui, resetJoystick } from "../app/game.js";
+import { state, motion, presentation } from "../app/engine.js";
 import { WORLD_SPEED, advanceWorld } from "./world.js";
 import { updateSwarm } from "./run.js";
 import { updateParticles, burst, showToast } from "./fx.js";
 import { killBoss, releaseCarSuppression } from "./combat.js";
-import { arriveStation, finish } from "../app/flows.js";
-import { updateHud } from "../view/hud.js";
+import { enterStation, settleFinish } from "../app/flow-logic.js";
 
 function stationCenter() {
   const distance=state.mode==="docking"?state.docking.offset:
@@ -22,9 +21,9 @@ function startDocking(final=false) {
   const offset=final?420:WORLD_SPEED*1.2;
   state.mode="docking";state.docking={time:0,clock:0,offset,startOffset:offset,duration:2*offset/WORLD_SPEED,final};
   state.routeDistance=0;state.timer=0;state.shots=[];state.weaponFx=[];
-  state.hostileShots=[];ui.levelUp.hidden=true;resetJoystick();
+  state.hostileShots=[];presentation.hideLevelUp();presentation.resetJoystick();
   showToast("进入车站防区 · 炮台接管");
-  updateHud();
+  presentation.updateHud();
 }
 function updateDocking(dt) {
   const d=state.docking;d.time+=dt;d.clock-=dt;
@@ -56,7 +55,8 @@ function updateDocking(dt) {
   }
   updateParticles(dt);
   if(d.time>=Math.max(3.4,d.duration+.6)&&!state.enemies.some(e=>!e.dead)&&(!d.final||!state.boss||state.boss.dead)) {
-    if(d.final)finish(true);else arriveStation();
+    if(d.final){const resultData=settleFinish(true);if(resultData)presentation.renderResult(resultData);}
+    else presentation.renderStation(enterStation());
   }
 }
 

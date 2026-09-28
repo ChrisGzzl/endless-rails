@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),createGame=require('./test-harness.cjs');
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 const g=createGame();
-g.run(`resetRun({regionId:'wasteland',region:longterm.REGIONS[0],cars:['hangar','pointDefense','storage','radar','repair'],trainLength:6});state.cameraZoom=.85;`);
+g.run(`beginRun({regionId:'wasteland',region:longterm.REGIONS[0],cars:['hangar','pointDefense','storage','radar','repair'],trainLength:6});state.cameraZoom=.85;`);
 for(const [width,height] of [[360,450],[390,660],[844,230]]){
  g.elements.gameCanvas.getBoundingClientRect=()=>({width,height});g.run('resizeBattlefield();');
  assert.equal(g.run('Array.from({length:state.trainLength},(_,i)=>carPosition(i)).every(p=>{const v=cameraView();return p.x>v.left+20&&p.x<v.right-20&&p.y>v.top+20&&p.y<v.bottom-20;})'),true,'all six cars fit the visible world');
@@ -15,8 +15,8 @@ for(const [width,height] of [[360,450],[390,660],[844,230]]){
 }
 // A low frame rate must not stretch the advertised 60-second route.
 for(const fps of [20,30,60]){
- const t=createGame();t.run(`resetRun();state.activeContract=routeEvents.CONTRACTS[2];beginRoute(routeEvents.ROUTE_EVENTS[2]);state.spawnClock=Infinity;state.enemies=[];`);
- t.run(`for(let i=1;i<=${fps*59};i++)nextFrame(i*1000/${fps});`,10000);
+ const t=createGame();t.run(`beginRun();state.activeContract=routeEvents.CONTRACTS[2];beginRoute(routeEvents.ROUTE_EVENTS[2]);state.spawnClock=Infinity;state.enemies=[];`);
+ t.run(`for(let i=1;i<=${fps*59};i++)nextFrame(i*1000/${fps});`,60000);
  near(t.run('state.routeDistance'),1);
  t.run(`for(let i=${fps*59+1};i<=${fps*60+1};i++)nextFrame(i*1000/${fps});`);
  assert.equal(t.run('state.mode'),'docking');

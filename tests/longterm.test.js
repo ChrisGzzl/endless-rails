@@ -22,10 +22,10 @@ assert.equal(meta.gameStorage(qaHost),meta.gameStorage(qaHost));assert.notEqual(
 assert.equal(meta.gameStorage({get localStorage(){throw new Error('blocked');}}),null);
 
 const g=createGame({storage});
-g.run(`resetRun();state.longtermRun.risk={scrap:100,components:10,data:10};state.kills=20;state.routeElapsed=40;finish(false);`);
+g.run(`beginRun();state.longtermRun.risk={scrap:100,components:10,data:10};state.kills=20;state.routeElapsed=40;finish(false);`);
 const resources=g.run('state.metaProfile.resources.scrap'),runs=g.run('state.record.runs');
 g.run('finish(false);');assert.equal(g.run('state.metaProfile.resources.scrap'),resources);assert.equal(g.run('state.record.runs'),runs,'settlement and records are idempotent');
-g.run('state.trainDamage=123;resetRun();');assert.equal(g.run('state.trainDamage'),0,'damage is per run');
+g.run('state.trainDamage=123;beginRun();');assert.equal(g.run('state.trainDamage'),0,'damage is per run');
 g.run(`state.mode='combat';state.disabledCars={storage:true};
 state.enemies=[{suppressedCar:'storage',targetCarId:'storage',attached:true,hp:5},{suppressedCar:'storage',targetCarId:'storage',attached:true,hp:5}];
 state.enemies[0].dead=true;releaseCarSuppression(state.enemies[0]);`);

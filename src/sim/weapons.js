@@ -1,6 +1,7 @@
 "use strict";
 
-import { state, level, TAU, effects, longterm, gameAudio, syncSwarm, carEnabled } from "../app/game.js";
+import { state, level, effects, longterm, gameAudio, syncSwarm, carEnabled } from "../app/engine.js";
+import { TAU } from "../view/surface.js";
 import { cameraView, carPosition } from "./world.js";
 import { burst } from "./fx.js";
 import { nearestTarget, damageTarget, areaHit, normalStatsFor, bondStatsFor, combatTargets, ricochetBurst } from "./combat.js";

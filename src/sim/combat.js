@@ -1,6 +1,7 @@
 "use strict";
 
-import { state, level, TAU, balance, effects, progression, longterm } from "../app/game.js";
+import { state, level, balance, effects, progression, longterm } from "../app/engine.js";
+import { TAU } from "../view/surface.js";
 import { burst, addText, showToast, showCombo } from "./fx.js";
 
 function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",4);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}

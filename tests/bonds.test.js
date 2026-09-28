@@ -93,5 +93,5 @@ all.run('renderDamageSummary();inspector.id="command";inspector.tab="weapon";ren
 for(const name of ['红色灼杀','蓝色穿透','紫色共振'])assert.ok(all.elements.resultBondDamage.innerHTML.includes(name));
 assert.ok(!all.elements.resultDroneDamage.innerHTML.includes('技能'),'no phantom zero skill rows for specialists');
 const summary=record.buildRunSummary({bondStats:{red:{damage:5}}});assert.equal(summary.damageByBond.red.damage,5);
-all.run('resetRun()');assert.equal(all.run('Object.keys(state.bondStats).length'),0);
+all.run('beginRun()');assert.equal(all.run('Object.keys(state.bondStats).length'),0);
 console.log('Bonds: thresholds, levels, command-only casting, coexistence, real damage/boss/DoT attribution, GM and records passed.');

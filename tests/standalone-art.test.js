@@ -22,10 +22,10 @@ test("iOS standalone mode bypasses stale image cache through reload fetch and Bl
     .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm,"");
   vm.runInContext(source,context);
   await new Promise(resolve=>setImmediate(resolve));
-  assert.equal(fetches.length,8);
+  assert.equal(fetches.length,12);
   assert.ok(fetches.every(call=>call.options.cache==="reload"&&call.url.includes("standalone=")));
-  assert.equal(images.length,8);assert.ok(images.every(image=>image.url.startsWith("blob:art-")));
+  assert.equal(images.length,12);assert.ok(images.every(image=>image.url.startsWith("blob:art-")));
   for(const image of images)image.onload();
   assert.equal(elements.startButton.disabled,false);assert.equal(elements.artStatus.hidden,true);
-  events.pagehide();assert.equal(revoked.length,8);
+  events.pagehide();assert.equal(revoked.length,12);
 });

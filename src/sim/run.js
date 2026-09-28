@@ -1,11 +1,10 @@
 "use strict";
 
-import { state, level, gameAudio, effects, longterm, routeEvents, balance, metaStorage, carEnabled } from "../app/game.js";
+import { state, level, gameAudio, effects, longterm, routeEvents, balance, metaStorage, carEnabled, presentation } from "../app/engine.js";
 import { cameraView } from "./world.js";
 import { nearestTarget, bladeHuntTarget, killEnemy, killBoss } from "./combat.js";
 import { burst, showToast } from "./fx.js";
 import { spawnWave } from "./spawn.js";
-import { updateHud } from "../view/hud.js";
 
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
@@ -22,7 +21,7 @@ function beginRoute(event) {
   state.routeDistanceTotal=state.routeModifiers.routeDistance;state.routeDistance=state.routeDistanceTotal;
   state.timer=state.routeDistance;state.enemies=[];state.hostileShots=[];state.shots=[];state.zones=[];state.weaponFx=[];
   state.spawnClock=balance.spawnInterval(state.station);state.fireClock=0;state.shieldReady=!!level("shield");
-  syncSwarm();spawnWave();showToast(state.station===1?"稀疏尸群 · 先积累火力":state.activeEvent?.name||"模块在线");updateHud();
+  syncSwarm();spawnWave();showToast(state.station===1?"稀疏尸群 · 先积累火力":state.activeEvent?.name||"模块在线");presentation.updateHud();
 }
 function syncSwarm() {
   const old=new Map(state.swarm.map(d=>[d.id,d]));

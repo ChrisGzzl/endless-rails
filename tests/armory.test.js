@@ -30,7 +30,7 @@ elements.resumeButton.events.click();
 assert.equal(run('state.mode'),"levelup");assert.equal(run('state.pendingLevelUps'),2);
 run('state.mode="combat";state.paused=false;');
 windowEvents.blur.forEach(fn=>fn());assert.equal(run('state.paused'),true,"window blur pauses combat");
-run('resetRun();');assert.equal(elements.pauseScreen.hidden,true);
+run('beginRun();');assert.equal(elements.pauseScreen.hidden,true);
 
 // Small displays paginate data instead of creating a scrolling overlay.
 run('window.innerHeight=568;state.mode="combat";togglePause();inspector.tab="global";renderPause();');

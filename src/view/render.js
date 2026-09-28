@@ -1,7 +1,11 @@
 "use strict";
 
 import { gameArt, spriteCells, paintSprite, paintAttack, paintWeaponVfx, paintCombatVfx, setRegionGround } from "./atlas.js";
-import { ctx, TAU, W, H, state, motion, balance, effects, cameraView, carPosition, stationCenter, stationTurrets, bladePositions } from "../app/game.js";
+import { ctx, TAU, W, H } from "./surface.js";
+import { state, motion, balance, effects } from "../app/engine.js";
+import { cameraView, carPosition } from "../sim/world.js";
+import { stationCenter, stationTurrets } from "../sim/docking.js";
+import { bladePositions } from "../sim/weapons.js";
 
 // Rendering stays independent of combat rules and uses the game's logical 390 × 680 canvas.
 const terrainPalettes = [

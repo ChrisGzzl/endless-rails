@@ -1,0 +1,10 @@
+{
+  "description": "Endless Rails mini-game build - open this folder in the WeChat devtools or the TapTap minigame toolchain.",
+  "appid": "touristappid",
+  "projectname": "endless-rails-minigame",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "minified": true
+  }
+}

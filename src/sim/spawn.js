@@ -1,9 +1,9 @@
 "use strict";
 
-import { state, ui, balance, motion } from "../app/game.js";
+import { state, presentation, balance, motion } from "../app/engine.js";
 import { cameraView } from "./world.js";
 
-function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;ui.bossWrap.hidden=true;}
+function spawnWave(){const count=balance.initialWaveCount(state.station);for(let i=0;i<count;i++)spawnEnemy(i*.14);state.boss=null;presentation.hideBoss();}
 function spawnEnemy(delay=0) {
   const curve = balance.difficultyAt(state.station, state.routeElapsed, state.routeDistanceTotal);
   const sides = ["top", "right", "bottom", "left"], side = sides[Math.floor(Math.random()*4)];
