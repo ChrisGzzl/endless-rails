@@ -14,8 +14,9 @@ import { showToast } from "../sim/fx.js";
 function settleFinish(result) {
   if (state.mode === "result" && state.metaSettled) return null;
   const outcome = result === true ? "won" : result === "extracted" ? "extracted" : "lost";
-  state.mode = "result"; state.outcome = outcome;
   const settlement = settleLongterm(outcome);
+  if (!settlement) return null;
+  state.mode = "result"; state.outcome = outcome;
   state.record = runRecord.mergeRecord(state.record, runRecord.buildRunSummary(state));
   runRecord.saveRecord(metaStorage, state.record);
   presentation.updateHud();

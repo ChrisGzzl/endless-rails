@@ -68,7 +68,7 @@ function beginRun(plan) {
   state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
-  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
+  state.metaSettlement = null; state.metaSettled = false; state.settlementRetryAt = 0; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
   // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).
   state.runStats = state.longtermRun.stats;
   state.emergencyReserveUsed = false; state.fieldRepairClock = 0;
@@ -87,6 +87,7 @@ function update(dt, refreshHud = true) {
   if (state.trainHp < audioTrainHp) gameAudio?.play("hurt");
   audioTrainHp = state.trainHp;
   if (state.paused || state.mode === "levelup") return;
+  if (state.settlementRetryAt && Date.now() < state.settlementRetryAt) return;
   if (state.mode === "docking") { updateDocking(dt); if (refreshHud) presentation.updateHud(); return; }
   if (state.mode !== "combat") return;
   state.visualTime += dt;

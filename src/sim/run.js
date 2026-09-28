@@ -9,8 +9,12 @@ import { spawnWave } from "./spawn.js";
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
   const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
-  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
-  state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
+  // Persist the whole resource/XP/record-of-settlement update before marking
+  // this run complete. A failed write leaves it retryable in the current tab.
+  const settlementSource=metaStorage?longterm.loadMeta(metaStorage):state.metaProfile;
+  const settlement=longterm.settleRun(settlementSource,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
+  if(!longterm.saveMeta(metaStorage,settlement.meta)){state.settlementRetryAt=Date.now()+2000;showToast("存档写入失败 · 请重试结算");return null;}
+  state.settlementRetryAt=0;state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }
 function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;const damageMul=state.runStats?.droneDamageMul??1;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5*damageMul;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8*damageMul;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}

@@ -1731,6 +1731,7 @@ function gameStorage(host) {
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 30;
 const SAVE_VERSION = 2;
+const MAX_SETTLED_RUN_IDS = 256; // Bounded by the development save service's 32 KiB payload.
 
 const CAR_DEFS = Object.freeze([
   { id: "hangar", name: "无人机机库", icon: "◇", fixed: true, description: "远征核心车厢；管理无人机与长期研究。" },
@@ -1742,10 +1743,10 @@ const CAR_DEFS = Object.freeze([
 const CAR_UNLOCK_NODE = Object.freeze({ pointDefense: "N0", repair: "R0", radar: "D0", storage: "C0" });
 
 const REGIONS = Object.freeze([
-  { id: "wasteland", name: "起始荒原", statusText: "低危铁路", description: "开阔荒原，适合验证列车与无人机编组。", enemyHp: .94, density: .92, elite: .85, reward: 1, next: ["ruins"], blueprintPool: ["pd-array", "swift-feed", "field-repair"] },
-  { id: "ruins", name: "废墟城市", statusText: "中危城区", description: "街区尸潮开始从多个方向压迫列车。", enemyHp: 1.05, density: 1.08, elite: 1.08, reward: 1.16, next: ["industrial", "infection"], blueprintPool: ["radar-pulse", "rail-lens", "arc-resonator"] },
-  { id: "industrial", name: "工业区", statusText: "高危工厂", description: "重型感染者与技术组件产出更高。", enemyHp: 1.14, density: 1.18, elite: 1.25, reward: 1.34, next: [], blueprintPool: ["cargo-lock", "missile-guidance", "incendiary-gel"] },
-  { id: "infection", name: "感染区", statusText: "高危巢域", description: "高密度尸潮与变异体，研究数据收益最高。", enemyHp: 1.22, density: 1.30, elite: 1.42, reward: 1.52, next: [], blueprintPool: ["bio-scan", "ricochet-prism", "chain-overload"] },
+  { id: "wasteland", name: "起始荒原", statusText: "低危铁路", description: "开阔荒原，适合验证列车与无人机编组。", enemyHp: .94, density: .92, elite: .85, reward: 1, next: ["ruins"], blueprintPool: ["radar-pulse", "rail-lens", "arc-resonator"] },
+  { id: "ruins", name: "废墟城市", statusText: "中危城区", description: "街区尸潮开始从多个方向压迫列车。", enemyHp: 1.05, density: 1.08, elite: 1.08, reward: 1.16, next: ["industrial", "infection"], blueprintPool: ["rail-lens", "arc-resonator", "missile-guidance"] },
+  { id: "industrial", name: "工业区", statusText: "高危工厂", description: "重型感染者与技术组件产出更高。", enemyHp: 1.14, density: 1.18, elite: 1.25, reward: 1.34, next: [], blueprintPool: ["missile-guidance", "incendiary-gel", "ricochet-prism"] },
+  { id: "infection", name: "感染区", statusText: "高危巢域", description: "高密度尸潮与变异体，研究数据收益最高。", enemyHp: 1.22, density: 1.30, elite: 1.42, reward: 1.52, next: [], blueprintPool: ["ricochet-prism", "arc-resonator", "incendiary-gel"] },
 ]);
 
 // v0.10.0 §21: stat-overlapping blueprints are retired into collection entries
@@ -2071,6 +2072,7 @@ function emptyMeta() {
     selectedRegion: "wasteland",
     regions,
     blueprints: [],
+    settledRunIds: [],
     research,
     totals: { expeditions: 0, extracts: 0, wins: 0, losses: 0 },
     migration: null,
@@ -2185,6 +2187,7 @@ function normalizeMeta(value) {
   }
   result.selectedRegion = result.regions[src.selectedRegion]?.unlocked ? src.selectedRegion : "wasteland";
   result.blueprints = [...new Set(Array.isArray(src.blueprints) ? src.blueprints : [])].filter(id => BLUEPRINTS.some(bp => bp.id === id));
+  result.settledRunIds = [...new Set(Array.isArray(src.settledRunIds) ? src.settledRunIds : [])].filter(id => typeof id === "string" && id.length > 0 && id.length <= 80).slice(-MAX_SETTLED_RUN_IDS);
   result.research = {};
   for (const id of RESEARCH_IDS) result.research[id] = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Math.floor(Number(src.research?.[id]) || 0)));
   result.totals = { expeditions: Math.max(0, Number(src.totals?.expeditions) || 0), extracts: Math.max(0, Number(src.totals?.extracts) || 0), wins: Math.max(0, Number(src.totals?.wins) || 0), losses: Math.max(0, Number(src.totals?.losses) || 0) };
@@ -2320,9 +2323,13 @@ function researchEffectText(id, level) {
 // Run lifecycle: risk/banked resources, yields, settlement (需求 §19-§20).
 // ---------------------------------------------------------------------------
 
+function newRunId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
 function createRun(meta, plan = planFor(meta)) {
   const normalized = normalizeMeta(meta);
-  return { plan: { ...plan, cars: [...plan.cars] }, stats: buildStats(normalized), banked: copyResources(), risk: copyResources(), bankedBlueprints: [], riskBlueprints: [], stationsBanked: 0, eliteKills: 0, specialKills: 0, regionReward: plan?.region?.reward || 1 };
+  return { id: newRunId(), startExpeditions: normalized.totals.expeditions, plan: { ...plan, cars: [...plan.cars] }, stats: buildStats(normalized), banked: copyResources(), risk: copyResources(), bankedBlueprints: [], riskBlueprints: [], stationsBanked: 0, eliteKills: 0, specialKills: 0, regionReward: plan?.region?.reward || 1 };
 }
 // Yields apply exactly once, at award time, using the departure snapshot.
 function awardRisk(run, type, amount) {
@@ -2331,15 +2338,15 @@ function awardRisk(run, type, amount) {
   run.risk[type] = fix3(run.risk[type] + Math.max(0, Number(amount) || 0) * mul);
   return run;
 }
-function addBlueprintRisk(run, id) { if (run && blueprintById(id) && !run.riskBlueprints.includes(id) && !run.bankedBlueprints.includes(id)) run.riskBlueprints.push(id); return run; }
+function addBlueprintRisk(run, id) { if (run && blueprintById(id) && !blueprintById(id).retired && !run.riskBlueprints.includes(id) && !run.bankedBlueprints.includes(id)) run.riskBlueprints.push(id); return run; }
 function bankRisk(run) {
   if (!run) return run;
+  // Arrival pays before the station locks its process rewards.
+  awardRisk(run, "data", 1);
   for (const key of Object.keys(run.risk)) { run.banked[key] = fix3(run.banked[key] + run.risk[key]); run.risk[key] = 0; }
   run.bankedBlueprints.push(...run.riskBlueprints.filter(id => !run.bankedBlueprints.includes(id)));
   run.riskBlueprints = [];
   run.stationsBanked += 1;
-  // Station arrival is part of the process reward pool: +1 research data.
-  awardRisk(run, "data", 1);
   return run;
 }
 function applyTrainXp(meta, amount) {
@@ -2352,7 +2359,7 @@ function applyTrainXp(meta, amount) {
 }
 // Accepts the account meta or a plain owned-id array; combat passes the
 // departure snapshot's copy (修订方案 §4/需求 §20.1).
-function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
+function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id) && blueprintById(id) && !blueprintById(id).retired); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
 
 // XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
 // a failed run keeps completed segments and converts current-segment progress
@@ -2369,6 +2376,7 @@ function expeditionXp(run, outcome, options = {}) {
 function settleRun(meta, run, outcome, options = {}) {
   let next = normalizeMeta(meta);
   if (!run) return { meta: next, gained: copyResources(), blueprints: [] };
+  if ((run.id && next.settledRunIds.includes(run.id)) || (Number.isSafeInteger(run.startExpeditions) && next.totals.expeditions > run.startExpeditions)) return { meta: next, gained: copyResources(), blueprints: [], trainXp: 0, alreadySettled: true };
   const gained = copyResources(run.banked);
   const blueprints = [...run.bankedBlueprints];
   if (outcome === "won" || outcome === "extracted") {
@@ -2399,6 +2407,7 @@ function settleRun(meta, run, outcome, options = {}) {
   }
   const xp = expeditionXp(run, outcome, options);
   next = applyTrainXp(next, xp);
+  if (run.id) next.settledRunIds = [...next.settledRunIds, run.id].slice(-MAX_SETTLED_RUN_IDS);
   return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
 }
 
@@ -2630,8 +2639,12 @@ function spawnEnemy(delay=0) {
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
   const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
-  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
-  state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
+  // Persist the whole resource/XP/record-of-settlement update before marking
+  // this run complete. A failed write leaves it retryable in the current tab.
+  const settlementSource=metaStorage?longterm.loadMeta(metaStorage):state.metaProfile;
+  const settlement=longterm.settleRun(settlementSource,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
+  if(!longterm.saveMeta(metaStorage,settlement.meta)){state.settlementRetryAt=Date.now()+2000;showToast("存档写入失败 · 请重试结算");return null;}
+  state.settlementRetryAt=0;state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }
 function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;const damageMul=state.runStats?.droneDamageMul??1;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5*damageMul;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8*damageMul;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
@@ -2732,8 +2745,9 @@ const stationUpgradePool=upgradePool.filter(u=>u.type==="train"&&!["cargo","rail
 function settleFinish(result) {
   if (state.mode === "result" && state.metaSettled) return null;
   const outcome = result === true ? "won" : result === "extracted" ? "extracted" : "lost";
-  state.mode = "result"; state.outcome = outcome;
   const settlement = settleLongterm(outcome);
+  if (!settlement) return null;
+  state.mode = "result"; state.outcome = outcome;
   state.record = runRecord.mergeRecord(state.record, runRecord.buildRunSummary(state));
   runRecord.saveRecord(metaStorage, state.record);
   presentation.updateHud();
@@ -3831,7 +3845,7 @@ function beginRun(plan) {
   state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
-  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
+  state.metaSettlement = null; state.metaSettled = false; state.settlementRetryAt = 0; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
   // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).
   state.runStats = state.longtermRun.stats;
   state.emergencyReserveUsed = false; state.fieldRepairClock = 0;
@@ -3850,6 +3864,7 @@ function update(dt, refreshHud = true) {
   if (state.trainHp < audioTrainHp) gameAudio?.play("hurt");
   audioTrainHp = state.trainHp;
   if (state.paused || state.mode === "levelup") return;
+  if (state.settlementRetryAt && Date.now() < state.settlementRetryAt) return;
   if (state.mode === "docking") { updateDocking(dt); if (refreshHud) presentation.updateHud(); return; }
   if (state.mode !== "combat") return;
   state.visualTime += dt;
@@ -4745,7 +4760,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1",
+  version: "v0.10.1.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };

@@ -2,6 +2,8 @@
 
 零依赖、无构建的静态 PWA：编组远征列车，指挥无人机蜂群，在不断扩大的尸潮中重新打通末日铁路。
 
+主仓库：`ChrisGzzl/endless-rails`。游戏位于本仓库根目录；`ChrisGzzl/indie-trail` 仅保留旧历史，不再作为本项目开发基线。继续开发前先读 `AGENTS.md` 和 `export/worklog.md`。
+
 ## 目录结构
 
 ```
@@ -21,7 +23,7 @@
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.10.1`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.10.1.1`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 ## 本地运行
 

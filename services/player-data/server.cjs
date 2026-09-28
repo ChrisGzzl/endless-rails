@@ -40,6 +40,9 @@ function validate(payload){
    if(!object(m.talents)||!object(m.talents.nodes)||!object(m.talents.specs)
      ||!Array.isArray(m.presets)||m.presets.length!==3
      ||!Number.isInteger(m.freeRefits)||m.freeRefits<0||m.freeRefits>99
+     ||(m.settledRunIds!==undefined&&(!Array.isArray(m.settledRunIds)||m.settledRunIds.length>256
+       ||new Set(m.settledRunIds).size!==m.settledRunIds.length
+       ||!m.settledRunIds.every(id=>typeof id==='string'&&id.length>0&&id.length<=80)))
      ||!meta.TALENT_NODES.every(node=>m.talents.nodes[node.id]===undefined
         ||Number.isInteger(m.talents.nodes[node.id])&&m.talents.nodes[node.id]>=0&&m.talents.nodes[node.id]<=node.levels))
      throw new ApiError(400,'invalid_save');
