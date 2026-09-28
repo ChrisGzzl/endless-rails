@@ -311,6 +311,17 @@ function buildStats(meta) {
     emergencyReserve: talents.specs.hull === "reserve" ? maxHp * .18 * repairEngineering : 0,
     pd: null,
     carFlags: { pointDefense: pdOn, repair: repairOn, radar: radarOn, storage: storageOn },
+    // Lv.10 breakthrough enhancer blueprints fold into the snapshot (修订方案
+    // §4-3)：战斗路径只读本快照，不再逐帧查询账号蓝图收藏。
+    blueprints: {
+      railLens: hasBlueprint(meta, "rail-lens"),
+      arcResonator: hasBlueprint(meta, "arc-resonator"),
+      missileGuidance: hasBlueprint(meta, "missile-guidance"),
+      incendiaryGel: hasBlueprint(meta, "incendiary-gel"),
+      ricochetPrism: hasBlueprint(meta, "ricochet-prism"),
+    },
+    // 奖励同样使用出发时快照 (需求 §20.1)：蓝图掉落按出发时的收藏 roll。
+    ownedBlueprints: [...(meta.blueprints || [])],
   };
   if (pdOn) {
     const heavy = talents.specs.pointDefense === "heavy", intercept = talents.specs.pointDefense === "intercept";
@@ -626,7 +637,9 @@ function applyTrainXp(meta, amount) {
   if (next.train.level >= MAX_TRAIN_LEVEL) next.train.xp = Math.min(next.train.xp, xpToNext(MAX_TRAIN_LEVEL) - 1);
   return next;
 }
-function rollBlueprint(meta, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(meta?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
+// Accepts the account meta or a plain owned-id array; combat passes the
+// departure snapshot's copy (修订方案 §4/需求 §20.1).
+function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
 
 // XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
 // a failed run keeps completed segments and converts current-segment progress

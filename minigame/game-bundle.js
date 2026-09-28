@@ -2024,6 +2024,17 @@ function buildStats(meta) {
     emergencyReserve: talents.specs.hull === "reserve" ? maxHp * .18 * repairEngineering : 0,
     pd: null,
     carFlags: { pointDefense: pdOn, repair: repairOn, radar: radarOn, storage: storageOn },
+    // Lv.10 breakthrough enhancer blueprints fold into the snapshot (修订方案
+    // §4-3)：战斗路径只读本快照，不再逐帧查询账号蓝图收藏。
+    blueprints: {
+      railLens: hasBlueprint(meta, "rail-lens"),
+      arcResonator: hasBlueprint(meta, "arc-resonator"),
+      missileGuidance: hasBlueprint(meta, "missile-guidance"),
+      incendiaryGel: hasBlueprint(meta, "incendiary-gel"),
+      ricochetPrism: hasBlueprint(meta, "ricochet-prism"),
+    },
+    // 奖励同样使用出发时快照 (需求 §20.1)：蓝图掉落按出发时的收藏 roll。
+    ownedBlueprints: [...(meta.blueprints || [])],
   };
   if (pdOn) {
     const heavy = talents.specs.pointDefense === "heavy", intercept = talents.specs.pointDefense === "intercept";
@@ -2339,7 +2350,9 @@ function applyTrainXp(meta, amount) {
   if (next.train.level >= MAX_TRAIN_LEVEL) next.train.xp = Math.min(next.train.xp, xpToNext(MAX_TRAIN_LEVEL) - 1);
   return next;
 }
-function rollBlueprint(meta, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(meta?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
+// Accepts the account meta or a plain owned-id array; combat passes the
+// departure snapshot's copy (修订方案 §4/需求 §20.1).
+function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
 
 // XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
 // a failed run keeps completed segments and converts current-segment progress
@@ -2464,7 +2477,7 @@ function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.pu
 
 
 
-function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
+function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.runStats?.ownedBlueprints,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
 function killEnemy(e, fromBlast=false){
   if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
   state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);
@@ -2476,7 +2489,7 @@ function killEnemy(e, fromBlast=false){
     if(e.elite){
       state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
       longterm.awardRisk(state.longtermRun,"data",1);
-      if(Math.random()<.14){const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
+      if(Math.random()<.14){const bp=longterm.rollBlueprint(state.runStats?.ownedBlueprints,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
     }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
   }
   const xp=progression.awardExperience(state,progression.experienceForEnemy(e,state.station,state.level));Object.assign(state,xp.state);
@@ -3214,13 +3227,15 @@ function applyResearchProfile(id,profile){
     if(id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
     if(id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
   }
-  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21): they modify
-  // the in-run breakthrough choice, not the permanent stat stack.
-  if(longterm.hasBlueprint(state.metaProfile,"rail-lens")&&path==="focus")q.pierce=(q.pierce||0)+1;
-  if(longterm.hasBlueprint(state.metaProfile,"arc-resonator")&&id==="chain")q.targets=(q.targets||1)+1;
-  if(longterm.hasBlueprint(state.metaProfile,"missile-guidance")&&path==="heavy")q.radius=(q.radius||0)*1.12;
-  if(longterm.hasBlueprint(state.metaProfile,"incendiary-gel")&&id==="incendiary")q.radius=(q.radius||0)*1.12;
-  if(longterm.hasBlueprint(state.metaProfile,"ricochet-prism")&&id==="ricochet")q.bounces=(q.bounces||0)+1;
+  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21), read from
+  // the departure snapshot only - they modify the in-run breakthrough choice,
+  // not the permanent stat stack (修订方案 §4-3).
+  const bp = S?.blueprints || {};
+  if(bp.railLens&&path==="focus")q.pierce=(q.pierce||0)+1;
+  if(bp.arcResonator&&id==="chain")q.targets=(q.targets||1)+1;
+  if(bp.missileGuidance&&path==="heavy")q.radius=(q.radius||0)*1.12;
+  if(bp.incendiaryGel&&id==="incendiary")q.radius=(q.radius||0)*1.12;
+  if(bp.ricochetPrism&&id==="ricochet")q.bounces=(q.bounces||0)+1;
   q.frequency=q.interval?1/q.interval:0;
   if(profile.singleTargetDps && profile.damage && profile.interval)
     q.singleTargetDps=profile.singleTargetDps*(q.damage/profile.damage)*(profile.interval/q.interval)*((q.projectileCount||1)/(profile.projectileCount||1));
@@ -3860,7 +3875,9 @@ function update(dt, refreshHud = true) {
     const drop = state.drops[i];
     if (Math.hypot(drop.x - state.drone.x, drop.y - state.drone.y) < pickupRadius) {
       if (drop.type === "meta-tech") { longterm.awardRisk(state.longtermRun, "components", 1); state.drops.splice(i, 1); showToast("技术组件已回收 · 风险资源"); continue; }
-      if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1 + (longterm.hasBlueprint(state.metaProfile, "bio-scan") ? 1 : 0)); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
+      // bio-scan was retired into migration compensation (需求 §21/§24.3):
+      // the drop stays a flat 1 data, no account-state read mid-combat.
+      if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
       if (drop.type === "repair-kit") { state.trainHp = Math.min(state.maxTrainHp, state.trainHp + 12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
       if (drop.type === "blueprint") { longterm.addBlueprintRisk(state.longtermRun, drop.blueprintId); state.drops.splice(i, 1); showToast("发现蓝图 · " + (longterm.blueprintById(drop.blueprintId)?.name || "未知")); continue; }
       const picked = progression.collectCore(state, drop.type);

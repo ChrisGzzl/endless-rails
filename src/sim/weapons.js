@@ -248,13 +248,15 @@ function applyResearchProfile(id,profile){
     if(id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
     if(id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
   }
-  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21): they modify
-  // the in-run breakthrough choice, not the permanent stat stack.
-  if(longterm.hasBlueprint(state.metaProfile,"rail-lens")&&path==="focus")q.pierce=(q.pierce||0)+1;
-  if(longterm.hasBlueprint(state.metaProfile,"arc-resonator")&&id==="chain")q.targets=(q.targets||1)+1;
-  if(longterm.hasBlueprint(state.metaProfile,"missile-guidance")&&path==="heavy")q.radius=(q.radius||0)*1.12;
-  if(longterm.hasBlueprint(state.metaProfile,"incendiary-gel")&&id==="incendiary")q.radius=(q.radius||0)*1.12;
-  if(longterm.hasBlueprint(state.metaProfile,"ricochet-prism")&&id==="ricochet")q.bounces=(q.bounces||0)+1;
+  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21), read from
+  // the departure snapshot only - they modify the in-run breakthrough choice,
+  // not the permanent stat stack (修订方案 §4-3).
+  const bp = S?.blueprints || {};
+  if(bp.railLens&&path==="focus")q.pierce=(q.pierce||0)+1;
+  if(bp.arcResonator&&id==="chain")q.targets=(q.targets||1)+1;
+  if(bp.missileGuidance&&path==="heavy")q.radius=(q.radius||0)*1.12;
+  if(bp.incendiaryGel&&id==="incendiary")q.radius=(q.radius||0)*1.12;
+  if(bp.ricochetPrism&&id==="ricochet")q.bounces=(q.bounces||0)+1;
   q.frequency=q.interval?1/q.interval:0;
   if(profile.singleTargetDps && profile.damage && profile.interval)
     q.singleTargetDps=profile.singleTargetDps*(q.damage/profile.damage)*(profile.interval/q.interval)*((q.projectileCount||1)/(profile.projectileCount||1));

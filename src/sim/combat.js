@@ -4,7 +4,7 @@ import { state, level, balance, effects, progression, longterm } from "../app/en
 import { TAU } from "../view/surface.js";
 import { burst, addText, showToast, showCombo } from "./fx.js";
 
-function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
+function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.runStats?.ownedBlueprints,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
 function killEnemy(e, fromBlast=false){
   if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
   state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);
@@ -16,7 +16,7 @@ function killEnemy(e, fromBlast=false){
     if(e.elite){
       state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
       longterm.awardRisk(state.longtermRun,"data",1);
-      if(Math.random()<.14){const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
+      if(Math.random()<.14){const bp=longterm.rollBlueprint(state.runStats?.ownedBlueprints,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
     }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
   }
   const xp=progression.awardExperience(state,progression.experienceForEnemy(e,state.station,state.level));Object.assign(state,xp.state);
