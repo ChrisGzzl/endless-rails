@@ -5,23 +5,27 @@
 ## 目录结构
 
 ```
-endless-rails/
+.
   index.html             页面入口；只含一个脚本标签 <script type="module" src="src/main.js">
   manifest.webmanifest   PWA 清单（start_url 的 ?v= 与全站缓存版本共用一个值）
   qa.html / qa.js        浏览器诊断台：帧率、布局越界、脚本错误、场景快进
   assets/                美术资源（精灵图集、地面、UI 精灵、ImageGen 源图）
   css/                   10 个样式表；内部 url() 相对样式表目录解析，引用资源写 ../assets/
-  docs/                  reviews.md（评审与整改记录）、ART.md、DESIGN.md
-  src/                   全部运行时代码（原生 ES Module，见下）
-  tests/                 26 个测试文件 + test-harness.cjs；根目录 node --test 递归执行
+  docs/                  reviews.md（评审与整改记录）、worklog.md（工作记录）、ART.md、DESIGN.md
+  src/                   游戏运行时代码（原生 ES Module，见下）
+  tests/                 26 个游戏测试 + test-harness.cjs；根目录 node --test 递归执行
+  tools/                 图集打包脚本（pack-ui-v3~v7.py）、pacing-check.cjs、dev-server.cjs
+  services/player-data/  开发用存档服务（node server.cjs；测试 node --test test/）
 ```
+
+当前版本：`v0.9.0-rc.5`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 ## 本地运行
 
 原生 ESM 不能用 `file://` 直接打开，需要任意静态服务器：
 
 ```
-cd endless-rails
+cd endless-rails   # 本仓库根目录
 python3 -m http.server 8123     # 或 npx serve 等价
 ```
 
@@ -63,4 +67,4 @@ src/
 - **缓存版本**：index.html 所有资源共用一个 `?v=` 值，test-harness 有断言强制一致；发布改动时整体更新这一个值。
 - **加载顺序**：由 src/main.js 的 import 顺序保证；调整模块依赖时先看这张图。
 - **QA 桥**：game.js 把 `update/draw/beginRoute/updateHud` 等显式挂到 window，供 qa.js 与浏览器控制台诊断使用。
-- **工作记录**：`../exports/worklog.md`（继续工作前先读，改动后追加条目）；评审与整改状态：`docs/reviews.md`。
+- **工作记录**：`docs/worklog.md`（继续工作前先读，改动后追加条目）；评审与整改状态：`docs/reviews.md`。

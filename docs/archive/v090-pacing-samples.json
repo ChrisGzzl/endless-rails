@@ -1,0 +1,758 @@
+[
+  {
+    "seed": 1,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 119,
+    "level": 30,
+    "kills": 2142,
+    "upgradeCount": 27,
+    "peakEnemies": 83,
+    "peakShots": 23,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 3,
+        "kills": 23,
+        "banked": {
+          "scrap": 23,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 8,
+        "kills": 151,
+        "banked": {
+          "scrap": 154,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 14,
+        "kills": 449,
+        "banked": {
+          "scrap": 485,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 4,
+        "hp": 201,
+        "level": 22,
+        "kills": 1057,
+        "banked": {
+          "scrap": 1162,
+          "components": 2,
+          "data": 3
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2424,
+      "components": 8,
+      "data": 8
+    }
+  },
+  {
+    "seed": 2,
+    "outcome": "lost",
+    "station": 5,
+    "seconds": 312,
+    "hp": 0,
+    "level": 30,
+    "kills": 2085,
+    "upgradeCount": 26,
+    "peakEnemies": 96,
+    "peakShots": 22,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 25,
+        "banked": {
+          "scrap": 25,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 100,
+        "level": 8,
+        "kills": 154,
+        "banked": {
+          "scrap": 157,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 3,
+        "hp": 135,
+        "level": 14,
+        "kills": 453,
+        "banked": {
+          "scrap": 471,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 170,
+        "level": 21,
+        "kills": 1056,
+        "banked": {
+          "scrap": 1137,
+          "components": 1,
+          "data": 3
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 1737,
+      "components": 5,
+      "data": 6
+    }
+  },
+  {
+    "seed": 3,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 57,
+    "level": 30,
+    "kills": 2144,
+    "upgradeCount": 26,
+    "peakEnemies": 86,
+    "peakShots": 25,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 26,
+        "banked": {
+          "scrap": 26,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 8,
+        "kills": 158,
+        "banked": {
+          "scrap": 161,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 14,
+        "kills": 457,
+        "banked": {
+          "scrap": 475,
+          "components": 1,
+          "data": 2
+        }
+      },
+      {
+        "station": 4,
+        "hp": 158,
+        "level": 22,
+        "kills": 1060,
+        "banked": {
+          "scrap": 1150,
+          "components": 3,
+          "data": 4
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2381,
+      "components": 9,
+      "data": 8
+    }
+  },
+  {
+    "seed": 4,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 12,
+    "level": 30,
+    "kills": 2126,
+    "upgradeCount": 27,
+    "peakEnemies": 98,
+    "peakShots": 24,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 26,
+        "banked": {
+          "scrap": 26,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 161,
+        "banked": {
+          "scrap": 167,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 15,
+        "kills": 464,
+        "banked": {
+          "scrap": 488,
+          "components": 0,
+          "data": 2
+        }
+      },
+      {
+        "station": 4,
+        "hp": 184,
+        "level": 22,
+        "kills": 1067,
+        "banked": {
+          "scrap": 1175,
+          "components": 2,
+          "data": 3
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2402,
+      "components": 9,
+      "data": 9
+    }
+  },
+  {
+    "seed": 5,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 25,
+    "level": 30,
+    "kills": 2145,
+    "upgradeCount": 26,
+    "peakEnemies": 87,
+    "peakShots": 26,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 26,
+        "banked": {
+          "scrap": 26,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 131,
+        "level": 8,
+        "kills": 152,
+        "banked": {
+          "scrap": 158,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 3,
+        "hp": 135,
+        "level": 15,
+        "kills": 456,
+        "banked": {
+          "scrap": 483,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 123,
+        "level": 22,
+        "kills": 1055,
+        "banked": {
+          "scrap": 1130,
+          "components": 0,
+          "data": 5
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2376,
+      "components": 7,
+      "data": 9
+    }
+  },
+  {
+    "seed": 6,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 41,
+    "level": 30,
+    "kills": 2140,
+    "upgradeCount": 27,
+    "peakEnemies": 91,
+    "peakShots": 25,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 24,
+        "banked": {
+          "scrap": 24,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 155,
+        "banked": {
+          "scrap": 161,
+          "components": 1,
+          "data": 0
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 15,
+        "kills": 455,
+        "banked": {
+          "scrap": 500,
+          "components": 2,
+          "data": 2
+        }
+      },
+      {
+        "station": 4,
+        "hp": 156,
+        "level": 22,
+        "kills": 1063,
+        "banked": {
+          "scrap": 1156,
+          "components": 4,
+          "data": 6
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2425,
+      "components": 14,
+      "data": 13
+    }
+  },
+  {
+    "seed": 7,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 59,
+    "level": 31,
+    "kills": 2149,
+    "upgradeCount": 27,
+    "peakEnemies": 86,
+    "peakShots": 22,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 25,
+        "banked": {
+          "scrap": 25,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 156,
+        "banked": {
+          "scrap": 168,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 3,
+        "hp": 135,
+        "level": 15,
+        "kills": 458,
+        "banked": {
+          "scrap": 494,
+          "components": 1,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 125,
+        "level": 22,
+        "kills": 1074,
+        "banked": {
+          "scrap": 1209,
+          "components": 2,
+          "data": 5
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2467,
+      "components": 8,
+      "data": 11
+    }
+  },
+  {
+    "seed": 8,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 13,
+    "level": 30,
+    "kills": 2126,
+    "upgradeCount": 27,
+    "peakEnemies": 82,
+    "peakShots": 26,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 3,
+        "kills": 24,
+        "banked": {
+          "scrap": 24,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 155,
+        "banked": {
+          "scrap": 167,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 14,
+        "kills": 450,
+        "banked": {
+          "scrap": 474,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 205,
+        "level": 21,
+        "kills": 1057,
+        "banked": {
+          "scrap": 1135,
+          "components": 2,
+          "data": 3
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2393,
+      "components": 8,
+      "data": 9
+    }
+  },
+  {
+    "seed": 9,
+    "outcome": "lost",
+    "station": 5,
+    "seconds": 300,
+    "hp": 0,
+    "level": 28,
+    "kills": 1770,
+    "upgradeCount": 27,
+    "peakEnemies": 90,
+    "peakShots": 23,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 3,
+        "kills": 23,
+        "banked": {
+          "scrap": 23,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 153,
+        "banked": {
+          "scrap": 162,
+          "components": 0,
+          "data": 2
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 15,
+        "kills": 460,
+        "banked": {
+          "scrap": 487,
+          "components": 1,
+          "data": 5
+        }
+      },
+      {
+        "station": 4,
+        "hp": 205,
+        "level": 22,
+        "kills": 1058,
+        "banked": {
+          "scrap": 1157,
+          "components": 2,
+          "data": 6
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 1733,
+      "components": 6,
+      "data": 8
+    }
+  },
+  {
+    "seed": 10,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 62,
+    "level": 30,
+    "kills": 2113,
+    "upgradeCount": 27,
+    "peakEnemies": 95,
+    "peakShots": 30,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 25,
+        "banked": {
+          "scrap": 25,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 156,
+        "banked": {
+          "scrap": 162,
+          "components": 0,
+          "data": 3
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 14,
+        "kills": 453,
+        "banked": {
+          "scrap": 471,
+          "components": 0,
+          "data": 4
+        }
+      },
+      {
+        "station": 4,
+        "hp": 180,
+        "level": 22,
+        "kills": 1053,
+        "banked": {
+          "scrap": 1170,
+          "components": 1,
+          "data": 7
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2377,
+      "components": 11,
+      "data": 11
+    }
+  },
+  {
+    "seed": 11,
+    "outcome": "won",
+    "station": 5,
+    "seconds": 324,
+    "hp": 118,
+    "level": 30,
+    "kills": 2127,
+    "upgradeCount": 27,
+    "peakEnemies": 89,
+    "peakShots": 27,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 3,
+        "kills": 23,
+        "banked": {
+          "scrap": 23,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 9,
+        "kills": 153,
+        "banked": {
+          "scrap": 165,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 14,
+        "kills": 453,
+        "banked": {
+          "scrap": 486,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 189,
+        "level": 22,
+        "kills": 1052,
+        "banked": {
+          "scrap": 1151,
+          "components": 0,
+          "data": 2
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 2424,
+      "components": 8,
+      "data": 6
+    }
+  },
+  {
+    "seed": 12,
+    "outcome": "lost",
+    "station": 5,
+    "seconds": 300,
+    "hp": 0,
+    "level": 28,
+    "kills": 1797,
+    "upgradeCount": 27,
+    "peakEnemies": 85,
+    "peakShots": 22,
+    "checkpoints": [
+      {
+        "station": 1,
+        "hp": 100,
+        "level": 4,
+        "kills": 26,
+        "banked": {
+          "scrap": 26,
+          "components": 0,
+          "data": 0
+        }
+      },
+      {
+        "station": 2,
+        "hp": 135,
+        "level": 8,
+        "kills": 159,
+        "banked": {
+          "scrap": 159,
+          "components": 0,
+          "data": 1
+        }
+      },
+      {
+        "station": 3,
+        "hp": 170,
+        "level": 15,
+        "kills": 463,
+        "banked": {
+          "scrap": 508,
+          "components": 2,
+          "data": 1
+        }
+      },
+      {
+        "station": 4,
+        "hp": 205,
+        "level": 22,
+        "kills": 1069,
+        "banked": {
+          "scrap": 1180,
+          "components": 2,
+          "data": 2
+        }
+      }
+    ],
+    "gained": {
+      "scrap": 1782,
+      "components": 6,
+      "data": 5
+    }
+  }
+]

@@ -1,0 +1,50 @@
+{
+  "commit": "c21fb4b0f35898632fad50418df2bd9092c1961e",
+  "approvedLocalCommit": "772a783420b978fd1004e84a9397c3e1142ded2a",
+  "tree": "d8bdcfd065aa15cb5f52bf28787a548a892d9e91",
+  "checks": [
+    {
+      "file": "index.html",
+      "http": 200,
+      "bytes": 24447,
+      "matches": true
+    },
+    {
+      "file": "reference-ui.css",
+      "http": 200,
+      "bytes": 25109,
+      "matches": true
+    },
+    {
+      "file": "mobile-icons.css",
+      "http": 200,
+      "bytes": 23441,
+      "matches": true
+    },
+    {
+      "file": "meta-ui.js",
+      "http": 200,
+      "bytes": 11119,
+      "matches": true
+    },
+    {
+      "file": "assets/ui-mobile-v3.webp",
+      "http": 200,
+      "bytes": 113050,
+      "matches": true
+    },
+    {
+      "file": "assets/hero-wasteland-v3.webp",
+      "http": 200,
+      "bytes": 75050,
+      "matches": true
+    },
+    {
+      "file": "assets/regions-mobile-v3.webp",
+      "http": 200,
+      "bytes": 51702,
+      "matches": true
+    }
+  ],
+  "browserVisualReview": "not completed: browser navigation timed out"
+}
