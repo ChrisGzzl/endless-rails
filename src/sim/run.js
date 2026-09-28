@@ -13,7 +13,8 @@ function settleLongterm(outcome){
   // this run complete. A failed write leaves it retryable in the current tab.
   const settlementSource=metaStorage?longterm.loadMeta(metaStorage):state.metaProfile;
   const settlement=longterm.settleRun(settlementSource,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
-  if(!longterm.saveMeta(metaStorage,settlement.meta)){state.settlementRetryAt=Date.now()+2000;showToast("存档写入失败 · 请重试结算");return null;}
+  if(metaStorage&&!longterm.saveMeta(metaStorage,settlement.meta)){state.settlementRetryAt=Date.now()+2000;showToast("存档写入失败 · 请重试结算");return null;}
+  if(!metaStorage)showToast("本机存储不可用 · 本局进度仅在当前页面有效");
   state.settlementRetryAt=0;state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }

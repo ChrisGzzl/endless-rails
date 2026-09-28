@@ -65,6 +65,11 @@ retryGame.run('finish(false);');
 assert.equal(retryGame.run('state.metaSettled'),true);
 assert.equal(retryGame.run('state.settlementRetryAt'),0);
 assert.equal(meta.loadMeta(flakyStorage).totals.expeditions,1);
+const noStorageGame=createGame({storage:null});
+noStorageGame.run('beginRun();state.mode="combat";finish(false);');
+assert.equal(noStorageGame.run('metaStorage'),null);
+assert.equal(noStorageGame.run('state.metaSettled'),true,'storage-disabled browsers can still finish a run in memory');
+assert.equal(noStorageGame.run('state.mode'),'result');
 g.run('state.trainDamage=123;beginRun();');assert.equal(g.run('state.trainDamage'),0,'damage is per run');
 // 车厢压制：需要一节已装备的仓储车（v0.10 空账号默认只有机库）
 g.run(`longterm.saveMeta(metaStorage,longterm.normalizeMeta({train:{level:5},talents:{nodes:{N0:1,C0:1}},loadout:['hangar','pointDefense','storage']}));beginRun();state.mode='combat';state.disabledCars={storage:true};
