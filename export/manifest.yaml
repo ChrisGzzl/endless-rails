@@ -1,0 +1,9 @@
+# 供稿清单（全局 ~/.zcode/agent.md 2026-09-01 供稿结构约定）。
+# export/ 是投稿箱不是档案馆：知识中枢收稿后本目录可清理旧文件。
+# files.hash 为 sha256，内容变更后同步更新。
+id: endless-rails
+domain: game-dev
+spec: 零依赖静态 PWA 游戏（荒原轨道 · Endless Rails）；项目结构与运行方式见 README.md，版制与评审记录见 docs/
+files:
+  - path: worklog.md
+    sha256: f11da6c091c61f3160e0a7d5f66acac658a8339d71dfde3c79c14a6883eec40e
