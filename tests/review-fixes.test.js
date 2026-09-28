@@ -97,9 +97,12 @@ function presetAccount() {
   assert.equal(host.host.talentSummary.canApply, true);
   host.handleRegionAction({ talentApply: true });
   assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'storage'], 'canvas apply commits the preset lineup');
-  // A full lineup swaps out its oldest car, matching the web page.
+  // Direct lineup edits now stay in the draft until the player applies them.
   host.handleRegionAction({ toggleCar: 'pointDefense' });
   host.handleRegionAction({ toggleCar: 'storage' });
+  assert.deepEqual(Array.from(host.host.talent.loadout), ['hangar', 'pointDefense']);
+  assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'storage']);
+  host.handleRegionAction({ talentApply: true });
   assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'pointDefense']);
 }
 

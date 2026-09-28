@@ -31,11 +31,11 @@ const host = {
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
   trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
-  talent: { branch: "hull", draft: null, loadout: null, notice: "" },
+  talent: { branch: "hull", draft: null, loadout: null, notice: "", confirmSave: null },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.2",
+  version: "v0.10.1.3",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -71,6 +71,7 @@ function draftFromProfile() {
   const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
   host.talent.draft = { nodes, specs };
   host.talent.loadout = null;
+  host.talent.confirmSave = null;
 }
 function draftDirty() {
   const current = host.meta?.talents;
@@ -141,16 +142,13 @@ function refreshHostData() {
   const cost = longterm.refitCost(profile);
   const currentStats = longterm.buildStats(profile);
   const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft, loadout: host.talent.loadout || profile.loadout }) : currentStats;
+  const changes = longterm.buildChangeRows(currentStats, nextStats);
   host.talentSummary = {
     points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
     dirty, problems,
-    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料`,
+    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料${profile.resources.scrap < cost ? ` · 还差 ${Math.ceil(cost - profile.resources.scrap)}` : ""}`,
     canApply: dirty && !problems.length,
-    rows: [
-      `最大耐久 ${Math.round(currentStats.maxHp)} → ${Math.round(nextStats.maxHp)}`,
-      `无人机伤害 ×${currentStats.droneDamageMul.toFixed(2)} → ×${nextStats.droneDamageMul.toFixed(2)}`,
-      `失败保留率 ${(currentStats.failureKeep * 100).toFixed(0)}% → ${(nextStats.failureKeep * 100).toFixed(0)}%`,
-    ],
+    rows: changes.length ? changes : [dirty ? "仅调整编组或未装备分支；当前属性无变化" : "当前属性无改动"],
   };
   host.researchRows = (longterm.RESEARCH_TRACKS || []).map(track => {
     const costData = longterm.researchCost(profile, track.id);
@@ -158,10 +156,11 @@ function refreshHostData() {
     const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
     const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id: track.id, group: track.group, name: track.name, scope: track.scope,
+      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, scope: track.scope,
       level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
       cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
       desc: RESEARCH_COPY[track.id] || "",
+      missing: maxed ? [] : [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => profile.resources[key] < costData[key]).map(([key, name]) => `${name}还差 ${Math.ceil(costData[key] - profile.resources[key])}`),
       affordable: !maxed && profile.resources.scrap >= costData.scrap
         && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
     };
@@ -313,7 +312,10 @@ function applyAction(action) {
   } else if (action.stationUpgrade) {
     selectStationUpgrade(action.stationUpgrade);
   } else if (action.homeTab) {
-    if (host.page !== action.homeTab) { host.page = action.homeTab; host.scroll = 0; }
+    if (host.page !== action.homeTab) {
+      if (host.page === "train" && draftDirty()) { host.talent.notice = "请先应用或重置草稿，再切换页面"; return; }
+      host.page = action.homeTab; host.scroll = 0;
+    }
   } else if (action.selectRegion) {
     const next = longterm.setRegion(state.metaProfile, action.selectRegion);
     if (next) {
@@ -321,21 +323,16 @@ function applyAction(action) {
       setRegionGround(action.selectRegion);
     }
   } else if (action.toggleCar) {
-    // Same rule as the DOM car list: a full lineup swaps out its oldest car;
-    // with a preset lineup drafted, edits stay in that draft until apply.
+    // Every lineup edit stays in the draft until apply.
     const base = (host.talent.loadout || state.metaProfile.loadout).filter(id => id !== "hangar");
     let cars;
     if (base.includes(action.toggleCar)) cars = base.filter(id => id !== action.toggleCar);
     else {
       cars = [...base];
-      if (cars.length >= longterm.carSlots(state.metaProfile)) cars.shift();
+      if (cars.length >= longterm.carSlots(state.metaProfile)) { host.talent.notice = "编组已满：先移除一节已选车厢"; return; }
       cars.push(action.toggleCar);
     }
-    if (host.talent.loadout) host.talent.loadout = ["hangar", ...cars];
-    else {
-      const next = longterm.setLoadout(state.metaProfile, cars);
-      if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
-    }
+    host.talent.loadout = ["hangar", ...cars]; host.talent.notice = "编组草稿待应用";
   } else if (action.talentBranch) {
     host.talent.branch = action.talentBranch;
   } else if (action.talentPlus) {
@@ -349,11 +346,28 @@ function applyAction(action) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
     host.talent.loadout = [...result.loadout];
+    host.talent.confirmSave = null;
     host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
+  } else if (action.presetRename !== undefined) {
+    const index = action.presetRename, previous = state.metaProfile.presets[index]?.name || `方案 ${"ABC"[index]}`;
+    const commit = name => {
+      if (!name?.trim()) return;
+      state.metaProfile = longterm.renamePreset(state.metaProfile, index, name.trim());
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = `方案已改名为 ${state.metaProfile.presets[index].name}`;
+      drawOverlay();
+    };
+    if (typeof wx !== "undefined" && wx.showModal) {
+      wx.showModal({ title: "重命名方案", editable: true, placeholderText: previous, content: previous, success: result => { if (result.confirm) commit(result.content); } });
+    } else if (typeof globalThis.prompt === "function") commit(globalThis.prompt("方案名称", previous));
+    else host.talent.notice = "当前环境暂不支持输入方案名称";
   } else if (action.presetSave !== undefined) {
-    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
-    longterm.saveMeta(metaStorage, state.metaProfile);
-    host.talent.notice = "草稿已存入方案";
+    const index = action.presetSave;
+    if (host.talent.confirmSave === index) {
+      state.metaProfile = longterm.savePreset(state.metaProfile, index, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = "草稿已存入方案"; host.talent.confirmSave = null;
+    } else { host.talent.confirmSave = index; host.talent.notice = `再点保存，覆盖方案 ${"ABC"[index]}`; }
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
@@ -370,6 +384,7 @@ function applyAction(action) {
   } else if (action.research) {
     const result = longterm.buyResearch(state.metaProfile, action.research);
     if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }
+    else if (result?.short?.length) host.researchNotice = result.short.join(" · ");
   } else if (action.audioToggle) {
     gameAudio?.setPreference?.(action.audioToggle, !host.audio[action.audioToggle]);
     host.audio = gameAudio?.getPreferences?.() || host.audio;

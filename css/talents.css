@@ -27,22 +27,26 @@
   border: 0;
   background: transparent;
   text-align: left;
-  padding: 2px 4px;
+  padding: 8px 4px;
+  min-height: 48px;
   cursor: pointer;
   border-radius: 4px;
 }
 .talent-preset__load b { display: block; font-size: 13px; color: #102f3a; }
 .talent-preset__load small { color: #596b6d; }
-.talent-preset__save {
+.talent-preset__actions { display: flex; gap: 4px; }
+.talent-preset__save,.talent-preset__rename {
   border: 1px solid #c9bba2;
   background: #f1e8d7;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 12px;
   color: #3f5953;
-  padding: 2px 6px;
+  padding: 7px 3px;
+  min-height: 36px;
+  flex: 1;
   cursor: pointer;
-  align-self: flex-start;
 }
+.talent-preset__save { background: #efb340; border-color: #b98730; color: #263b3e; font-weight: 800; }
 
 /* 分支切换 */
 .talent-branches {
@@ -64,7 +68,9 @@
   line-height: 1.35;
 }
 .talent-branch-tab b { color: #8a6b1f; font-weight: 800; }
-.talent-branch-tab small { display: block; font-size: 10px; color: #b3362d; }
+.talent-branch-tab { min-height: 44px; }
+.talent-branch-tab.unequipped { border-bottom: 3px solid #a53c32; }
+.talent-branch-tab.unequipped.active { border-bottom-color: #ffccae; }
 .talent-branch-tab.active {
   background: #163f49;
   border-color: #0e2b33;
@@ -150,7 +156,7 @@
   gap: 8px;
   z-index: 2;
 }
-.talent-summary__rows { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #c9d5d1; }
+.talent-summary__rows { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #c9d5d1; max-height: 52px; overflow-y: auto; }
 .talent-summary__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .talent-summary__points { font-weight: 800; color: #ffd053; }
 .talent-summary__points.bad { color: #ff8d7a; }
@@ -176,7 +182,10 @@
 /* 研究页分组标题与行 */
 .talent-research-head { margin: 6px 0; }
 .meta-research-row .research-effect { color: #2f6b5e; font-weight: 700; }
-.meta-research-row button.flash-short { outline: 2px solid #b3362d; }
+.home-hub .meta-research-row .research-cost { color: #805f1e; font-size: 12px; font-weight: 750; line-height: 1.5; margin-top: 5px; }
+.home-hub .meta-research-row .research-cost .ui-icon { display: inline-block; vertical-align: middle; width: 17px; height: 17px; }
+.home-hub .meta-research-row .research-short { color: #9d372d; font-size: 12px; font-weight: 800; }
+#metaLoadoutSummary { white-space: pre-line; line-height: 1.6; }
 
 @media (max-width: 400px) {
   .talent-branches { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }

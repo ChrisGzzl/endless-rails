@@ -10,7 +10,6 @@ import { metaStorage } from "./game.js";
   const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton");
   if (!screen || !regionList || !carList || !researchList || !startButton) return;
   const icon = id => `<i class="ui-icon ui-icon--${id}" aria-hidden="true"></i>`;
-  const pct = value => `${value >= 1 ? "+" : ""}${((value - 1) * 100).toFixed(1)}%`;
 
   function save() { metaApi.saveMeta(storage, meta); }
 
@@ -18,8 +17,8 @@ import { metaStorage } from "./game.js";
   // call validates, charges and commits atomically.
   // draftLoadout is null while the lineup follows the save; loading a preset
   // drafts the preset's cars too (需求 §14.3), committed by the same apply.
-  let draft = null, draftLoadout = null, branch = "hull", presetNotice = "";
-  function draftFromMeta() { draft = { nodes: { ...meta.talents.nodes }, specs: { ...meta.talents.specs } }; draftLoadout = null; presetNotice = ""; }
+  let draft = null, draftLoadout = null, branch = "hull", presetNotice = "", presetConfirm = null;
+  function draftFromMeta() { draft = { nodes: { ...meta.talents.nodes }, specs: { ...meta.talents.specs } }; draftLoadout = null; presetNotice = ""; presetConfirm = null; }
   const sameCars = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
   function draftDirty() {
     for (const node of metaApi.TALENT_NODES) if ((draft.nodes[node.id] || 0) !== (meta.talents.nodes[node.id] || 0)) return true;
@@ -75,7 +74,7 @@ import { metaStorage } from "./game.js";
   function renderCars() {
     // With a preset lineup drafted, the car list edits that draft; unlocks
     // follow the drafted talents because apply commits both together.
-    const cars = draftLoadout || meta.loadout, unlockMeta = draftLoadout ? { ...meta, talents: draft } : meta;
+    const cars = draftLoadout || meta.loadout, unlockMeta = { ...meta, talents: draft };
     const slots = metaApi.carSlots(meta), selected = new Set(cars);
     carList.innerHTML = "";
     for (const car of metaApi.CAR_DEFS) {
@@ -83,19 +82,17 @@ import { metaStorage } from "./game.js";
       const unlocked = metaApi.carUnlocked(unlockMeta, car.id);
       const button = document.createElement("button"); button.type = "button";
       const active = selected.has(car.id); button.className = "meta-card meta-car" + (active ? " selected" : "");
-      button.disabled = !unlocked;button.setAttribute("aria-pressed",String(active));
-      const stateText = !unlocked ? `需先购买${metaApi.NODE_BY_ID[metaApi.CAR_UNLOCK_NODE[car.id]].name}` : active ? "已编组" : "未编组";
+      button.disabled = !unlocked && !active;button.setAttribute("aria-pressed",String(active));
+      const changed = active !== meta.loadout.includes(car.id);
+      const stateText = !unlocked ? active ? "天赋不足 · 点击从草稿移除" : `需先购买${metaApi.NODE_BY_ID[metaApi.CAR_UNLOCK_NODE[car.id]].name}` : changed ? (active ? "草稿加入 · 待应用" : "草稿移除 · 待应用") : active ? "已应用 · 点击移除" : "未编组 · 点击加入";
       button.innerHTML = `<span class="meta-card__icon">${icon(car.id)}</span><span><b>${car.name}</b><small>${stateText}</small><em>${car.description}</em></span>`;
-      if (unlocked) button.addEventListener("click", () => {
+      if (unlocked || active) button.addEventListener("click", () => {
         const next = new Set(cars.filter(id => id !== "hangar"));
         if (next.has(car.id)) next.delete(car.id); else {
-          if (next.size >= slots) {
-            const first = next.values().next().value; if (first) next.delete(first);
-          }
+          if (next.size >= slots) { presetNotice = "编组已满：先点一节已选车厢移除，再加入新车厢。"; render(); return; }
           next.add(car.id);
         }
-        if (draftLoadout) { draftLoadout = ["hangar", ...next]; render(); return; }
-        meta = metaApi.setLoadout(meta, [...next]); save(); render();
+        draftLoadout = ["hangar", ...next]; presetNotice = "编组已写入草稿，点击应用改装后生效"; render();
       });
       carList.append(button);
     }
@@ -113,11 +110,14 @@ import { metaStorage } from "./game.js";
       button.type = "button"; button.className = "talent-branch-tab" + (branch === item.id ? " active" : "");
       button.setAttribute("role", "tab"); button.setAttribute("aria-selected", String(branch === item.id));
       const spent = metaApi.branchSpent(draft, item.id);
-      const inactive = !branchActive(item.id) ? " <small>未装备</small>" : "";
-      button.innerHTML = `${item.name} <b>${spent}/${item.cap}</b>${inactive}`;
+      const inactive = !branchActive(item.id);
+      button.innerHTML = `${item.name} <b>${spent}/${item.cap}</b>`;
+      button.setAttribute("aria-label", `${item.name} ${spent}/${item.cap}${inactive ? "，未装备，分支效果不生效" : ""}`);
+      if (inactive) button.classList.add("unequipped");
       button.addEventListener("click", () => { branch = item.id; render(); });
       bar.append(button);
     }
+    $("talentBranchNote").textContent = branchActive(branch) ? "未装备车厢的分支不生效" : "当前分支未装备，天赋效果暂不生效";
   }
   function renderNodes() {
     const list = $("talentNodeList");
@@ -175,23 +175,33 @@ import { metaStorage } from "./game.js";
       const load = document.createElement("button");
       load.type = "button"; load.className = "talent-preset__load";
       const spent = metaApi.spentPoints(preset.talents);
-      load.innerHTML = `<b>${preset.name}</b><small>${spent} 点 · ${preset.loadout.length - 1} 车厢</small>`;
+      const title = document.createElement("b"); title.textContent = preset.name;
+      const detail = document.createElement("small"); detail.textContent = `${spent} 点 · ${preset.loadout.length - 1} 车厢`;
+      load.append(title, detail);
       load.addEventListener("click", () => {
         const result = metaApi.loadPreset(meta, index);
         draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
         draftLoadout = [...result.loadout];
+        presetConfirm = null;
         presetNotice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
         render();
       });
-      load.addEventListener("dblclick", () => {
+      const rename = document.createElement("button"); rename.type = "button"; rename.className = "talent-preset__rename"; rename.textContent = "改名";
+      rename.setAttribute("aria-label", `重命名${preset.name}`);
+      rename.addEventListener("click", () => {
         const name = window.prompt?.("方案名称", preset.name);
         if (name && name.trim()) { meta = metaApi.renamePreset(meta, index, name.trim()); save(); render(); }
       });
       const keep = document.createElement("button");
-      keep.type = "button"; keep.className = "talent-preset__save"; keep.textContent = "保存";
+      keep.type = "button"; keep.className = "talent-preset__save"; keep.textContent = presetConfirm === index ? "确认" : "保存";
       keep.setAttribute("aria-label", `保存当前草稿到${preset.name}`);
-      keep.addEventListener("click", () => { meta = metaApi.savePreset(meta, index, draft, draftLoadout || meta.loadout); save(); presetNotice = `草稿已存入 ${preset.name}`; render(); });
-      chip.append(load, keep);
+      keep.addEventListener("click", () => {
+        if (window.confirm) { if (!window.confirm(`用当前草稿覆盖「${preset.name}」？`)) return; }
+        else if (presetConfirm !== index) { presetConfirm = index; presetNotice = `再点确认覆盖「${preset.name}」`; render(); return; }
+        meta = metaApi.savePreset(meta, index, draft, draftLoadout || meta.loadout); save(); presetNotice = `草稿已存入 ${preset.name}`; render();
+      });
+      const actions = document.createElement("span"); actions.className = "talent-preset__actions"; actions.append(rename, keep);
+      chip.append(load, actions);
       bar.append(chip);
     });
   }
@@ -199,13 +209,8 @@ import { metaStorage } from "./game.js";
   function summaryRows() {
     const current = metaApi.buildStats(meta);
     const next = metaApi.buildStats({ ...meta, talents: draft, loadout: draftLoadout || meta.loadout });
-    const rows = [`最大耐久 ${Math.round(current.maxHp)} → ${Math.round(next.maxHp)}`];
-    if (current.pd || next.pd) rows.push(`近防 ${current.pd ? `伤害${pct(current.pd.damageMul)}·间隔${(current.pd.intervalMul).toFixed(2)}` : "无"} → ${next.pd ? `伤害${pct(next.pd.damageMul)}·间隔${(next.pd.intervalMul).toFixed(2)}` : "无"}`);
-    if (current.repairCar || next.repairCar) rows.push(`到站维修车 ${current.repairCar ? `+${Math.round(current.repairCar.flat * current.repairCar.mul)}固定` : "无"} → ${next.repairCar ? `+${Math.round(next.repairCar.flat * next.repairCar.mul)}固定` : "无"}`);
-    if (current.scrapYieldMul !== next.scrapYieldMul || current.dataYieldMul !== next.dataYieldMul)
-      rows.push(`资源收益 废料${pct(next.scrapYieldMul)}·数据${pct(next.dataYieldMul)}·组件${pct(next.componentYieldMul)}`);
-    if (current.failureKeep !== next.failureKeep)
-      rows.push(`失败保留率 ${(current.failureKeep * 100).toFixed(0)}% → ${(next.failureKeep * 100).toFixed(0)}%`);
+    const rows = metaApi.buildChangeRows(current, next);
+    if (!rows.length) rows.push(draftDirty() ? "仅调整编组或未装备分支；当前属性无变化" : "当前属性无改动");
     return { rows, current, next };
   }
   function renderSummary() {
@@ -253,22 +258,24 @@ import { metaStorage } from "./game.js";
         const effect = metaApi.researchEffectText(track.id, level);
         const nextEffect = metaApi.researchEffectText(track.id, Math.min(metaApi.MAX_RESEARCH_LEVEL, level + 1));
         const row = document.createElement("div"); row.className = "meta-research-row";
-        let costLine = "已达当前上限";
+        let costLine = "已达当前上限", missing = [];
         if (!maxed) {
           const parts = [`${icon("scrap")}${cost.scrap}`, `${icon(cost.attack ? "data" : "components")}${cost.attack ? cost.data : cost.components}`];
           if (cost.attack && cost.components > 0) parts.push(`${icon("components")}${cost.components}`);
           if (!cost.attack && cost.data > 0) parts.push(`${icon("data")}${cost.data}`);
           costLine = parts.join(" ");
+          missing = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => meta.resources[key] < cost[key]).map(([key, name]) => `${name}还差 ${Math.ceil(cost[key] - meta.resources[key])}`);
         }
-        row.innerHTML = `<span class="research-icon" data-weapon="${track.id}">${icon(track.group === "drone" ? "rapid" : "pointDefense")}</span>
+        row.innerHTML = `<span class="research-icon" data-weapon="${track.id}">${icon(metaApi.RESEARCH_ICONS[track.id])}</span>
           <span class="research-copy"><b>${track.name}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL} · ${track.scope}</small>
           <small>${RESEARCH_COPY[track.id]}</small>
-          <small class="research-effect">累计 ${effect.total}${maxed ? "" : ` → 下一级 ${nextEffect.total}`}</small></span>
-          <button type="button" aria-label="升级${track.name}，${maxed ? "已满级" : `废料${cost.scrap}等`}" ${maxed ? "disabled" : ""}>${maxed ? "已满级" : `${costLine}<small>升级</small>`}</button>`;
+          <small class="research-effect">累计 ${effect.total}${maxed ? "" : ` → 下一级 ${nextEffect.total}`}</small>
+          <small class="research-cost">${costLine}</small>${missing.length ? `<small class="research-short">${missing.join(" · ")}</small>` : ""}</span>
+          <button type="button" data-research="${track.id}" aria-label="${maxed ? track.name + "已满级" : missing.length ? `升级${track.name}，${missing.join("，")}` : `升级${track.name}`}" ${maxed || missing.length ? "disabled" : ""}>${maxed ? "已满级" : "升级"}</button>`;
         if (!maxed) row.querySelector("button").addEventListener("click", () => {
           const result = metaApi.buyResearch(meta, track.id);
           if (result.purchased) { meta = result.meta; save(); render(); }
-          else { row.querySelector("button").classList.add("flash-short"); window.setTimeout(() => row.querySelector("button").classList.remove("flash-short"), 400); }
+          else { presetNotice = "研究资源不足，请核对卡片所列缺口"; render(); }
         });
         researchList.append(row);
       }
@@ -310,8 +317,9 @@ import { metaStorage } from "./game.js";
     const pointsEl = $("metaTalentPoints");
     pointsEl.textContent = `天赋点（草稿）${points} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
     pointsEl.classList.toggle("bad", points < 0);
-    const plan = metaApi.planFor(meta);
-    loadoutText.textContent = `当前编组 ${plan.cars.length}/${plan.slots} 节车厢（另含车头） · ${plan.cars.map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ")}`;
+    const carNames = cars => cars.filter(id => id !== "hangar").map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ") || "未选功能车厢";
+    const slots = metaApi.carSlots(meta);
+    loadoutText.textContent = `已应用 ${meta.loadout.length - 1}/${slots} · ${carNames(meta.loadout)}${draftLoadout && !sameCars(draftLoadout, meta.loadout) ? `\n草稿 ${draftLoadout.length - 1}/${slots} · ${carNames(draftLoadout)}（待应用）` : ""}`;
     renderRegions(); renderCars(); renderBranchTabs(); renderNodes(); renderPresets(); renderSummary(); renderResearch();
     const blueprints=$("metaBlueprintList");
     if(blueprints)blueprints.textContent=meta.blueprints.length?meta.blueprints.map(id=>{const bp=metaApi.blueprintById(id);return bp.name+"："+bp.description;}).join("\n"):"暂无蓝图 · 击破精英或区域 Boss 后回收，到站锁定。";
@@ -320,6 +328,9 @@ import { metaStorage } from "./game.js";
   let activeTab='battle';
   function selectTab(name,focus=false){
     if(!tabs.some(([key])=>key===name))name='battle';
+    if (activeTab === 'train' && name !== 'train' && draftDirty()) {
+      if (!window.confirm || !window.confirm('列车改装草稿尚未应用，离开后将丢弃。继续离开？')) { presetNotice = '请先应用或重置草稿，再切换页面'; render(); return; }
+    }
     activeTab=name;
     for(const [key,buttonId,panelId] of tabs){
       const active=key===name,button=$(buttonId);button.setAttribute('aria-selected',String(active));button.setAttribute('tabindex',active?'0':'-1');$(panelId).hidden=!active;

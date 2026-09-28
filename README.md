@@ -23,7 +23,7 @@
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.10.1.2`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.10.1.3`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 ## 本地运行
 

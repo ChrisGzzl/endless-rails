@@ -592,20 +592,24 @@ function drawTrainTab(u, host, registerRegion) {
   const chipW = X(120), gap = X(11);
   for (const preset of host.presetRows) {
     const x = X(14) + preset.index * (chipW + gap);
-    fill(c, "#F8EFDE", x, y, chipW, Y(52), X(5));
-    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, x, y, chipW, Y(52), X(5)); c.stroke();
+    fill(c, "#F8EFDE", x, y, chipW, Y(80), X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, x, y, chipW, Y(80), X(5)); c.stroke();
     text(c, preset.name, x + X(10), y + Y(13), F(12), HT.ink, { weight: "800" });
     text(c, `${preset.spent} 点 · ${preset.cars} 车厢`, x + X(10), y + Y(28), F(9), HT.muted);
-    fill(c, "#EFB340", x + chipW - X(46), y + Y(34), X(38), Y(13), X(3));
-    text(c, "保存", x + chipW - X(27), y + Y(40.5), F(9), "#3B2F0F", { align: "center", weight: "800" });
-    registerRegion({ x, y, w: chipW - X(48), h: Y(52), action: { presetLoad: preset.index } });
-    registerRegion({ x: x + chipW - X(48), y: y + Y(32), w: X(48), h: Y(20), action: { presetSave: preset.index } });
+    fill(c, "#F1E8D7", x + X(6), y + Y(40), X(50), Y(34), X(3));
+    text(c, "改名", x + X(31), y + Y(57), F(10), HT.ink, { align: "center", weight: "800" });
+    fill(c, "#EFB340", x + X(62), y + Y(40), X(52), Y(34), X(3));
+    text(c, host.talent.confirmSave === preset.index ? "确认" : "保存", x + X(88), y + Y(57), F(10), "#3B2F0F", { align: "center", weight: "800" });
+    registerRegion({ x, y, w: chipW, h: Y(36), action: { presetLoad: preset.index } });
+    registerRegion({ x: x + X(6), y: y + Y(40), w: X(50), h: Y(34), action: { presetRename: preset.index } });
+    registerRegion({ x: x + X(62), y: y + Y(40), w: X(52), h: Y(34), action: { presetSave: preset.index } });
   }
-  y += Y(52) + Y(14);
+  y += Y(80) + Y(14);
   // Cars.
   y = sectionHead(u, y, "功能车厢", "点击调整编组");
-  text(c, `当前编组 ${Math.max(0, host.loadoutCars.length - 1)}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
-  y += Y(28);
+  text(c, `已应用 ${Math.max(0, host.meta.loadout.length - 1)}/${host.carSlots} · ${host.meta.loadout.slice(1).map(id => host.carDefs.find(car => car.id === id)?.name || id).join("/") || "未选"}`, X(14), y + Y(9), F(11), "#586A65");
+  if (host.talent.loadout) text(c, `草稿 ${Math.max(0, host.talent.loadout.length - 1)}/${host.carSlots} · ${host.talent.loadout.slice(1).map(id => host.carDefs.find(car => car.id === id)?.name || id).join("/") || "未选"}`, X(14), y + Y(27), F(11), "#2F6B5E", { weight: "700" });
+  y += Y(host.talent.loadout ? 46 : 28);
   for (const car of host.carDefs) {
     const unlocked = host.unlockedCars.includes(car.id);
     const active = (host.talent?.loadout || host.meta.loadout).includes(car.id);
@@ -616,9 +620,10 @@ function drawTrainTab(u, host, registerRegion) {
     fill(c, "#FFF9ED", X(23), y + Y(10), X(62), Y(50), X(4));
     paintUiIcon(c, CAR_ICONS[car.id] || "train", X(26), y + Y(13), X(56), Y(44));
     text(c, car.name, X(97), y + Y(17), F(13), HT.ink, { weight: "700" });
-    text(c, unlocked ? (active ? "已编组" : "未编组") : "天赋未解锁", X(97), y + Y(31), F(10), unlocked ? HT.green : "#B3362D", { weight: "700" });
+    const changed = active !== host.meta.loadout.includes(car.id);
+    text(c, unlocked ? changed ? (active ? "草稿加入 · 待应用" : "草稿移除 · 待应用") : (active ? "已应用 · 点击移除" : "未编组 · 点击加入") : active ? "天赋不足 · 点击移除" : "天赋未解锁", X(97), y + Y(31), F(10), unlocked ? HT.green : "#B3362D", { weight: "700" });
     text(c, car.description || "", X(97), y + Y(48), F(10), HT.muted);
-    if (unlocked) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
+    if (unlocked || active) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
     y += h + Y(7);
   }
   y += Y(6);
@@ -631,7 +636,7 @@ function drawTrainTab(u, host, registerRegion) {
     c.strokeStyle = branchRow.active ? "#0E2B33" : "#CEC3AB"; c.lineWidth = X(1); rr(c, x, y, branchW, Y(40), X(5)); c.stroke();
     text(c, branchRow.name, x + branchW / 2, y + Y(11), F(11), branchRow.active ? "#FFF5D7" : "#3F5953", { align: "center", weight: "800" });
     text(c, `${branchRow.spent}/${branchRow.cap}`, x + branchW / 2, y + Y(24), F(10), branchRow.active ? "#FFD053" : "#8A6B1F", { align: "center", weight: "700" });
-    if (!branchRow.equipped) text(c, "未装备", x + branchW / 2, y + Y(34), F(8), "#E8927C", { align: "center" });
+    if (!branchRow.equipped) text(c, "未装备", x + branchW / 2, y + Y(34), F(9), branchRow.active ? "#FFCCB9" : "#9D372D", { align: "center", weight: "700" });
     registerRegion({ x, y, w: branchW, h: Y(40), action: { talentBranch: branchRow.id } });
   });
   y += Y(40) + Y(10);
@@ -672,21 +677,11 @@ function drawTrainTab(u, host, registerRegion) {
     });
     y += h + Y(12);
   }
-  // Sticky-equivalent summary block with apply / reset.
-  const notice = host.talent.notice || summary.problems.join("；");
-  const sh = Y(96) + (notice ? Y(16) : 0);
+  // Complete stat diff remains scrollable; the action bar stays fixed below.
+  const sh = Y(30 + summary.rows.length * 19);
   fill(c, "#102F3A", X(14), y, X(382), sh, X(6));
-  summary.rows.forEach((line, i) => text(c, line, X(28), y + Y(14) + i * Y(16), F(10), "#C9D5D1"));
-  const resetX = X(248), applyX = X(306);
-  fill(c, "#1B434C", resetX, y + Y(58), X(50), Y(30), X(4));
-  c.strokeStyle = "#507897"; c.lineWidth = X(1); rr(c, resetX, y + Y(58), X(50), Y(30), X(4)); c.stroke();
-  text(c, "重置", resetX + X(25), y + Y(73), F(11), summary.dirty ? "#EEEADD" : "#6C8791", { align: "center", weight: "700" });
-  if (summary.dirty) registerRegion({ x: resetX, y: y + Y(58), w: X(50), h: Y(30), action: { talentReset: true } });
-  fill(c, grad(c, 0, y + Y(58), 0, y + Y(88), [[0, "#F8D277"], [1, "#E5B350"]]), applyX, y + Y(58), X(74), Y(30), X(4));
-  c.strokeStyle = "#B98730"; c.lineWidth = X(1.5); rr(c, applyX, y + Y(58), X(74), Y(30), X(4)); c.stroke();
-  text(c, "应用改装", applyX + X(37), y + Y(73), F(12), summary.canApply ? "#263B3E" : "#C7B083", { align: "center", weight: "800" });
-  if (summary.canApply) registerRegion({ x: applyX, y: y + Y(58), w: X(74), h: Y(30), action: { talentApply: true } });
-  if (notice) text(c, notice.slice(0, 44), X(28), y + sh - Y(8), F(9), notice.includes("不可用") || summary.problems.length ? "#FF9D8A" : "#9FD3C8");
+  text(c, "改装属性预览", X(28), y + Y(14), F(11), "#FFD053", { weight: "800" });
+  summary.rows.forEach((line, i) => text(c, line, X(28), y + Y(36) + i * Y(19), F(10), "#C9D5D1"));
   y += sh + Y(14);
   // Secondary: back to departure.
   fill(c, "#F6EDDA", X(14), y, X(382), Y(44), X(4));
@@ -694,6 +689,23 @@ function drawTrainTab(u, host, registerRegion) {
   text(c, "编组完成 · 前往出发 →", vw / 2, y + Y(22), F(13), HT.ink, { align: "center", weight: "700" });
   registerRegion({ x: X(14), y, w: X(382), h: Y(44), action: { homeTab: "battle" } });
   return y + Y(44) + Y(23);
+}
+
+function drawTrainFooter(u, host, registerRegion) {
+  const { c, X, Y, F } = u, summary = host.talentSummary;
+  const y = Y(622), h = Y(108), notice = summary.problems.join("；") || host.talent.notice;
+  fill(c, "#102F3A", 0, y, X(410), h);
+  text(c, `草稿可用点数 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
+  const preview = summary.rows[0];
+  text(c, preview.slice(0, 37), X(14), y + Y(31), F(10), "#C9D5D1");
+  if (summary.rows.length > 1) text(c, `${summary.rows[1].slice(0, 30)}${summary.rows.length > 2 ? ` · 另 ${summary.rows.length - 2} 项` : ""}`, X(14), y + Y(47), F(9), "#C9D5D1");
+  if (notice) text(c, notice.slice(0, 32), X(14), y + Y(64), F(9), summary.problems.length ? "#FF9D8A" : "#9FD3C8");
+  fill(c, "#1B434C", X(205), y + Y(72), X(72), Y(34), X(4));
+  text(c, "重置", X(241), y + Y(89), F(11), summary.dirty ? "#EEEADD" : "#6C8791", { align: "center", weight: "700" });
+  if (summary.dirty) registerRegion({ x: X(205), y: y + Y(72), w: X(72), h: Y(34), action: { talentReset: true } });
+  fill(c, summary.canApply ? "#EFB340" : "#897B61", X(286), y + Y(72), X(110), Y(34), X(4));
+  text(c, "应用改装", X(341), y + Y(89), F(12), summary.canApply ? "#263B3E" : "#C9C2B5", { align: "center", weight: "800" });
+  if (summary.canApply) registerRegion({ x: X(286), y: y + Y(72), w: X(110), h: Y(34), action: { talentApply: true } });
 }
 
 // -- research tab ----------------------------------------------------------------
@@ -713,7 +725,7 @@ function drawResearchTab(u, host, registerRegion) {
       fill(c, grad(c, X(22), y + Y(10), X(68), y + Y(56), [[0, colors[0]], [1, colors[1]]]), X(22), y + Y(10), X(46), Y(46), X(4));
       c.save();
       rr(c, X(22), y + Y(10), X(46), Y(46), X(4)); c.clip();
-      paintUiIcon(c, groupId === "drone" ? "rapid" : "pointDefense", X(23.5), y + Y(12), X(43), X(43));
+      paintUiIcon(c, row.icon, X(23.5), y + Y(12), X(43), X(43));
       c.restore();
       text(c, row.name, X(77), y + Y(11), F(13), HT.ink, { weight: "700" });
       text(c, `Lv.${row.level}/${row.max} · ${row.scope}`, X(77), y + Y(26), F(9), "#586B6C", { weight: "700" });
@@ -724,6 +736,7 @@ function drawResearchTab(u, host, registerRegion) {
         if (row.cost.attack && row.cost.components > 0) costBits.push(`组${row.cost.components}`);
         if (!row.cost.attack && row.cost.data > 0) costBits.push(`数${row.cost.data}`);
         text(c, costBits.join(" · "), X(77), y + Y(67), F(9), "#8A6B1F", { weight: "700" });
+        if (row.missing.length) text(c, row.missing.join(" · "), X(77), y + Y(79), F(9), "#A4372D", { weight: "700" });
       }
       // Upgrade chip: golden when affordable, parchment when maxed or short.
       const bxx = X(340), byy = y + Y(24), bw = X(48), bh = Y(40);
@@ -735,9 +748,9 @@ function drawResearchTab(u, host, registerRegion) {
         fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
         text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
-        if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+        registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
       }
-      y += h + Y(7);
+      y += h + Y(row.missing?.length ? 17 : 7);
     }
   }
   // Rules note.
@@ -904,15 +917,21 @@ function drawHome(u, host, registerRegion) {
   } else {
     const scroll = Math.max(0, host.scroll || 0);
     c.save();
-    c.beginPath(); c.rect(0, Y64(u), vw, u.Y(730) - Y64(u)); c.clip();
+    const bottom = host.page === "train" ? u.Y(622) : u.Y(730);
+    c.beginPath(); c.rect(0, Y64(u), vw, bottom - Y64(u)); c.clip();
     c.translate(0, -scroll);
-    if (host.page === "train") contentH = drawTrainTab(u, host, registerRegion);
-    else if (host.page === "research") contentH = drawResearchTab(u, host, registerRegion);
-    else if (host.page === "shop") contentH = drawShopTab(u, host, registerRegion);
-    else if (host.page === "settings") contentH = drawSettingsTab(u, host, registerRegion);
+    const scrolledRegion = region => {
+      const top = Math.max(Y64(u), region.y - scroll), end = Math.min(bottom, region.y + region.h - scroll);
+      if (end > top) registerRegion({ ...region, y: top, h: end - top });
+    };
+    if (host.page === "train") contentH = drawTrainTab(u, host, scrolledRegion);
+    else if (host.page === "research") contentH = drawResearchTab(u, host, scrolledRegion);
+    else if (host.page === "shop") contentH = drawShopTab(u, host, scrolledRegion);
+    else if (host.page === "settings") contentH = drawSettingsTab(u, host, scrolledRegion);
     c.restore();
     host.contentHeight = contentH;
-    host.viewportHeight = u.Y(730);
+    host.viewportHeight = bottom;
+    if (host.page === "train") drawTrainFooter(u, host, registerRegion);
   }
   drawTabsBar(u, host, registerRegion);
 }
@@ -1851,6 +1870,7 @@ const RESEARCH_TRACKS = Object.freeze([
   { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
 ]);
 const RESEARCH_IDS = Object.freeze(RESEARCH_TRACKS.map(track => track.id));
+const RESEARCH_ICONS = Object.freeze({ fireControl: "rapid", cycleControl: "pulse", rangeCalibration: "radar", hullEngineering: "armor", armorMaterials: "shield", repairEngineering: "repair", trainFireControl: "pointDefense" });
 const RESEARCH_NAMES = Object.freeze(Object.fromEntries(RESEARCH_TRACKS.map(track => [track.id, track.name])));
 const trackById = id => RESEARCH_TRACKS.find(track => track.id === id);
 
@@ -2048,6 +2068,33 @@ function buildStats(meta) {
     };
   }
   return stats;
+}
+
+function buildChangeRows(current, next) {
+  const rows = [];
+  const add = (label, a, b, format) => { if (Math.abs(a - b) > 0.0001) rows.push(`${label} ${format(a)} → ${format(b)}`); };
+  const mul = n => `×${n.toFixed(2)}`, pct = n => `${Math.round(n * 100)}%`;
+  add("最大耐久", current.maxHp, next.maxHp, n => String(Math.round(n)));
+  add("受伤倍率", current.damageTakenMul, next.damageTakenMul, mul);
+  add("无人机伤害", current.droneDamageMul, next.droneDamageMul, mul);
+  add("无人机间隔", current.droneIntervalMul, next.droneIntervalMul, mul);
+  add("无人机射程", current.droneRangeMul, next.droneRangeMul, mul);
+  const optionalMul = n => n === 0 ? "无" : mul(n);
+  add("近防伤害", current.pd?.damageMul || 0, next.pd?.damageMul || 0, optionalMul);
+  add("近防间隔", current.pd?.intervalMul || 0, next.pd?.intervalMul || 0, optionalMul);
+  add("近防射程", current.pd?.rangeMul || 0, next.pd?.rangeMul || 0, optionalMul);
+  add("维修车固定量", current.repairCar ? current.repairCar.flat * current.repairCar.mul : 0, next.repairCar ? next.repairCar.flat * next.repairCar.mul : 0, n => String(Math.round(n)));
+  add("到站维修", current.stationBaseMul * current.repairMul, next.stationBaseMul * next.repairMul, mul);
+  add("到站大修", current.repairCar?.overhaulPct || 0, next.repairCar?.overhaulPct || 0, pct);
+  add("现场维修/10秒", current.fieldRepairPer10s, next.fieldRepairPer10s, n => n.toFixed(1));
+  add("应急储备", current.emergencyReserve, next.emergencyReserve, n => String(Math.round(n)));
+  add("拾取范围", current.pickupRadiusMul, next.pickupRadiusMul, mul);
+  add("精英伤害", current.eliteDamageMul, next.eliteDamageMul, mul);
+  add("废料收益", current.scrapYieldMul, next.scrapYieldMul, mul);
+  add("组件收益", current.componentYieldMul, next.componentYieldMul, mul);
+  add("数据收益", current.dataYieldMul, next.dataYieldMul, mul);
+  add("失败保留率", current.failureKeep, next.failureKeep, pct);
+  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -2416,11 +2463,11 @@ const api = {
   STORAGE_KEY, BACKUP_KEY, gameStorage, MAX_TRAIN_LEVEL, MAX_RESEARCH_LEVEL, SAVE_VERSION,
   CAR_DEFS, CAR_UNLOCK_NODE, REGIONS, BLUEPRINTS, BLUEPRINT_COMPENSATION,
   TALENT_BRANCHES, TALENT_NODES, NODE_BY_ID, SPEC_OPTIONS, SPEC_NODE,
-  RESEARCH_IDS, RESEARCH_NAMES, RESEARCH_TRACKS, RESEARCH_COST_BASE,
+  RESEARCH_IDS, RESEARCH_NAMES, RESEARCH_TRACKS, RESEARCH_ICONS, RESEARCH_COST_BASE,
   emptyMeta, normalizeMeta, migrateFromV1, loadMeta, saveMeta,
   trainSlots, carSlots, unlockedCars, carUnlocked, talentPoints, spentPoints, availablePoints, branchSpent,
   nodeBlockReason, branchFullReason, talentProblems, normalizeTalents, emptyTalents,
-  buildStats, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
+  buildStats, buildChangeRows, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
   refitCost, refitIsPaid, applyTalents, savePreset, loadPreset, renamePreset, emptyPreset,
   regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout,
   createRun, awardRisk, addBlueprintRisk, bankRisk, expeditionXp,
@@ -4759,11 +4806,11 @@ const host = {
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
   trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
-  talent: { branch: "hull", draft: null, loadout: null, notice: "" },
+  talent: { branch: "hull", draft: null, loadout: null, notice: "", confirmSave: null },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.2",
+  version: "v0.10.1.3",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -4799,6 +4846,7 @@ function draftFromProfile() {
   const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
   host.talent.draft = { nodes, specs };
   host.talent.loadout = null;
+  host.talent.confirmSave = null;
 }
 function draftDirty() {
   const current = host.meta?.talents;
@@ -4869,16 +4917,13 @@ function refreshHostData() {
   const cost = longterm.refitCost(profile);
   const currentStats = longterm.buildStats(profile);
   const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft, loadout: host.talent.loadout || profile.loadout }) : currentStats;
+  const changes = longterm.buildChangeRows(currentStats, nextStats);
   host.talentSummary = {
     points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
     dirty, problems,
-    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料`,
+    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料${profile.resources.scrap < cost ? ` · 还差 ${Math.ceil(cost - profile.resources.scrap)}` : ""}`,
     canApply: dirty && !problems.length,
-    rows: [
-      `最大耐久 ${Math.round(currentStats.maxHp)} → ${Math.round(nextStats.maxHp)}`,
-      `无人机伤害 ×${currentStats.droneDamageMul.toFixed(2)} → ×${nextStats.droneDamageMul.toFixed(2)}`,
-      `失败保留率 ${(currentStats.failureKeep * 100).toFixed(0)}% → ${(nextStats.failureKeep * 100).toFixed(0)}%`,
-    ],
+    rows: changes.length ? changes : [dirty ? "仅调整编组或未装备分支；当前属性无变化" : "当前属性无改动"],
   };
   host.researchRows = (longterm.RESEARCH_TRACKS || []).map(track => {
     const costData = longterm.researchCost(profile, track.id);
@@ -4886,10 +4931,11 @@ function refreshHostData() {
     const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
     const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id: track.id, group: track.group, name: track.name, scope: track.scope,
+      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, scope: track.scope,
       level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
       cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
       desc: RESEARCH_COPY[track.id] || "",
+      missing: maxed ? [] : [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => profile.resources[key] < costData[key]).map(([key, name]) => `${name}还差 ${Math.ceil(costData[key] - profile.resources[key])}`),
       affordable: !maxed && profile.resources.scrap >= costData.scrap
         && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
     };
@@ -5041,7 +5087,10 @@ function applyAction(action) {
   } else if (action.stationUpgrade) {
     selectStationUpgrade(action.stationUpgrade);
   } else if (action.homeTab) {
-    if (host.page !== action.homeTab) { host.page = action.homeTab; host.scroll = 0; }
+    if (host.page !== action.homeTab) {
+      if (host.page === "train" && draftDirty()) { host.talent.notice = "请先应用或重置草稿，再切换页面"; return; }
+      host.page = action.homeTab; host.scroll = 0;
+    }
   } else if (action.selectRegion) {
     const next = longterm.setRegion(state.metaProfile, action.selectRegion);
     if (next) {
@@ -5049,21 +5098,16 @@ function applyAction(action) {
       setRegionGround(action.selectRegion);
     }
   } else if (action.toggleCar) {
-    // Same rule as the DOM car list: a full lineup swaps out its oldest car;
-    // with a preset lineup drafted, edits stay in that draft until apply.
+    // Every lineup edit stays in the draft until apply.
     const base = (host.talent.loadout || state.metaProfile.loadout).filter(id => id !== "hangar");
     let cars;
     if (base.includes(action.toggleCar)) cars = base.filter(id => id !== action.toggleCar);
     else {
       cars = [...base];
-      if (cars.length >= longterm.carSlots(state.metaProfile)) cars.shift();
+      if (cars.length >= longterm.carSlots(state.metaProfile)) { host.talent.notice = "编组已满：先移除一节已选车厢"; return; }
       cars.push(action.toggleCar);
     }
-    if (host.talent.loadout) host.talent.loadout = ["hangar", ...cars];
-    else {
-      const next = longterm.setLoadout(state.metaProfile, cars);
-      if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
-    }
+    host.talent.loadout = ["hangar", ...cars]; host.talent.notice = "编组草稿待应用";
   } else if (action.talentBranch) {
     host.talent.branch = action.talentBranch;
   } else if (action.talentPlus) {
@@ -5077,11 +5121,28 @@ function applyAction(action) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
     host.talent.loadout = [...result.loadout];
+    host.talent.confirmSave = null;
     host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
+  } else if (action.presetRename !== undefined) {
+    const index = action.presetRename, previous = state.metaProfile.presets[index]?.name || `方案 ${"ABC"[index]}`;
+    const commit = name => {
+      if (!name?.trim()) return;
+      state.metaProfile = longterm.renamePreset(state.metaProfile, index, name.trim());
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = `方案已改名为 ${state.metaProfile.presets[index].name}`;
+      drawOverlay();
+    };
+    if (typeof wx !== "undefined" && wx.showModal) {
+      wx.showModal({ title: "重命名方案", editable: true, placeholderText: previous, content: previous, success: result => { if (result.confirm) commit(result.content); } });
+    } else if (typeof globalThis.prompt === "function") commit(globalThis.prompt("方案名称", previous));
+    else host.talent.notice = "当前环境暂不支持输入方案名称";
   } else if (action.presetSave !== undefined) {
-    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
-    longterm.saveMeta(metaStorage, state.metaProfile);
-    host.talent.notice = "草稿已存入方案";
+    const index = action.presetSave;
+    if (host.talent.confirmSave === index) {
+      state.metaProfile = longterm.savePreset(state.metaProfile, index, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = "草稿已存入方案"; host.talent.confirmSave = null;
+    } else { host.talent.confirmSave = index; host.talent.notice = `再点保存，覆盖方案 ${"ABC"[index]}`; }
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
@@ -5098,6 +5159,7 @@ function applyAction(action) {
   } else if (action.research) {
     const result = longterm.buyResearch(state.metaProfile, action.research);
     if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }
+    else if (result?.short?.length) host.researchNotice = result.short.join(" · ");
   } else if (action.audioToggle) {
     gameAudio?.setPreference?.(action.audioToggle, !host.audio[action.audioToggle]);
     host.audio = gameAudio?.getPreferences?.() || host.audio;

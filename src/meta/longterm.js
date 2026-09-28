@@ -138,6 +138,7 @@ const RESEARCH_TRACKS = Object.freeze([
   { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
 ]);
 const RESEARCH_IDS = Object.freeze(RESEARCH_TRACKS.map(track => track.id));
+const RESEARCH_ICONS = Object.freeze({ fireControl: "rapid", cycleControl: "pulse", rangeCalibration: "radar", hullEngineering: "armor", armorMaterials: "shield", repairEngineering: "repair", trainFireControl: "pointDefense" });
 const RESEARCH_NAMES = Object.freeze(Object.fromEntries(RESEARCH_TRACKS.map(track => [track.id, track.name])));
 const trackById = id => RESEARCH_TRACKS.find(track => track.id === id);
 
@@ -335,6 +336,33 @@ function buildStats(meta) {
     };
   }
   return stats;
+}
+
+function buildChangeRows(current, next) {
+  const rows = [];
+  const add = (label, a, b, format) => { if (Math.abs(a - b) > 0.0001) rows.push(`${label} ${format(a)} → ${format(b)}`); };
+  const mul = n => `×${n.toFixed(2)}`, pct = n => `${Math.round(n * 100)}%`;
+  add("最大耐久", current.maxHp, next.maxHp, n => String(Math.round(n)));
+  add("受伤倍率", current.damageTakenMul, next.damageTakenMul, mul);
+  add("无人机伤害", current.droneDamageMul, next.droneDamageMul, mul);
+  add("无人机间隔", current.droneIntervalMul, next.droneIntervalMul, mul);
+  add("无人机射程", current.droneRangeMul, next.droneRangeMul, mul);
+  const optionalMul = n => n === 0 ? "无" : mul(n);
+  add("近防伤害", current.pd?.damageMul || 0, next.pd?.damageMul || 0, optionalMul);
+  add("近防间隔", current.pd?.intervalMul || 0, next.pd?.intervalMul || 0, optionalMul);
+  add("近防射程", current.pd?.rangeMul || 0, next.pd?.rangeMul || 0, optionalMul);
+  add("维修车固定量", current.repairCar ? current.repairCar.flat * current.repairCar.mul : 0, next.repairCar ? next.repairCar.flat * next.repairCar.mul : 0, n => String(Math.round(n)));
+  add("到站维修", current.stationBaseMul * current.repairMul, next.stationBaseMul * next.repairMul, mul);
+  add("到站大修", current.repairCar?.overhaulPct || 0, next.repairCar?.overhaulPct || 0, pct);
+  add("现场维修/10秒", current.fieldRepairPer10s, next.fieldRepairPer10s, n => n.toFixed(1));
+  add("应急储备", current.emergencyReserve, next.emergencyReserve, n => String(Math.round(n)));
+  add("拾取范围", current.pickupRadiusMul, next.pickupRadiusMul, mul);
+  add("精英伤害", current.eliteDamageMul, next.eliteDamageMul, mul);
+  add("废料收益", current.scrapYieldMul, next.scrapYieldMul, mul);
+  add("组件收益", current.componentYieldMul, next.componentYieldMul, mul);
+  add("数据收益", current.dataYieldMul, next.dataYieldMul, mul);
+  add("失败保留率", current.failureKeep, next.failureKeep, pct);
+  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -703,11 +731,11 @@ const api = {
   STORAGE_KEY, BACKUP_KEY, gameStorage, MAX_TRAIN_LEVEL, MAX_RESEARCH_LEVEL, SAVE_VERSION,
   CAR_DEFS, CAR_UNLOCK_NODE, REGIONS, BLUEPRINTS, BLUEPRINT_COMPENSATION,
   TALENT_BRANCHES, TALENT_NODES, NODE_BY_ID, SPEC_OPTIONS, SPEC_NODE,
-  RESEARCH_IDS, RESEARCH_NAMES, RESEARCH_TRACKS, RESEARCH_COST_BASE,
+  RESEARCH_IDS, RESEARCH_NAMES, RESEARCH_TRACKS, RESEARCH_ICONS, RESEARCH_COST_BASE,
   emptyMeta, normalizeMeta, migrateFromV1, loadMeta, saveMeta,
   trainSlots, carSlots, unlockedCars, carUnlocked, talentPoints, spentPoints, availablePoints, branchSpent,
   nodeBlockReason, branchFullReason, talentProblems, normalizeTalents, emptyTalents,
-  buildStats, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
+  buildStats, buildChangeRows, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
   refitCost, refitIsPaid, applyTalents, savePreset, loadPreset, renamePreset, emptyPreset,
   regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout,
   createRun, awardRisk, addBlueprintRisk, bankRisk, expeditionXp,
