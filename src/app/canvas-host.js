@@ -30,10 +30,12 @@ const host = {
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
-  trainSlots: 4, trainLength: 4, xpToNext: 1, trainUpgradeCost: 0, trainUpgradeComponents: 0,
-  maxedTrain: false, canUpgradeTrain: false, regionMeta: null, regionTags: {}, blueprintText: "",
+  trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
+  talent: { branch: "hull", draft: null, notice: "" },
+  presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
+  regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.9.0-rc.5",
+  version: "v0.10.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -41,16 +43,15 @@ let regions = [];
 
 // -- host data assembly -------------------------------------------------------
 
-// Same display copy the DOM research page shows (meta-ui.js compactDescriptions).
+// Same display copy the DOM research page shows (meta-ui.js RESEARCH_COPY).
 const RESEARCH_COPY = {
-  rapid: "近程高频点射，提高射速与伤害。",
-  missile: "远程追踪弹，高伤爆炸清理尸群。",
-  incendiary: "投掷燃烧弹，在地面留下火墙。",
-  ricochet: "中程能量球，反弹穿过尸群。",
-  chain: "连锁电弧，密集目标伤害更高。",
-  piercing: "远程磁轨弹，贯穿多个敌人。",
-  scatter: "近程扇形霰弹，贴近尸群清扫。",
-  blades: "近战持续切割，主动靠近尸群。",
+  fireControl: "提高北辰与所有无人机的伤害。",
+  cycleControl: "缩短无人机普通攻击的基础间隔。",
+  rangeCalibration: "扩大无人机索敌与攻击射程。",
+  hullEngineering: "提高列车最大耐久。",
+  armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
+  repairEngineering: "提高所有到站维修与应急储备的维修量。",
+  trainFireControl: "提高列车自身近防炮的伤害。",
 };
 
 function regionStatus(meta, regionId) {
@@ -62,28 +63,105 @@ function regionStatus(meta, regionId) {
   return { status, tag: unlocked ? status : "未解锁" };
 }
 
+// Talent draft lives on the host exactly like the DOM page keeps one in
+// meta-ui.js: edits are free previews, the single apply call commits. The
+// reset derives from state.metaProfile (updated by applyTalents itself) -
+// host.meta may still hold the previous frame's copy at action time.
+function draftFromProfile() {
+  const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
+  host.talent.draft = { nodes, specs };
+}
+function draftDirty() {
+  const current = host.meta?.talents;
+  if (!current || !host.talent.draft) return false;
+  for (const node of (longterm.TALENT_NODES || []))
+    if ((host.talent.draft.nodes[node.id] || 0) !== (current.nodes[node.id] || 0)) return true;
+  for (const key in host.talent.draft.specs) if (host.talent.draft.specs[key] !== current.specs[key]) return true;
+  return false;
+}
+function withdrawNode(nodeId) {
+  const draft = host.talent.draft;
+  draft.nodes[nodeId] = Math.max(0, (draft.nodes[nodeId] || 0) - 1);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of longterm.TALENT_NODES) {
+      if (!(draft.nodes[node.id] > 0) || !node.prereq?.id) continue;
+      if ((draft.nodes[node.prereq.id] || 0) < node.prereq.level) { draft.nodes[node.id] = 0; changed = true; }
+    }
+    for (const branchId of Object.keys(longterm.SPEC_NODE))
+      if (draft.specs[branchId] && !(draft.nodes[longterm.SPEC_NODE[branchId]] > 0)) draft.specs[branchId] = null;
+  }
+}
+function raiseNode(nodeId) {
+  const node = longterm.NODE_BY_ID[nodeId], draft = host.talent.draft;
+  if (!node || (draft.nodes[nodeId] || 0) >= node.levels || longterm.nodeBlockReason(host.meta, draft, nodeId)) return;
+  draft.nodes[nodeId] = (draft.nodes[nodeId] || 0) + 1;
+}
+
 function refreshHostData() {
   const profile = state.metaProfile;
   host.meta = profile;
   const plan = longterm.planFor(profile);
   host.trainLength = plan.trainLength;
   host.trainSlots = longterm.trainSlots(profile);
+  host.carSlots = longterm.carSlots(profile);
   host.xpToNext = longterm.xpToNext(profile.train.level);
-  const cost = longterm.trainUpgradeCost(profile);
-  host.maxedTrain = !Number.isFinite(cost.scrap);
-  host.trainUpgradeCost = host.maxedTrain ? 0 : cost.scrap;
-  host.trainUpgradeComponents = cost.components;
-  host.canUpgradeTrain = !host.maxedTrain
-    && profile.resources.scrap >= cost.scrap && profile.resources.components >= cost.components;
-  host.carDefs = (longterm.CAR_DEFS || []).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
-  host.unlockedCars = profile.unlockedCars || [];
+  host.talentPoints = longterm.talentPoints(profile);
+  if (!host.talent.draft) draftFromProfile();
+  host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
+  host.unlockedCars = longterm.unlockedCars(profile);
   host.loadoutCars = (profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
-  host.researchRows = (longterm.RESEARCH_IDS || []).map(id => {
-    const costData = longterm.researchCost(profile, id);
-    const maxed = !Number.isFinite(costData);
+  // Talent panel data for the canvas painter.
+  host.branchRows = (longterm.TALENT_BRANCHES || []).map(branch => ({
+    id: branch.id, name: branch.name, cap: branch.cap,
+    spent: longterm.branchSpent(host.talent.draft, branch.id),
+    equipped: !branch.car || (profile.loadout || []).includes(branch.car),
+    active: host.talent.branch === branch.id,
+  }));
+  host.nodeRows = (longterm.TALENT_NODES || []).filter(node => node.branch === host.talent.branch).map(node => ({
+    id: node.id, name: node.name, cost: node.cost, levels: node.levels,
+    level: host.talent.draft.nodes[node.id] || 0,
+    block: longterm.nodeBlockReason(profile, host.talent.draft, node.id),
+    effect: host.talent.draft.nodes[node.id] > 0 ? node.effect(host.talent.draft.nodes[node.id]) : node.effect(1),
+  }));
+  host.specRows = (longterm.SPEC_OPTIONS?.[host.talent.branch] || []).map(option => ({
+    branch: host.talent.branch, id: option.id, name: option.name, desc: option.desc,
+    owned: (host.talent.draft.nodes[longterm.SPEC_NODE[host.talent.branch]] || 0) > 0,
+    active: host.talent.draft.specs[host.talent.branch] === option.id,
+  }));
+  host.presetRows = (profile.presets || []).map((preset, index) => ({
+    index, name: preset.name, spent: longterm.spentPoints(preset.talents), cars: Math.max(0, preset.loadout.length - 1),
+  }));
+  const dirty = draftDirty();
+  const problems = dirty ? longterm.talentProblems(profile, host.talent.draft) : [];
+  const paid = dirty && longterm.refitIsPaid(profile.talents, host.talent.draft);
+  const cost = longterm.refitCost(profile);
+  const currentStats = longterm.buildStats(profile);
+  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft }) : currentStats;
+  host.talentSummary = {
+    points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
+    dirty, problems,
+    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料`,
+    canApply: dirty && !problems.length,
+    rows: [
+      `最大耐久 ${Math.round(currentStats.maxHp)} → ${Math.round(nextStats.maxHp)}`,
+      `无人机伤害 ×${currentStats.droneDamageMul.toFixed(2)} → ×${nextStats.droneDamageMul.toFixed(2)}`,
+      `失败保留率 ${(currentStats.failureKeep * 100).toFixed(0)}% → ${(nextStats.failureKeep * 100).toFixed(0)}%`,
+    ],
+  };
+  host.researchRows = (longterm.RESEARCH_TRACKS || []).map(track => {
+    const costData = longterm.researchCost(profile, track.id);
+    const maxed = !costData;
+    const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
+    const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id, name: longterm.RESEARCH_NAMES?.[id] || id, level: profile.research[id] || 0,
-      cost: maxed ? 0 : costData, maxed, desc: RESEARCH_COPY[id] || "研究等级影响对应无人机的长期性能。",
+      id: track.id, group: track.group, name: track.name, scope: track.scope,
+      level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
+      cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
+      desc: RESEARCH_COPY[track.id] || "",
+      affordable: !maxed && profile.resources.scrap >= costData.scrap
+        && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
     };
   });
   const selectedRegion = profile.selectedRegion || "wasteland";
@@ -95,6 +173,11 @@ function refreshHostData() {
   for (const id of profile.blueprints || []) {
     const bp = longterm.blueprintById(id);
     if (bp) host.blueprintNames[id] = bp.name;
+  }
+  // 出发页摘要 (需求 §22.3)，与 DOM 版 meta-ui.js 同一口径。
+  {
+    const S = longterm.buildStats(profile);
+    host.departureSummary = `伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp / 100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
   }
   host.blueprintText = (profile.blueprints || []).length
     ? (profile.blueprints || []).map(id => { const bp = longterm.blueprintById(id); return bp ? bp.name + "：" + bp.description : id; }).join("\n")
@@ -155,6 +238,7 @@ function backToMenu() {
   state.metaProfile = longterm.loadMeta(metaStorage);
   state.record = runRecord.loadRecord(metaStorage);
   host.levelPicks = null; host.breakthrough = null; host.stationData = null; host.resultData = null; host.routeCards = null; host.page = "battle"; host.scroll = 0;
+  host.talent.draft = null; host.talent.notice = "";
   refreshHostData();
   drawOverlay();
 }
@@ -242,9 +326,36 @@ function applyAction(action) {
       const next = longterm.setLoadout(state.metaProfile, cars);
       if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
     }
-  } else if (action.trainUpgrade) {
-    const result = longterm.upgradeTrain(state.metaProfile);
-    if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }
+  } else if (action.talentBranch) {
+    host.talent.branch = action.talentBranch;
+  } else if (action.talentPlus) {
+    raiseNode(action.talentPlus);
+  } else if (action.talentMinus) {
+    withdrawNode(action.talentMinus);
+  } else if (action.talentSpec) {
+    const [branchId, optionId] = action.talentSpec;
+    host.talent.draft.specs[branchId] = host.talent.draft.specs[branchId] === optionId ? null : optionId;
+  } else if (action.presetLoad !== undefined) {
+    const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
+    host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
+    host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
+  } else if (action.presetSave !== undefined) {
+    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, state.metaProfile.loadout);
+    longterm.saveMeta(metaStorage, state.metaProfile);
+    host.talent.notice = "草稿已存入方案";
+  } else if (action.talentReset) {
+    draftFromProfile();
+    host.talent.notice = "";
+  } else if (action.talentApply) {
+    const result = longterm.applyTalents(state.metaProfile, host.talent.draft);
+    if (result.applied) {
+      state.metaProfile = result.meta;
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      draftFromProfile();
+      host.talent.notice = result.charged ? `已支付改装费 ${result.charged} 废料` : result.paid ? `已消耗 1 次免费重构（剩 ${result.freeRefits} 次）` : "";
+    } else {
+      host.talent.notice = result.problems.join("；");
+    }
   } else if (action.research) {
     const result = longterm.buyResearch(state.metaProfile, action.research);
     if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }

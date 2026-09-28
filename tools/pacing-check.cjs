@@ -1,16 +1,27 @@
 'use strict';
 // Deterministic, render-free pacing samples. This is not a browser FPS benchmark.
-const createGame = require('../endless-rails/test-harness.cjs');
+const createGame = require('../tests/test-harness.cjs');
 const runs = [];
 for (let seed = 1; seed <= 12; seed++) {
-  const {run} = createGame();
-  run(`let rng=${seed};Math.random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296;};resetRun();state.activeContract=routeEvents.CONTRACTS[2];beginRoute(routeEvents.ROUTE_EVENTS[2]);`);
+  // v0.10 baseline loadout: a legal Lv6 account with the point-defense and
+  // storage unlock nodes bought, matching the historical samples that started
+  // with point defense + storage equipped (C0 needs train Lv4). The harness
+  // must receive the storage, or beginRun loads the bare default account.
+  const values = new Map();
+  const storage = { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, String(value)) };
+  const {run} = createGame({storage});
+  run(`let rng=${seed};Math.random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296;};
+longterm.saveMeta(metaStorage,longterm.normalizeMeta({train:{level:6},talents:{nodes:{N0:1,C0:1}},loadout:['hangar','pointDefense','storage']}));
+beginRun();state.activeContract=routeEvents.CONTRACTS[2];beginRoute(routeEvents.ROUTE_EVENTS[2]);`);
   const result = run(`JSON.stringify((()=>{
     const upgrades=['blades','missile','incendiary','chain','piercing','rapid','ricochet','wingman'];
     let frames=0, peakEnemies=0, peakShots=0, upgradeCount=0;
     const checkpoints=[];
     while(state.mode!=='result'&&frames++<20000){
       if(state.mode==='levelup'){
+        // v0.10 breakthroughs are no longer gated on the removed per-drone
+        // research: the pilot takes the first Lv.10 option like a player.
+        if(ui.levelUpList.children[0]&&ui.levelUpList.children[0].dataset.icon){ui.levelUpList.children[0].events.click();continue;}
         const ids=ui.levelUpList.children.map(c=>c.dataset.weapon).filter(Boolean);
         const choices=experiencePool.filter(u=>ids.includes(u.id));
         const choice=choices.sort((a,b)=>(level(a.id)*3+upgrades.indexOf(a.id))-(level(b.id)*3+upgrades.indexOf(b.id)))[0];

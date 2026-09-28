@@ -4,7 +4,7 @@ import { state, level, effects, longterm, gameAudio, syncSwarm, carEnabled } fro
 import { TAU } from "../view/surface.js";
 import { cameraView, carPosition } from "./world.js";
 import { burst } from "./fx.js";
-import { nearestTarget, damageTarget, areaHit, normalStatsFor, bondStatsFor, combatTargets, ricochetBurst } from "./combat.js";
+import { nearestTarget, damageTarget, areaHit, normalStatsFor, bondStatsFor, combatTargets, ricochetBurst, isEliteTarget } from "./combat.js";
 
 function bladeRadius(n=level("blades")){return effects.weaponProfile("blades",n).range;}
 function bladePositions() {
@@ -16,9 +16,11 @@ function bladePositions() {
   });
 }
 // Bonds belong exclusively to Beichen. A volley snapshots each active skill level.
+// 火控算法 covers bond volleys too, multiplied exactly once here (需求 §17.1).
 function fireCommandVolley(target,p,bonds){
   const origin=state.drone,angle=Math.atan2(target.y-origin.y,target.x-origin.x);
   origin.angle=angle;
+  const damageMul=state.runStats?.droneDamageMul??1;
   const blue=bonds.find(b=>b.id==="blue");
   if(!blue){gameAudio?.play("shot");fireProfile(origin,p,"#8ff6ff");normalStatsFor("command").volleys++;}
   for(const bond of bonds){
@@ -26,19 +28,19 @@ function fireCommandVolley(target,p,bonds){
     bondStatsFor(bond.id,bond.level).casts++;
     if(bond.id==="red"){
       state.shots.push({...source,x:origin.x,y:origin.y,vx:Math.cos(angle)*bond.speed,vy:Math.sin(angle)*bond.speed,
-        missile:true,target,life:bond.life,damage:bond.damage,radius:bond.radius,seekRange:bond.range,turnRate:bond.turnRate,
-        burnDamage:bond.burnDamage,burnDuration:bond.duration,burnTick:bond.tick,color:"#ff6445"});
+        missile:true,target,life:bond.life,damage:bond.damage*damageMul,radius:bond.radius,seekRange:bond.range,turnRate:bond.turnRate,
+        burnDamage:bond.burnDamage*damageMul,burnDuration:bond.duration,burnTick:bond.tick,color:"#ff6445"});
     }else if(bond.id==="purple"){
       state.shots.push({...source,x:origin.x,y:origin.y,vx:Math.cos(angle)*bond.speed,vy:Math.sin(angle)*bond.speed,
-        bounce:true,life:bond.life,bounces:bond.bounces,damage:bond.damage,hitRadius:bond.hitRadius,
-        arcRadius:bond.arcRadius,arcDamage:bond.arcDamage,arcInterval:bond.arcInterval,arcClock:0,color:"#be81ff"});
+        bounce:true,life:bond.life,bounces:bond.bounces,damage:bond.damage*damageMul,hitRadius:bond.hitRadius,
+        arcRadius:bond.arcRadius,arcDamage:bond.arcDamage*damageMul,arcInterval:bond.arcInterval,arcClock:0,color:"#be81ff"});
     }else{
       const end={x:origin.x+Math.cos(angle)*bond.range,y:origin.y+Math.sin(angle)*bond.range};
       for(const enemy of combatTargets()){
         const forward=(enemy.x-origin.x)*Math.cos(angle)+(enemy.y-origin.y)*Math.sin(angle);
         if(forward<0||forward>bond.range+(enemy.r||0))continue;
         const lateral=Math.abs((enemy.x-origin.x)*Math.sin(angle)-(enemy.y-origin.y)*Math.cos(angle));
-        if(lateral<=(enemy.r||0)+bond.width/2)damageTarget(enemy,bond.damage,source);
+        if(lateral<=(enemy.r||0)+bond.width/2)damageTarget(enemy,bond.damage*damageMul,source);
       }
       gameAudio?.play("laser");
       state.weaponFx.push({kind:"bondLaser",...source,x:origin.x,y:origin.y,tx:end.x,ty:end.y,width:bond.width,life:.36,maxLife:.36});
@@ -211,42 +213,48 @@ function alignedTargetCount(origin,target,range=330,width=26){
   }
   return count;
 }
+// 列车近防 (需求 §9/§17): range/interval/damage all derive from the frozen
+// run snapshot; 拦截阵列 targets the enemy closest to the train, 重型近防
+// carries its own elite factor here (damageTarget only handles drone sources).
 function pointDefenseTick(dt){
   state.pointDefenseClock=Math.max(0,(state.pointDefenseClock||0)-dt);
-  if(!carEnabled("pointDefense")||state.pointDefenseClock>0)return;
-  const origin=carPosition(1+state.expeditionPlan.cars.indexOf("pointDefense"));
-  const target=nearestTarget(origin,92);if(!target)return;
-  const amount=damageTarget(target,.8*(longterm.hasBlueprint(state.metaProfile,"pd-array")?1.22:1),{owner:"train-point-defense"});
+  const pd=state.runStats?.pd;
+  if(!carEnabled("pointDefense")||!pd||state.pointDefenseClock>0)return;
+  const origin=pd.intercept?state.train:carPosition(1+state.expeditionPlan.cars.indexOf("pointDefense"));
+  const range=92*pd.rangeMul;
+  const target=pd.intercept
+    ?combatTargets().filter(e=>Math.hypot(e.x-state.train.x,e.y-state.train.y)<=range+ (e.r||0))
+      .sort((a,b)=>Math.hypot(a.x-state.train.x,a.y-state.train.y)-Math.hypot(b.x-state.train.x,b.y-state.train.y))[0]
+    :nearestTarget(origin,range);
+  if(!target)return;
+  const eliteFactor=isEliteTarget(target)?pd.eliteMul:1;
+  const amount=damageTarget(target,.8*pd.damageMul*eliteFactor,{owner:"train-point-defense"});
   state.trainDamage=(state.trainDamage||0)+amount;
   state.weaponFx.push({kind:"stationBeam",x:origin.x,y:origin.y,tx:target.x,ty:target.y,life:.1,maxLife:.1});
-  state.pointDefenseClock=.42;
+  state.pointDefenseClock=.42*pd.intervalMul;
 }
+// v0.10 permanent research applies the three drone multipliers exactly once
+// here (需求 §17): damage 火控算法, interval 循环控制, range 射程校准 (ranges
+// only - radii, blast areas and laser widths are out of scope per §17.3).
 function applyResearchProfile(id,profile){
-  const q={...profile},research=longterm.researchProfile(state.metaProfile,id),bonus=longterm.trainBonuses(state.metaProfile);
-  q.damage=(q.damage||0)*research.damageMultiplier*bonus.droneDamageMultiplier;
-  if(research.specialized){
-    if(research.id==="rapid")q.interval*=.92;
-    if(research.id==="missile"||research.id==="incendiary")q.radius=(q.radius||0)*1.15;
-    if(research.id==="ricochet")q.bounces=(q.bounces||0)+1;
-    if(research.id==="chain")q.targets=(q.targets||1)+1;
-    if(research.id==="piercing")q.pierce=(q.pierce||0)+1;
-    if(research.id==="scatter")q.projectileCount=(q.projectileCount||1)+1;
-    if(research.id==="blades"){q.range=(q.range||0)*1.12;q.radius=(q.radius||q.range)*1.12;}
-  }
-  if(research.id==="rapid"&&longterm.hasBlueprint(state.metaProfile,"swift-feed"))q.damage*=1.08;
-  if(research.id==="piercing"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"rail-lens"))q.pierce=(q.pierce||0)+1;
-  if(research.id==="chain"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"arc-resonator"))q.targets=(q.targets||1)+1;
-  if(research.id==="missile"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"missile-guidance"))q.radius=(q.radius||0)*1.12;
-  if(research.id==="incendiary"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"incendiary-gel"))q.radius=(q.radius||0)*1.12;
-  if(research.id==="ricochet"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"ricochet-prism"))q.bounces=(q.bounces||0)+1;
-  const path=state.breakthroughs?.[research.id];
+  const q={...profile},S=state.runStats;
+  q.damage=(q.damage||0)*(S?.droneDamageMul??1);
+  if(q.interval)q.interval*=S?.droneIntervalMul??1;
+  if(q.range)q.range*=S?.droneRangeMul??1;
+  const path=state.breakthroughs?.[id];
   if(profile.breakthrough&&path){
-    if(research.id==="missile"&&path==="cluster"){q.damage*=.90;q.cluster=true;}
-    if(research.id==="missile"&&path==="heavy"){q.damage*=1.22;q.radius=(q.radius||0)*1.18;q.interval*=1.12;}
-    if(research.id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
-    if(research.id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
+    if(id==="missile"&&path==="cluster"){q.damage*=.90;q.cluster=true;}
+    if(id==="missile"&&path==="heavy"){q.damage*=1.22;q.radius=(q.radius||0)*1.18;q.interval*=1.12;}
+    if(id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
+    if(id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
   }
-  if(research.id==="chain"&&longterm.hasBlueprint(state.metaProfile,"chain-overload"))q.damage*=1.08;
+  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21): they modify
+  // the in-run breakthrough choice, not the permanent stat stack.
+  if(longterm.hasBlueprint(state.metaProfile,"rail-lens")&&path==="focus")q.pierce=(q.pierce||0)+1;
+  if(longterm.hasBlueprint(state.metaProfile,"arc-resonator")&&id==="chain")q.targets=(q.targets||1)+1;
+  if(longterm.hasBlueprint(state.metaProfile,"missile-guidance")&&path==="heavy")q.radius=(q.radius||0)*1.12;
+  if(longterm.hasBlueprint(state.metaProfile,"incendiary-gel")&&id==="incendiary")q.radius=(q.radius||0)*1.12;
+  if(longterm.hasBlueprint(state.metaProfile,"ricochet-prism")&&id==="ricochet")q.bounces=(q.bounces||0)+1;
   q.frequency=q.interval?1/q.interval:0;
   if(profile.singleTargetDps && profile.damage && profile.interval)
     q.singleTargetDps=profile.singleTargetDps*(q.damage/profile.damage)*(profile.interval/q.interval)*((q.projectileCount||1)/(profile.projectileCount||1));

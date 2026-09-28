@@ -1,0 +1,186 @@
+/* v0.10 列车天赋与永久研究页面样式（沿用 reference-ui 主题变量与色板） */
+
+.talent-status .talent-points {
+  margin: 6px 0 0;
+  font-weight: 700;
+  color: #25383b;
+}
+.talent-status .talent-points.bad { color: #b3362d; }
+
+/* 方案槽 A/B/C */
+.talent-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.talent-preset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8efde;
+  border: 1px solid #d3c7af;
+  border-radius: 6px;
+  padding: 6px;
+}
+.talent-preset__load {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.talent-preset__load b { display: block; font-size: 13px; color: #102f3a; }
+.talent-preset__load small { color: #596b6d; }
+.talent-preset__save {
+  border: 1px solid #c9bba2;
+  background: #f1e8d7;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #3f5953;
+  padding: 2px 6px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+/* 分支切换 */
+.talent-branches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0;
+}
+.talent-branch-tab {
+  border: 1px solid #cec3ab;
+  background: #f6edda;
+  color: #3f5953;
+  border-radius: 5px;
+  padding: 7px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.35;
+}
+.talent-branch-tab b { color: #8a6b1f; font-weight: 800; }
+.talent-branch-tab small { display: block; font-size: 10px; color: #b3362d; }
+.talent-branch-tab.active {
+  background: #163f49;
+  border-color: #0e2b33;
+  color: #fff5d7;
+}
+.talent-branch-tab.active b { color: #ffd053; }
+
+/* 节点行 */
+.talent-nodes { display: flex; flex-direction: column; gap: 8px; }
+.talent-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f8efde;
+  border: 1px solid #d3c7af;
+  border-left: 3px solid #d3c7af;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.talent-node.owned { border-left-color: #e5af45; background: #fff4df; }
+.talent-node__copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.talent-node__copy b { font-size: 13px; color: #102f3a; }
+.talent-node__level { font-size: 11px; color: #8a6b1f; font-weight: 700; }
+.talent-node__copy em { font-size: 11px; color: #596b6d; font-style: normal; }
+.talent-node__controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.talent-node__controls b { min-width: 14px; text-align: center; font-size: 14px; color: #102f3a; }
+.talent-node__controls button {
+  width: 34px;
+  height: 34px;
+  border-radius: 5px;
+  border: 1px solid #b98730;
+  background: linear-gradient(#f8d277, #e5b350);
+  color: #263b3e;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.talent-node__controls button:first-child { background: #f1e8d7; border-color: #c9bba2; color: #3f5953; }
+.talent-node__controls button:disabled { opacity: .45; cursor: default; }
+
+/* 专精二选一 */
+.talent-spec {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  background: #f1e8d7;
+  border: 1px solid #c9bba2;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.talent-spec.locked .talent-spec__option { opacity: .5; }
+.talent-spec__option {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  border: 1px solid #cec3ab;
+  background: #f8efde;
+  border-radius: 5px;
+  padding: 7px 9px;
+  cursor: pointer;
+}
+.talent-spec__option b { font-size: 13px; color: #102f3a; }
+.talent-spec__option small { font-size: 11px; color: #596b6d; }
+.talent-spec__option.active {
+  border-color: #b98730;
+  background: #fff4df;
+  box-shadow: inset 0 0 0 1px #b98730;
+}
+.talent-spec__option.active b { color: #8a6b1f; }
+
+/* 底部改装摘要 */
+.talent-summary {
+  position: sticky;
+  bottom: 0;
+  margin-top: 12px;
+  background: #102f3a;
+  color: #eeeadd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2;
+}
+.talent-summary__rows { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: #c9d5d1; }
+.talent-summary__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.talent-summary__points { font-weight: 800; color: #ffd053; }
+.talent-summary__points.bad { color: #ff8d7a; }
+.talent-summary__cost { font-size: 12px; color: #c9d5d1; flex: 1; }
+.talent-summary button {
+  border-radius: 5px;
+  border: 1px solid #507897;
+  background: #1b434c;
+  color: #eeeadd;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.talent-summary button.primary-button {
+  border: 2px solid #b98730;
+  background: linear-gradient(#f8d277, #e5b350);
+  color: #263b3e;
+}
+.talent-summary button:disabled { opacity: .5; cursor: default; }
+.talent-summary__problems { color: #ff9d8a; font-size: 12px; }
+.talent-summary__notice { color: #9fd3c8; font-size: 12px; }
+
+/* 研究页分组标题与行 */
+.talent-research-head { margin: 6px 0; }
+.meta-research-row .research-effect { color: #2f6b5e; font-weight: 700; }
+.meta-research-row button.flash-short { outline: 2px solid #b3362d; }
+
+@media (max-width: 400px) {
+  .talent-branches { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .talent-branch-tab { font-size: 11px; padding: 6px 1px; }
+  .talent-presets { gap: 6px; }
+  .talent-node__controls button { width: 30px; height: 30px; }
+}

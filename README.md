@@ -21,7 +21,7 @@
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.9.0-rc.5`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.10.1`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 ## 本地运行
 
@@ -42,7 +42,7 @@ python3 -m http.server 8123     # 或 npx serve 等价
 node --test
 ```
 
-26 个测试文件全绿为改动的验收线（29 个测试 = 26 游戏 + canvas 启动/纯度 + 小游戏 bundle 冒烟）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：假 DOM 的元素集合与模块加载图都解析自真实的 index.html（`entry` 可换 canvas.html），模块图中每条具名导入都会校验目标确实导出——"测试里有、页面上没有"或反向的脱节会直接测试失败。canvas-purity 测试在完全不提供 `document` 的沙箱里跑通整条 canvas 路径，守住"共享模块不得直引 DOM"的红线。
+29 个测试文件全绿为改动的验收线（42 项 = 游戏 + 天赋/研究回归 + canvas 启动/纯度 + 小游戏 bundle 冒烟 + 12 个存档服务测试）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：假 DOM 的元素集合与模块加载图都解析自真实的 index.html（`entry` 可换 canvas.html），模块图中每条具名导入都会校验目标确实导出——"测试里有、页面上没有"或反向的脱节会直接测试失败。canvas-purity 测试在完全不提供 `document` 的沙箱里跑通整条 canvas 路径，守住"共享模块不得直引 DOM"的红线。
 
 ## src/ 结构
 
@@ -53,7 +53,7 @@ src/
               balance 数值 · motion 运动 · progression 经验/掉落 · combat-effects 武器与羁绊
               control 操控 · route-events 路线/契约 · run-record 战绩
               audio 音频 · cloud-sync 云存档核心 · cloud-config 云开关
-  meta/       longterm 长期养成存档（等级/研究/蓝图/区域）
+  meta/       longterm 长期养成存档（等级/五分支天赋/七项永久研究/方案槽/蓝图/区域/v0.9→v0.10 迁移）
   sim/        纯模拟逻辑，不触碰 DOM
               world 世界与相机 · spawn 出怪 · fx 粒子与提示 · enemies 敌人行为
               combat 目标/伤害/击杀 · weapons 武器与弹道 · docking 进站清场

@@ -506,6 +506,8 @@ function drawResultScreen(u, state, host, registerRegion) {
     for (const bond of bonds) rows.push(["r", [bond.name + " · " + bond.stage, "伤害 " + bond.damage]]);
   }
   rows.push(["r", ["车炮　" + dmg.train, ""]]);
+  rows.push(["r", ["列车近防　" + (dmg.pointDefense || "0"), ""]]);
+  rows.push(["r", ["有效维修　" + (dmg.effectiveRepair || "0"), ""]]);
   let cardH = Y(36);
   for (const [kind] of rows) cardH += kind === "r" ? Y(26) : kind === "s" ? Y(42) : Y(24);
   box(c, T.card, X(21), y, X(363), cardH, X(5));

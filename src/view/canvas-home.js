@@ -218,7 +218,7 @@ function drawBattleTab(u, host, registerRegion) {
   c.strokeStyle = HT.rail; c.lineWidth = X(1); rr(c, lx, ly, lw, lh, X(5)); c.stroke();
   paintUiIcon(c, "train", lx + X(9), ly + Y(10), X(31), X(31));
   c.strokeStyle = HT.lineSoft; c.beginPath(); c.moveTo(lx + X(52), ly + Y(7)); c.lineTo(lx + X(52), ly + lh - Y(7)); c.stroke();
-  text(c, `编组 ${host.trainLength} 节`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
+  text(c, `编组 ${host.trainLength} 节 · ${host.departureSummary || "研究：未投资"}`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
   text(c, "前往列车调整 →", lx + X(61), ly + Y(37), F(10), HT.muted, { weight: "500" });
   const carCount = Math.min(4, host.trainLength);
   let cx = lx + lw - X(9) - X(14);
@@ -282,54 +282,130 @@ function sectionHead(u, y, b, span) {
 
 function drawTrainTab(u, host, registerRegion) {
   const { c, X, Y, F, vw } = u;
-  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "修整编组，为下一次远征做好准备。");
-  let y = sectionHead(u, Y(177.8), "功能车厢", "点击调整编组");
-  // Loadout summary line.
-  const carNames = host.loadoutCars || [];
-  text(c, `当前编组 ${host.trainLength}/${host.trainSlots} 节 · ${carNames.join(" / ")}`, X(14), y + Y(9), F(11), "#586A65");
-  y += Y(31.6);
-  // Car roster cards.
-  for (const car of host.carDefs) {
-    if (!host.unlockedCars.includes(car.id)) continue;
-    const active = host.meta.loadout.includes(car.id);
-    const h = Y(78);
-    fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
-    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
-    if (active) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
-    fill(c, "#FFF9ED", X(23), y + Y(10), X(62), Y(58), X(4));
-    paintUiIcon(c, CAR_ICONS[car.id] || "train", X(26), y + Y(13), X(56), Y(52));
-    text(c, car.name + (car.fixed ? " · 固定" : ""), X(97), y + Y(19.4), F(13), HT.ink, { weight: "700" });
-    text(c, active ? "已编组" : "未编组", X(97), y + Y(33.4), F(10), HT.green, { weight: "700" });
-    text(c, car.description || "", X(97), y + Y(50.3), F(11), HT.muted);
-    if (!car.fixed) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
-    y += h + Y(8);
-  }
-  // Train level card.
-  y += Y(4);
-  fill(c, HT.card, X(14), y, X(382), Y(158.5), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(158.5), X(5)); c.stroke();
-  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · ${host.trainSlots} 节远征上限`, X(26), y + Y(12), F(13), "#25383B", { weight: "800" });
-  fill(c, HT.track, X(26), y + Y(29), X(358), Y(8), X(3));
+  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "分配天赋点、选择专精并调整编组。");
+  // Status card: level, xp bar, points, resources.
+  let y = Y(177.8);
+  fill(c, HT.card, X(14), y, X(382), Y(118), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(118), X(5)); c.stroke();
+  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(14), F(13), "#25383B", { weight: "800" });
+  fill(c, HT.track, X(26), y + Y(26), X(358), Y(8), X(3));
   const ratio = Math.min(1, host.meta.train.xp / Math.max(1, host.xpToNext));
   if (ratio > 0) {
-    rr(c, X(26), y + Y(29), X(358) * ratio, Y(8), X(3));
-    c.fillStyle = grad(c, 0, y + Y(29), 0, y + Y(37), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
+    rr(c, X(26), y + Y(26), X(358) * ratio, Y(8), X(3));
+    c.fillStyle = grad(c, 0, y + Y(26), 0, y + Y(34), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
   }
+  const summary = host.talentSummary;
+  text(c, `天赋点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(48), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
   const res = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   res.forEach(([key, label], i) => {
     const rx = X(26) + i * X(122);
-    paintUiIcon(c, key, rx, y + Y(57), X(23), X(23));
-    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(63), F(12), HT.ink);
-    text(c, label, rx + X(30), y + Y(76), F(9), HT.muted);
+    paintUiIcon(c, key, rx, y + Y(64), X(23), X(23));
+    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(70), F(12), HT.ink);
+    text(c, label, rx + X(30), y + Y(83), F(9), HT.muted);
   });
-  const byy = y + Y(98.5);
-  fill(c, grad(c, 0, byy, 0, byy + Y(48), [[0, "#274850"], [1, "#132F39"]]), X(26), byy, X(358), Y(48), X(4));
-  c.strokeStyle = "#B98730"; c.lineWidth = X(2); rr(c, X(26), byy, X(358), Y(48), X(4)); c.stroke();
-  c.strokeStyle = "rgba(246,215,139,0.33)"; c.lineWidth = X(1); rr(c, X(28), byy + Y(2), X(354), Y(44), X(3)); c.stroke();
-  text(c, host.maxedTrain ? "列车等级已满" : `强化列车 · 废料 ${host.trainUpgradeCost} + 组件 ${host.trainUpgradeComponents}`,
-    X(205), byy + Y(24), F(13), "#FFE6A0", { align: "center", weight: "800" });
-  if (!host.maxedTrain) registerRegion({ x: X(26), y: byy, w: X(358), h: Y(48), action: "trainUpgrade" });
-  y += Y(158.5) + Y(14);
+  text(c, `改装：${summary.costText}`, X(26), y + Y(103), F(10), "#586A65");
+  y += Y(118) + Y(12);
+  // Presets A/B/C.
+  y = sectionHead(u, y, "改装方案", "点按载入 · 保存当前草稿");
+  const chipW = X(120), gap = X(11);
+  for (const preset of host.presetRows) {
+    const x = X(14) + preset.index * (chipW + gap);
+    fill(c, "#F8EFDE", x, y, chipW, Y(52), X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, x, y, chipW, Y(52), X(5)); c.stroke();
+    text(c, preset.name, x + X(10), y + Y(13), F(12), HT.ink, { weight: "800" });
+    text(c, `${preset.spent} 点 · ${preset.cars} 车厢`, x + X(10), y + Y(28), F(9), HT.muted);
+    fill(c, "#EFB340", x + chipW - X(46), y + Y(34), X(38), Y(13), X(3));
+    text(c, "保存", x + chipW - X(27), y + Y(40.5), F(9), "#3B2F0F", { align: "center", weight: "800" });
+    registerRegion({ x, y, w: chipW - X(48), h: Y(52), action: { presetLoad: preset.index } });
+    registerRegion({ x: x + chipW - X(48), y: y + Y(32), w: X(48), h: Y(20), action: { presetSave: preset.index } });
+  }
+  y += Y(52) + Y(14);
+  // Cars.
+  y = sectionHead(u, y, "功能车厢", "点击调整编组");
+  text(c, `当前编组 ${host.loadoutCars.length}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
+  y += Y(28);
+  for (const car of host.carDefs) {
+    const unlocked = host.unlockedCars.includes(car.id);
+    const active = host.meta.loadout.includes(car.id);
+    const h = Y(70);
+    fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    if (active) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
+    fill(c, "#FFF9ED", X(23), y + Y(10), X(62), Y(50), X(4));
+    paintUiIcon(c, CAR_ICONS[car.id] || "train", X(26), y + Y(13), X(56), Y(44));
+    text(c, car.name, X(97), y + Y(17), F(13), HT.ink, { weight: "700" });
+    text(c, unlocked ? (active ? "已编组" : "未编组") : "天赋未解锁", X(97), y + Y(31), F(10), unlocked ? HT.green : "#B3362D", { weight: "700" });
+    text(c, car.description || "", X(97), y + Y(48), F(10), HT.muted);
+    if (unlocked) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
+    y += h + Y(7);
+  }
+  y += Y(6);
+  // Talent branches and nodes.
+  y = sectionHead(u, y, "列车天赋", "未装备车厢的分支不生效");
+  const branchW = X(72.4), bgap = X(8);
+  host.branchRows.forEach((branchRow, i) => {
+    const x = X(14) + i * (branchW + bgap);
+    fill(c, branchRow.active ? "#163F49" : "#F6EDDA", x, y, branchW, Y(40), X(5));
+    c.strokeStyle = branchRow.active ? "#0E2B33" : "#CEC3AB"; c.lineWidth = X(1); rr(c, x, y, branchW, Y(40), X(5)); c.stroke();
+    text(c, branchRow.name, x + branchW / 2, y + Y(11), F(11), branchRow.active ? "#FFF5D7" : "#3F5953", { align: "center", weight: "800" });
+    text(c, `${branchRow.spent}/${branchRow.cap}`, x + branchW / 2, y + Y(24), F(10), branchRow.active ? "#FFD053" : "#8A6B1F", { align: "center", weight: "700" });
+    if (!branchRow.equipped) text(c, "未装备", x + branchW / 2, y + Y(34), F(8), "#E8927C", { align: "center" });
+    registerRegion({ x, y, w: branchW, h: Y(40), action: { talentBranch: branchRow.id } });
+  });
+  y += Y(40) + Y(10);
+  for (const node of host.nodeRows) {
+    const h = Y(64);
+    fill(c, node.level > 0 ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    if (node.level > 0) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
+    text(c, node.name, X(26), y + Y(12), F(12), HT.ink, { weight: "750" });
+    text(c, `Lv.${node.level}/${node.levels} · ${node.cost} 点/级${node.block ? " · 🔒 " + node.block : ""}`, X(26), y + Y(27), F(9), node.block ? "#B3362D" : "#8A6B1F", { weight: "700" });
+    text(c, node.effect + (node.levels > 1 && node.level === 0 ? " / 级" : ""), X(26), y + Y(44), F(10), HT.muted);
+    const minusX = X(300), plusX = X(346), by = y + Y(15), bw = X(38), bh = Y(34);
+    fill(c, "#F1E8D7", minusX, by, bw, bh, X(4));
+    c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, minusX, by, bw, bh, X(4)); c.stroke();
+    text(c, "−", minusX + bw / 2, by + bh / 2, F(17), node.level > 0 ? "#3F5953" : "#B9B2A0", { align: "center", weight: "800" });
+    if (node.level > 0) registerRegion({ x: minusX, y: by, w: bw, h: bh, action: { talentMinus: node.id } });
+    fill(c, grad(c, 0, by, 0, by + bh, [[0, "#F8D277"], [1, "#E5B350"]]), plusX, by, bw, bh, X(4));
+    c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, plusX, by, bw, bh, X(4)); c.stroke();
+    text(c, "＋", plusX + bw / 2, by + bh / 2, F(17), node.block ? "#D8C9A4" : "#263B3E", { align: "center", weight: "800" });
+    if (!node.block) registerRegion({ x: plusX, y: by, w: bw, h: bh, action: { talentPlus: node.id } });
+    y += h + Y(7);
+  }
+  // Spec choices for the active branch.
+  if (host.specRows.length) {
+    const owned = host.specRows[0].owned;
+    const h = Y(40) + host.specRows.length * Y(52);
+    fill(c, "#F1E8D7", X(14), y, X(382), h, X(5));
+    c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    text(c, owned ? "专精 · 二选一（切换已购选项需改装费）" : "专精 · 购买专精节点后开放", X(26), y + Y(14), F(11), owned ? HT.ink : "#8A8374", { weight: "750" });
+    host.specRows.forEach((spec, i) => {
+      const sy = y + Y(28) + i * Y(52);
+      fill(c, spec.active ? "#FFF4DF" : "#F8EFDE", X(24), sy, X(362), Y(46), X(4));
+      c.strokeStyle = spec.active ? "#B98730" : "#D3C7AF"; c.lineWidth = spec.active ? X(2) : X(1);
+      rr(c, X(24), sy, X(362), Y(46), X(4)); c.stroke();
+      text(c, spec.name + (spec.active ? " · 已选" : ""), X(36), sy + Y(12), F(12), spec.active ? "#8A6B1F" : HT.ink, { weight: "800" });
+      text(c, spec.desc, X(36), sy + Y(30), F(10), HT.muted);
+      if (owned) registerRegion({ x: X(24), y: sy, w: X(362), h: Y(46), action: { talentSpec: [spec.branch, spec.id] } });
+    });
+    y += h + Y(12);
+  }
+  // Sticky-equivalent summary block with apply / reset.
+  const notice = host.talent.notice || summary.problems.join("；");
+  const sh = Y(96) + (notice ? Y(16) : 0);
+  fill(c, "#102F3A", X(14), y, X(382), sh, X(6));
+  summary.rows.forEach((line, i) => text(c, line, X(28), y + Y(14) + i * Y(16), F(10), "#C9D5D1"));
+  const resetX = X(248), applyX = X(306);
+  fill(c, "#1B434C", resetX, y + Y(58), X(50), Y(30), X(4));
+  c.strokeStyle = "#507897"; c.lineWidth = X(1); rr(c, resetX, y + Y(58), X(50), Y(30), X(4)); c.stroke();
+  text(c, "重置", resetX + X(25), y + Y(73), F(11), summary.dirty ? "#EEEADD" : "#6C8791", { align: "center", weight: "700" });
+  if (summary.dirty) registerRegion({ x: resetX, y: y + Y(58), w: X(50), h: Y(30), action: { talentReset: true } });
+  fill(c, grad(c, 0, y + Y(58), 0, y + Y(88), [[0, "#F8D277"], [1, "#E5B350"]]), applyX, y + Y(58), X(74), Y(30), X(4));
+  c.strokeStyle = "#B98730"; c.lineWidth = X(1.5); rr(c, applyX, y + Y(58), X(74), Y(30), X(4)); c.stroke();
+  text(c, "应用改装", applyX + X(37), y + Y(73), F(12), summary.canApply ? "#263B3E" : "#C7B083", { align: "center", weight: "800" });
+  if (summary.canApply) registerRegion({ x: applyX, y: y + Y(58), w: X(74), h: Y(30), action: { talentApply: true } });
+  if (notice) text(c, notice.slice(0, 44), X(28), y + sh - Y(8), F(9), notice.includes("不可用") || summary.problems.length ? "#FF9D8A" : "#9FD3C8");
+  y += sh + Y(14);
   // Secondary: back to departure.
   fill(c, "#F6EDDA", X(14), y, X(382), Y(44), X(4));
   c.strokeStyle = "#CEC3AB"; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(44), X(4)); c.stroke();
@@ -342,44 +418,53 @@ function drawTrainTab(u, host, registerRegion) {
 
 function drawResearchTab(u, host, registerRegion) {
   const { c, X, Y, F } = u;
-  pageHeading(u, "DRONE LABORATORY", "无人机研究", "这里可查看专机职责与长期研究效果。");
+  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "将远征资源投入无人机与列车的永久属性。");
   let y = Y(177.8);
-  for (const row of host.researchRows) {
-    const h = Y(67);
-    fill(c, HT.card, X(14), y, X(382), h, X(5));
-    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
-    const colors = RESEARCH_GRADIENTS[row.id] || RESEARCH_GRADIENTS.rapid;
-    fill(c, grad(c, X(22), y + Y(9.5), X(68), y + Y(57.5), [[0, colors[0]], [1, colors[1]]]), X(22), y + Y(9.5), X(46), Y(48), X(4));
-    c.save();
-    rr(c, X(22), y + Y(9.5), X(46), Y(48), X(4)); c.clip();
-    paintUiIcon(c, row.id, X(23.5), y + Y(12), X(43), X(43));
-    c.restore();
-    text(c, row.name, X(77), y + Y(10.2), F(13), HT.ink, { weight: "700" });
-    text(c, `Lv.${row.level}/3`, X(77), y + Y(28.2), F(9), "#586A6C", { weight: "700" });
-    text(c, row.desc, X(77), y + Y(42.6), F(10), "#586A6C", { weight: "500" });
-    // Study button: golden chip when affordable, parchment when not.
-    const bxx = X(340), byy = y + Y(11.5), bw = X(48), bh = Y(44);
-    if (row.maxed) {
-      fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
-      c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
-      text(c, "已完成", bxx + bw / 2, byy + bh / 2, F(11), "#68716C", { align: "center", weight: "800" });
-    } else {
-      fill(c, grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]), bxx, byy, bw, bh, X(4));
-      c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
-      paintUiIcon(c, "data", bxx + X(7), byy + Y(14), X(16), X(16));
-      text(c, String(row.cost), bxx + X(27), byy + Y(17), F(12), "#263B3E", { weight: "700" });
-      text(c, "研究", bxx + bw / 2 + X(2), byy + Y(34), F(8), "#374F51");
-      if (host.meta.resources.data >= row.cost) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+  const groups = [["drone", "无人机战斗 · 主材料研究数据"], ["train", "列车工程 · 主材料技术组件"]];
+  for (const [groupId, groupLabel] of groups) {
+    y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
+    for (const row of host.researchRows.filter(row => row.group === groupId)) {
+      const h = Y(84);
+      fill(c, HT.card, X(14), y, X(382), h, X(5));
+      c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+      const colors = groupId === "drone" ? ["#003b78", "#057cc7"] : ["#5c3a12", "#b9822c"];
+      fill(c, grad(c, X(22), y + Y(10), X(68), y + Y(56), [[0, colors[0]], [1, colors[1]]]), X(22), y + Y(10), X(46), Y(46), X(4));
+      c.save();
+      rr(c, X(22), y + Y(10), X(46), Y(46), X(4)); c.clip();
+      paintUiIcon(c, groupId === "drone" ? "rapid" : "pointDefense", X(23.5), y + Y(12), X(43), X(43));
+      c.restore();
+      text(c, row.name, X(77), y + Y(11), F(13), HT.ink, { weight: "700" });
+      text(c, `Lv.${row.level}/${row.max} · ${row.scope}`, X(77), y + Y(26), F(9), "#586B6C", { weight: "700" });
+      text(c, row.desc, X(77), y + Y(39), F(9.5), "#586B6C");
+      text(c, `累计 ${row.effect}${row.maxed ? "" : ` → 下一级 ${row.nextEffect}`}`, X(77), y + Y(53), F(10), "#2F6B5E", { weight: "700" });
+      if (!row.maxed) {
+        const costBits = [`废${row.cost.scrap}`, groupId === "drone" ? `数${row.cost.data}` : `组${row.cost.components}`];
+        if (row.cost.attack && row.cost.components > 0) costBits.push(`组${row.cost.components}`);
+        if (!row.cost.attack && row.cost.data > 0) costBits.push(`数${row.cost.data}`);
+        text(c, costBits.join(" · "), X(77), y + Y(67), F(9), "#8A6B1F", { weight: "700" });
+      }
+      // Upgrade chip: golden when affordable, parchment when maxed or short.
+      const bxx = X(340), byy = y + Y(24), bw = X(48), bh = Y(40);
+      if (row.maxed) {
+        fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
+        c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
+        text(c, "已满", bxx + bw / 2, byy + bh / 2, F(11), "#68716C", { align: "center", weight: "800" });
+      } else {
+        fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
+        c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
+        text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
+        if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+      }
+      y += h + Y(7);
     }
-    y += h + Y(7);
   }
-  // Weapon parameter guide (collapsed details).
-  y += Y(5);
-  fill(c, HT.card, X(14), y, X(382), Y(46), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(46), X(5)); c.stroke();
-  text(c, "武器参数与突破说明", X(25), y + Y(23), F(11), HT.ink, { weight: "750" });
-  text(c, "›", X(371), y + Y(23), F(13), HT.muted, { align: "right" });
-  y += Y(46) + Y(14);
+  // Rules note.
+  fill(c, HT.card, X(14), y, X(382), Y(58), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(58), X(5)); c.stroke();
+  text(c, "研究规则说明", X(25), y + Y(14), F(11), HT.ink, { weight: "750" });
+  text(c, "Lv1-10 基础 / Lv11-20 进阶 / Lv21-30 长期，单级收益分段递减。", X(25), y + Y(30), F(9.5), HT.muted);
+  text(c, "无等待与限额，数据足够即可升级；装甲材料按乘法叠算。", X(25), y + Y(44), F(9.5), HT.muted);
+  y += Y(58) + Y(12);
   // Bond color guide.
   fill(c, "#F1E8D7", X(14), y, X(382), Y(173.6), X(4));
   c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(173.6), X(4)); c.stroke();
@@ -404,7 +489,7 @@ function drawResearchTab(u, host, registerRegion) {
   fill(c, "#EFB340", X(31), y + Y(12), X(18), Y(18), X(4));
   text(c, "›", X(31) + X(9), y + Y(21), F(13), "#FFF8DC", { align: "center", weight: "700" });
   text(c, "已回收蓝图", X(55), y + Y(22), F(15), "#25383B", { weight: "850" });
-  text(c, "永久生效", X(396), y + Y(22), F(10), HT.muted, { align: "right" });
+  text(c, "收藏记录", X(396), y + Y(22), F(10), HT.muted, { align: "right" });
   text(c, host.blueprintText || "暂无蓝图 · 击破精英或区域 Boss 后回收，到站锁定。", X(31), y + Y(47), F(11), "#3F5953");
   return y + Y(73.8) + Y(23);
 }

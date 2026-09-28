@@ -500,7 +500,7 @@ function drawBattleTab(u, host, registerRegion) {
   c.strokeStyle = HT.rail; c.lineWidth = X(1); rr(c, lx, ly, lw, lh, X(5)); c.stroke();
   paintUiIcon(c, "train", lx + X(9), ly + Y(10), X(31), X(31));
   c.strokeStyle = HT.lineSoft; c.beginPath(); c.moveTo(lx + X(52), ly + Y(7)); c.lineTo(lx + X(52), ly + lh - Y(7)); c.stroke();
-  text(c, `编组 ${host.trainLength} 节`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
+  text(c, `编组 ${host.trainLength} 节 · ${host.departureSummary || "研究：未投资"}`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
   text(c, "前往列车调整 →", lx + X(61), ly + Y(37), F(10), HT.muted, { weight: "500" });
   const carCount = Math.min(4, host.trainLength);
   let cx = lx + lw - X(9) - X(14);
@@ -564,54 +564,130 @@ function sectionHead(u, y, b, span) {
 
 function drawTrainTab(u, host, registerRegion) {
   const { c, X, Y, F, vw } = u;
-  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "修整编组，为下一次远征做好准备。");
-  let y = sectionHead(u, Y(177.8), "功能车厢", "点击调整编组");
-  // Loadout summary line.
-  const carNames = host.loadoutCars || [];
-  text(c, `当前编组 ${host.trainLength}/${host.trainSlots} 节 · ${carNames.join(" / ")}`, X(14), y + Y(9), F(11), "#586A65");
-  y += Y(31.6);
-  // Car roster cards.
-  for (const car of host.carDefs) {
-    if (!host.unlockedCars.includes(car.id)) continue;
-    const active = host.meta.loadout.includes(car.id);
-    const h = Y(78);
-    fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
-    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
-    if (active) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
-    fill(c, "#FFF9ED", X(23), y + Y(10), X(62), Y(58), X(4));
-    paintUiIcon(c, CAR_ICONS[car.id] || "train", X(26), y + Y(13), X(56), Y(52));
-    text(c, car.name + (car.fixed ? " · 固定" : ""), X(97), y + Y(19.4), F(13), HT.ink, { weight: "700" });
-    text(c, active ? "已编组" : "未编组", X(97), y + Y(33.4), F(10), HT.green, { weight: "700" });
-    text(c, car.description || "", X(97), y + Y(50.3), F(11), HT.muted);
-    if (!car.fixed) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
-    y += h + Y(8);
-  }
-  // Train level card.
-  y += Y(4);
-  fill(c, HT.card, X(14), y, X(382), Y(158.5), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(158.5), X(5)); c.stroke();
-  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · ${host.trainSlots} 节远征上限`, X(26), y + Y(12), F(13), "#25383B", { weight: "800" });
-  fill(c, HT.track, X(26), y + Y(29), X(358), Y(8), X(3));
+  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "分配天赋点、选择专精并调整编组。");
+  // Status card: level, xp bar, points, resources.
+  let y = Y(177.8);
+  fill(c, HT.card, X(14), y, X(382), Y(118), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(118), X(5)); c.stroke();
+  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(14), F(13), "#25383B", { weight: "800" });
+  fill(c, HT.track, X(26), y + Y(26), X(358), Y(8), X(3));
   const ratio = Math.min(1, host.meta.train.xp / Math.max(1, host.xpToNext));
   if (ratio > 0) {
-    rr(c, X(26), y + Y(29), X(358) * ratio, Y(8), X(3));
-    c.fillStyle = grad(c, 0, y + Y(29), 0, y + Y(37), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
+    rr(c, X(26), y + Y(26), X(358) * ratio, Y(8), X(3));
+    c.fillStyle = grad(c, 0, y + Y(26), 0, y + Y(34), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
   }
+  const summary = host.talentSummary;
+  text(c, `天赋点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(48), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
   const res = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   res.forEach(([key, label], i) => {
     const rx = X(26) + i * X(122);
-    paintUiIcon(c, key, rx, y + Y(57), X(23), X(23));
-    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(63), F(12), HT.ink);
-    text(c, label, rx + X(30), y + Y(76), F(9), HT.muted);
+    paintUiIcon(c, key, rx, y + Y(64), X(23), X(23));
+    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(70), F(12), HT.ink);
+    text(c, label, rx + X(30), y + Y(83), F(9), HT.muted);
   });
-  const byy = y + Y(98.5);
-  fill(c, grad(c, 0, byy, 0, byy + Y(48), [[0, "#274850"], [1, "#132F39"]]), X(26), byy, X(358), Y(48), X(4));
-  c.strokeStyle = "#B98730"; c.lineWidth = X(2); rr(c, X(26), byy, X(358), Y(48), X(4)); c.stroke();
-  c.strokeStyle = "rgba(246,215,139,0.33)"; c.lineWidth = X(1); rr(c, X(28), byy + Y(2), X(354), Y(44), X(3)); c.stroke();
-  text(c, host.maxedTrain ? "列车等级已满" : `强化列车 · 废料 ${host.trainUpgradeCost} + 组件 ${host.trainUpgradeComponents}`,
-    X(205), byy + Y(24), F(13), "#FFE6A0", { align: "center", weight: "800" });
-  if (!host.maxedTrain) registerRegion({ x: X(26), y: byy, w: X(358), h: Y(48), action: "trainUpgrade" });
-  y += Y(158.5) + Y(14);
+  text(c, `改装：${summary.costText}`, X(26), y + Y(103), F(10), "#586A65");
+  y += Y(118) + Y(12);
+  // Presets A/B/C.
+  y = sectionHead(u, y, "改装方案", "点按载入 · 保存当前草稿");
+  const chipW = X(120), gap = X(11);
+  for (const preset of host.presetRows) {
+    const x = X(14) + preset.index * (chipW + gap);
+    fill(c, "#F8EFDE", x, y, chipW, Y(52), X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, x, y, chipW, Y(52), X(5)); c.stroke();
+    text(c, preset.name, x + X(10), y + Y(13), F(12), HT.ink, { weight: "800" });
+    text(c, `${preset.spent} 点 · ${preset.cars} 车厢`, x + X(10), y + Y(28), F(9), HT.muted);
+    fill(c, "#EFB340", x + chipW - X(46), y + Y(34), X(38), Y(13), X(3));
+    text(c, "保存", x + chipW - X(27), y + Y(40.5), F(9), "#3B2F0F", { align: "center", weight: "800" });
+    registerRegion({ x, y, w: chipW - X(48), h: Y(52), action: { presetLoad: preset.index } });
+    registerRegion({ x: x + chipW - X(48), y: y + Y(32), w: X(48), h: Y(20), action: { presetSave: preset.index } });
+  }
+  y += Y(52) + Y(14);
+  // Cars.
+  y = sectionHead(u, y, "功能车厢", "点击调整编组");
+  text(c, `当前编组 ${host.loadoutCars.length}/${host.carSlots} 节功能车厢`, X(14), y + Y(9), F(11), "#586A65");
+  y += Y(28);
+  for (const car of host.carDefs) {
+    const unlocked = host.unlockedCars.includes(car.id);
+    const active = host.meta.loadout.includes(car.id);
+    const h = Y(70);
+    fill(c, active ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    if (active) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
+    fill(c, "#FFF9ED", X(23), y + Y(10), X(62), Y(50), X(4));
+    paintUiIcon(c, CAR_ICONS[car.id] || "train", X(26), y + Y(13), X(56), Y(44));
+    text(c, car.name, X(97), y + Y(17), F(13), HT.ink, { weight: "700" });
+    text(c, unlocked ? (active ? "已编组" : "未编组") : "天赋未解锁", X(97), y + Y(31), F(10), unlocked ? HT.green : "#B3362D", { weight: "700" });
+    text(c, car.description || "", X(97), y + Y(48), F(10), HT.muted);
+    if (unlocked) registerRegion({ x: X(14), y, w: X(382), h, action: { toggleCar: car.id } });
+    y += h + Y(7);
+  }
+  y += Y(6);
+  // Talent branches and nodes.
+  y = sectionHead(u, y, "列车天赋", "未装备车厢的分支不生效");
+  const branchW = X(72.4), bgap = X(8);
+  host.branchRows.forEach((branchRow, i) => {
+    const x = X(14) + i * (branchW + bgap);
+    fill(c, branchRow.active ? "#163F49" : "#F6EDDA", x, y, branchW, Y(40), X(5));
+    c.strokeStyle = branchRow.active ? "#0E2B33" : "#CEC3AB"; c.lineWidth = X(1); rr(c, x, y, branchW, Y(40), X(5)); c.stroke();
+    text(c, branchRow.name, x + branchW / 2, y + Y(11), F(11), branchRow.active ? "#FFF5D7" : "#3F5953", { align: "center", weight: "800" });
+    text(c, `${branchRow.spent}/${branchRow.cap}`, x + branchW / 2, y + Y(24), F(10), branchRow.active ? "#FFD053" : "#8A6B1F", { align: "center", weight: "700" });
+    if (!branchRow.equipped) text(c, "未装备", x + branchW / 2, y + Y(34), F(8), "#E8927C", { align: "center" });
+    registerRegion({ x, y, w: branchW, h: Y(40), action: { talentBranch: branchRow.id } });
+  });
+  y += Y(40) + Y(10);
+  for (const node of host.nodeRows) {
+    const h = Y(64);
+    fill(c, node.level > 0 ? "#FFF4DF" : HT.card, X(14), y, X(382), h, X(5));
+    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    if (node.level > 0) { fill(c, "#E5AF45", X(14), y + Y(6), X(3), h - Y(12), X(1)); }
+    text(c, node.name, X(26), y + Y(12), F(12), HT.ink, { weight: "750" });
+    text(c, `Lv.${node.level}/${node.levels} · ${node.cost} 点/级${node.block ? " · 🔒 " + node.block : ""}`, X(26), y + Y(27), F(9), node.block ? "#B3362D" : "#8A6B1F", { weight: "700" });
+    text(c, node.effect + (node.levels > 1 && node.level === 0 ? " / 级" : ""), X(26), y + Y(44), F(10), HT.muted);
+    const minusX = X(300), plusX = X(346), by = y + Y(15), bw = X(38), bh = Y(34);
+    fill(c, "#F1E8D7", minusX, by, bw, bh, X(4));
+    c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, minusX, by, bw, bh, X(4)); c.stroke();
+    text(c, "−", minusX + bw / 2, by + bh / 2, F(17), node.level > 0 ? "#3F5953" : "#B9B2A0", { align: "center", weight: "800" });
+    if (node.level > 0) registerRegion({ x: minusX, y: by, w: bw, h: bh, action: { talentMinus: node.id } });
+    fill(c, grad(c, 0, by, 0, by + bh, [[0, "#F8D277"], [1, "#E5B350"]]), plusX, by, bw, bh, X(4));
+    c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, plusX, by, bw, bh, X(4)); c.stroke();
+    text(c, "＋", plusX + bw / 2, by + bh / 2, F(17), node.block ? "#D8C9A4" : "#263B3E", { align: "center", weight: "800" });
+    if (!node.block) registerRegion({ x: plusX, y: by, w: bw, h: bh, action: { talentPlus: node.id } });
+    y += h + Y(7);
+  }
+  // Spec choices for the active branch.
+  if (host.specRows.length) {
+    const owned = host.specRows[0].owned;
+    const h = Y(40) + host.specRows.length * Y(52);
+    fill(c, "#F1E8D7", X(14), y, X(382), h, X(5));
+    c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+    text(c, owned ? "专精 · 二选一（切换已购选项需改装费）" : "专精 · 购买专精节点后开放", X(26), y + Y(14), F(11), owned ? HT.ink : "#8A8374", { weight: "750" });
+    host.specRows.forEach((spec, i) => {
+      const sy = y + Y(28) + i * Y(52);
+      fill(c, spec.active ? "#FFF4DF" : "#F8EFDE", X(24), sy, X(362), Y(46), X(4));
+      c.strokeStyle = spec.active ? "#B98730" : "#D3C7AF"; c.lineWidth = spec.active ? X(2) : X(1);
+      rr(c, X(24), sy, X(362), Y(46), X(4)); c.stroke();
+      text(c, spec.name + (spec.active ? " · 已选" : ""), X(36), sy + Y(12), F(12), spec.active ? "#8A6B1F" : HT.ink, { weight: "800" });
+      text(c, spec.desc, X(36), sy + Y(30), F(10), HT.muted);
+      if (owned) registerRegion({ x: X(24), y: sy, w: X(362), h: Y(46), action: { talentSpec: [spec.branch, spec.id] } });
+    });
+    y += h + Y(12);
+  }
+  // Sticky-equivalent summary block with apply / reset.
+  const notice = host.talent.notice || summary.problems.join("；");
+  const sh = Y(96) + (notice ? Y(16) : 0);
+  fill(c, "#102F3A", X(14), y, X(382), sh, X(6));
+  summary.rows.forEach((line, i) => text(c, line, X(28), y + Y(14) + i * Y(16), F(10), "#C9D5D1"));
+  const resetX = X(248), applyX = X(306);
+  fill(c, "#1B434C", resetX, y + Y(58), X(50), Y(30), X(4));
+  c.strokeStyle = "#507897"; c.lineWidth = X(1); rr(c, resetX, y + Y(58), X(50), Y(30), X(4)); c.stroke();
+  text(c, "重置", resetX + X(25), y + Y(73), F(11), summary.dirty ? "#EEEADD" : "#6C8791", { align: "center", weight: "700" });
+  if (summary.dirty) registerRegion({ x: resetX, y: y + Y(58), w: X(50), h: Y(30), action: { talentReset: true } });
+  fill(c, grad(c, 0, y + Y(58), 0, y + Y(88), [[0, "#F8D277"], [1, "#E5B350"]]), applyX, y + Y(58), X(74), Y(30), X(4));
+  c.strokeStyle = "#B98730"; c.lineWidth = X(1.5); rr(c, applyX, y + Y(58), X(74), Y(30), X(4)); c.stroke();
+  text(c, "应用改装", applyX + X(37), y + Y(73), F(12), summary.canApply ? "#263B3E" : "#C7B083", { align: "center", weight: "800" });
+  if (summary.canApply) registerRegion({ x: applyX, y: y + Y(58), w: X(74), h: Y(30), action: { talentApply: true } });
+  if (notice) text(c, notice.slice(0, 44), X(28), y + sh - Y(8), F(9), notice.includes("不可用") || summary.problems.length ? "#FF9D8A" : "#9FD3C8");
+  y += sh + Y(14);
   // Secondary: back to departure.
   fill(c, "#F6EDDA", X(14), y, X(382), Y(44), X(4));
   c.strokeStyle = "#CEC3AB"; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(44), X(4)); c.stroke();
@@ -624,44 +700,53 @@ function drawTrainTab(u, host, registerRegion) {
 
 function drawResearchTab(u, host, registerRegion) {
   const { c, X, Y, F } = u;
-  pageHeading(u, "DRONE LABORATORY", "无人机研究", "这里可查看专机职责与长期研究效果。");
+  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "将远征资源投入无人机与列车的永久属性。");
   let y = Y(177.8);
-  for (const row of host.researchRows) {
-    const h = Y(67);
-    fill(c, HT.card, X(14), y, X(382), h, X(5));
-    c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
-    const colors = RESEARCH_GRADIENTS[row.id] || RESEARCH_GRADIENTS.rapid;
-    fill(c, grad(c, X(22), y + Y(9.5), X(68), y + Y(57.5), [[0, colors[0]], [1, colors[1]]]), X(22), y + Y(9.5), X(46), Y(48), X(4));
-    c.save();
-    rr(c, X(22), y + Y(9.5), X(46), Y(48), X(4)); c.clip();
-    paintUiIcon(c, row.id, X(23.5), y + Y(12), X(43), X(43));
-    c.restore();
-    text(c, row.name, X(77), y + Y(10.2), F(13), HT.ink, { weight: "700" });
-    text(c, `Lv.${row.level}/3`, X(77), y + Y(28.2), F(9), "#586A6C", { weight: "700" });
-    text(c, row.desc, X(77), y + Y(42.6), F(10), "#586A6C", { weight: "500" });
-    // Study button: golden chip when affordable, parchment when not.
-    const bxx = X(340), byy = y + Y(11.5), bw = X(48), bh = Y(44);
-    if (row.maxed) {
-      fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
-      c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
-      text(c, "已完成", bxx + bw / 2, byy + bh / 2, F(11), "#68716C", { align: "center", weight: "800" });
-    } else {
-      fill(c, grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]), bxx, byy, bw, bh, X(4));
-      c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
-      paintUiIcon(c, "data", bxx + X(7), byy + Y(14), X(16), X(16));
-      text(c, String(row.cost), bxx + X(27), byy + Y(17), F(12), "#263B3E", { weight: "700" });
-      text(c, "研究", bxx + bw / 2 + X(2), byy + Y(34), F(8), "#374F51");
-      if (host.meta.resources.data >= row.cost) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+  const groups = [["drone", "无人机战斗 · 主材料研究数据"], ["train", "列车工程 · 主材料技术组件"]];
+  for (const [groupId, groupLabel] of groups) {
+    y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
+    for (const row of host.researchRows.filter(row => row.group === groupId)) {
+      const h = Y(84);
+      fill(c, HT.card, X(14), y, X(382), h, X(5));
+      c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
+      const colors = groupId === "drone" ? ["#003b78", "#057cc7"] : ["#5c3a12", "#b9822c"];
+      fill(c, grad(c, X(22), y + Y(10), X(68), y + Y(56), [[0, colors[0]], [1, colors[1]]]), X(22), y + Y(10), X(46), Y(46), X(4));
+      c.save();
+      rr(c, X(22), y + Y(10), X(46), Y(46), X(4)); c.clip();
+      paintUiIcon(c, groupId === "drone" ? "rapid" : "pointDefense", X(23.5), y + Y(12), X(43), X(43));
+      c.restore();
+      text(c, row.name, X(77), y + Y(11), F(13), HT.ink, { weight: "700" });
+      text(c, `Lv.${row.level}/${row.max} · ${row.scope}`, X(77), y + Y(26), F(9), "#586B6C", { weight: "700" });
+      text(c, row.desc, X(77), y + Y(39), F(9.5), "#586B6C");
+      text(c, `累计 ${row.effect}${row.maxed ? "" : ` → 下一级 ${row.nextEffect}`}`, X(77), y + Y(53), F(10), "#2F6B5E", { weight: "700" });
+      if (!row.maxed) {
+        const costBits = [`废${row.cost.scrap}`, groupId === "drone" ? `数${row.cost.data}` : `组${row.cost.components}`];
+        if (row.cost.attack && row.cost.components > 0) costBits.push(`组${row.cost.components}`);
+        if (!row.cost.attack && row.cost.data > 0) costBits.push(`数${row.cost.data}`);
+        text(c, costBits.join(" · "), X(77), y + Y(67), F(9), "#8A6B1F", { weight: "700" });
+      }
+      // Upgrade chip: golden when affordable, parchment when maxed or short.
+      const bxx = X(340), byy = y + Y(24), bw = X(48), bh = Y(40);
+      if (row.maxed) {
+        fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
+        c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
+        text(c, "已满", bxx + bw / 2, byy + bh / 2, F(11), "#68716C", { align: "center", weight: "800" });
+      } else {
+        fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
+        c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
+        text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
+        if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+      }
+      y += h + Y(7);
     }
-    y += h + Y(7);
   }
-  // Weapon parameter guide (collapsed details).
-  y += Y(5);
-  fill(c, HT.card, X(14), y, X(382), Y(46), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(46), X(5)); c.stroke();
-  text(c, "武器参数与突破说明", X(25), y + Y(23), F(11), HT.ink, { weight: "750" });
-  text(c, "›", X(371), y + Y(23), F(13), HT.muted, { align: "right" });
-  y += Y(46) + Y(14);
+  // Rules note.
+  fill(c, HT.card, X(14), y, X(382), Y(58), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(58), X(5)); c.stroke();
+  text(c, "研究规则说明", X(25), y + Y(14), F(11), HT.ink, { weight: "750" });
+  text(c, "Lv1-10 基础 / Lv11-20 进阶 / Lv21-30 长期，单级收益分段递减。", X(25), y + Y(30), F(9.5), HT.muted);
+  text(c, "无等待与限额，数据足够即可升级；装甲材料按乘法叠算。", X(25), y + Y(44), F(9.5), HT.muted);
+  y += Y(58) + Y(12);
   // Bond color guide.
   fill(c, "#F1E8D7", X(14), y, X(382), Y(173.6), X(4));
   c.strokeStyle = "#C9BBA2"; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(173.6), X(4)); c.stroke();
@@ -686,7 +771,7 @@ function drawResearchTab(u, host, registerRegion) {
   fill(c, "#EFB340", X(31), y + Y(12), X(18), Y(18), X(4));
   text(c, "›", X(31) + X(9), y + Y(21), F(13), "#FFF8DC", { align: "center", weight: "700" });
   text(c, "已回收蓝图", X(55), y + Y(22), F(15), "#25383B", { weight: "850" });
-  text(c, "永久生效", X(396), y + Y(22), F(10), HT.muted, { align: "right" });
+  text(c, "收藏记录", X(396), y + Y(22), F(10), HT.muted, { align: "right" });
   text(c, host.blueprintText || "暂无蓝图 · 击破精英或区域 Boss 后回收，到站锁定。", X(31), y + Y(47), F(11), "#3F5953");
   return y + Y(73.8) + Y(23);
 }
@@ -1630,6 +1715,7 @@ if (typeof window !== "undefined") window.EndlessRailsRunRecord = runRecordApi;
 (() => {
 
 const STORAGE_KEY = "endless-rails-v09-meta";
+const BACKUP_KEY = "endless-rails-v09-meta-backup-v1";
 let qaStorage;
 // Regression runs use disposable memory storage, without touching player progress.
 function gameStorage(host) {
@@ -1643,15 +1729,17 @@ function gameStorage(host) {
     return {getItem:key=>(host?.EndlessRailsCloudStorage||raw).getItem(key),setItem:(key,value)=>(host?.EndlessRailsCloudStorage||raw).setItem(key,value)}; } catch { return null; }
 }
 const MAX_TRAIN_LEVEL = 30;
-const MAX_RESEARCH_LEVEL = 3;
+const MAX_RESEARCH_LEVEL = 30;
+const SAVE_VERSION = 2;
 
 const CAR_DEFS = Object.freeze([
   { id: "hangar", name: "无人机机库", icon: "◇", fixed: true, description: "远征核心车厢；管理无人机与长期研究。" },
   { id: "pointDefense", name: "近防车厢", icon: "⌁", description: "自动拦截贴近列车的目标，提供最后一道防线。" },
   { id: "storage", name: "仓储车厢", icon: "▣", description: "远征失败时额外保留风险资源。" },
-  { id: "radar", name: "雷达车厢", icon: "◎", description: "提前显示路线威胁、Elite 与潜在收益信息。" },
+  { id: "radar", name: "雷达车厢", icon: "◎", description: "扩大拾取半径，并提高研究数据结算收益。" },
   { id: "repair", name: "维修车厢", icon: "+", description: "每次安全停靠时提供额外维修。" },
 ]);
+const CAR_UNLOCK_NODE = Object.freeze({ pointDefense: "N0", repair: "R0", radar: "D0", storage: "C0" });
 
 const REGIONS = Object.freeze([
   { id: "wasteland", name: "起始荒原", statusText: "低危铁路", description: "开阔荒原，适合验证列车与无人机编组。", enemyHp: .94, density: .92, elite: .85, reward: 1, next: ["ruins"], blueprintPool: ["pd-array", "swift-feed", "field-repair"] },
@@ -1660,49 +1748,425 @@ const REGIONS = Object.freeze([
   { id: "infection", name: "感染区", statusText: "高危巢域", description: "高密度尸潮与变异体，研究数据收益最高。", enemyHp: 1.22, density: 1.30, elite: 1.42, reward: 1.52, next: [], blueprintPool: ["bio-scan", "ricochet-prism", "chain-overload"] },
 ]);
 
+// v0.10.0 §21: stat-overlapping blueprints are retired into collection entries
+// with a one-time research-resource compensation. Intel and Lv.10 breakthrough
+// enhancers stay active. Compensation is a first-pass baseline, see worklog #12.
+const BLUEPRINT_COMPENSATION = Object.freeze({ scrap: 90, components: 6, data: 30 });
 const BLUEPRINTS = Object.freeze([
-  { id: "pd-array", name: "近防阵列校准", kind: "car", description: "近防车厢伤害小幅提高。" },
-  { id: "swift-feed", name: "雨燕高速供弹", kind: "drone", description: "雨燕长期研究伤害额外提高。" },
-  { id: "field-repair", name: "荒原抢修规程", kind: "car", description: "维修车厢到站修复提高。" },
+  { id: "pd-array", name: "近防阵列校准", kind: "car", description: "已并入近防天赋研究，转化为一次性研究资源补偿。", retired: true },
+  { id: "swift-feed", name: "雨燕高速供弹", kind: "drone", description: "已并入火控算法研究，转化为一次性研究资源补偿。", retired: true },
+  { id: "field-repair", name: "荒原抢修规程", kind: "car", description: "已并入维修车厢天赋，转化为一次性研究资源补偿。", retired: true },
   { id: "radar-pulse", name: "宽域雷达脉冲", kind: "car", description: "雷达可显示更完整的路线风险提示。" },
-  { id: "rail-lens", name: "白虹聚束透镜", kind: "drone", description: "白虹专精后额外获得贯穿。" },
-  { id: "arc-resonator", name: "惊蛰共振器", kind: "drone", description: "惊蛰专精后额外增加一个连锁目标。" },
-  { id: "cargo-lock", name: "抗冲击货柜锁", kind: "car", description: "仓储车进一步降低失败损失。" },
-  { id: "missile-guidance", name: "天隼终端制导", kind: "drone", description: "天隼专精后爆炸范围提高。" },
-  { id: "incendiary-gel", name: "烛龙凝胶燃料", kind: "drone", description: "烛龙专精后燃烧区域扩大。" },
-  { id: "bio-scan", name: "感染体谱系扫描", kind: "research", description: "Elite 研究数据产出提高。" },
-  { id: "ricochet-prism", name: "回响折跃棱镜", kind: "drone", description: "回响专精后增加一次弹跳。" },
-  { id: "chain-overload", name: "电弧过载协议", kind: "drone", description: "惊蛰在密集目标间输出进一步提高。" },
+  { id: "rail-lens", name: "白虹聚束透镜", kind: "drone", description: "白虹 Lv.10 聚束磁轨额外 +1 贯穿。" },
+  { id: "arc-resonator", name: "惊蛰共振器", kind: "drone", description: "惊蛰 Lv.10 后连锁目标额外 +1。" },
+  { id: "cargo-lock", name: "抗冲击货柜锁", kind: "car", description: "已并入仓储车厢天赋，转化为一次性研究资源补偿。", retired: true },
+  { id: "missile-guidance", name: "天隼终端制导", kind: "drone", description: "天隼 Lv.10 后爆炸范围额外提高。" },
+  { id: "incendiary-gel", name: "烛龙凝胶燃料", kind: "drone", description: "烛龙 Lv.10 后燃烧区域额外扩大。" },
+  { id: "bio-scan", name: "感染体谱系扫描", kind: "research", description: "已并入雷达车厢天赋，转化为一次性研究资源补偿。", retired: true },
+  { id: "ricochet-prism", name: "回响折跃棱镜", kind: "drone", description: "回响 Lv.10 后额外 +1 次弹跳。" },
+  { id: "chain-overload", name: "电弧过载协议", kind: "drone", description: "已并入火控算法研究，转化为一次性研究资源补偿。", retired: true },
 ]);
 
-const RESEARCH_IDS = Object.freeze(["rapid", "missile", "incendiary", "ricochet", "chain", "piercing", "scatter", "blades"]);
-const RESEARCH_NAMES = Object.freeze({ rapid: "雨燕", missile: "天隼", incendiary: "烛龙", ricochet: "回响", chain: "惊蛰", piercing: "白虹", scatter: "繁星", blades: "弦月" });
+// ---------------------------------------------------------------------------
+// v0.10 talent tree (需求 §7-§12). Node cost is per level; branch caps count
+// every purchased level of every node in the branch, including the spec node.
+// ---------------------------------------------------------------------------
+
+const TALENT_BRANCHES = Object.freeze([
+  { id: "hull", name: "车体", cap: 24, car: null },
+  { id: "pointDefense", name: "近防", cap: 24, car: "pointDefense" },
+  { id: "repair", name: "维修", cap: 22, car: "repair" },
+  { id: "radar", name: "雷达", cap: 20, car: "radar" },
+  { id: "storage", name: "仓储", cap: 20, car: "storage" },
+]);
+
+const TALENT_NODES = Object.freeze([
+  { id: "H1", branch: "hull", name: "车架强化", levels: 3, cost: 1, trainLevel: 1, prereq: null, effect: lv => `最大耐久 +${lv * 4}%` },
+  { id: "H2", branch: "hull", name: "冲击缓冲", levels: 3, cost: 2, trainLevel: 5, prereq: { id: "H1", level: 1 }, effect: lv => `列车受到的直接攻击伤害 -${lv * 3}%` },
+  { id: "H3", branch: "hull", name: "结构加固", levels: 2, cost: 2, trainLevel: 8, prereq: { id: "H1", level: 3 }, effect: lv => `最大耐久 +${lv * 6}%` },
+  { id: "H4", branch: "hull", name: "维修接口", levels: 2, cost: 3, trainLevel: 12, prereq: { id: "H3", level: 2 }, effect: lv => `基础到站维修量 +${lv * 5}%` },
+  { id: "H5", branch: "hull", name: "车体专精", levels: 1, cost: 5, trainLevel: 20, prereq: { branchPoints: 19 }, spec: "hull", effect: () => `选择移动堡垒或应急储备` },
+  { id: "N0", branch: "pointDefense", name: "解锁近防车", levels: 1, cost: 1, trainLevel: 1, prereq: null, effect: () => `可装备近防车；经验拾取无加成` },
+  { id: "N1", branch: "pointDefense", name: "射界扩张", levels: 3, cost: 1, trainLevel: 3, prereq: { id: "N0", level: 1 }, effect: lv => `近防射程 +${lv * 8}%` },
+  { id: "N2", branch: "pointDefense", name: "连续供弹", levels: 3, cost: 2, trainLevel: 5, prereq: { id: "N0", level: 1 }, effect: lv => `近防攻击间隔 -${lv * 5}%` },
+  { id: "N3", branch: "pointDefense", name: "弹药强化", levels: 2, cost: 2, trainLevel: 8, prereq: { id: "N2", level: 1 }, effect: lv => `近防伤害 +${lv * 10}%` },
+  { id: "N4", branch: "pointDefense", name: "近防专精", levels: 1, cost: 4, trainLevel: 12, prereq: { branchPoints: 14 }, spec: "pointDefense", effect: () => `选择拦截阵列或重型近防` },
+  { id: "N5", branch: "pointDefense", name: "火力校准", levels: 3, cost: 2, trainLevel: 20, prereq: { id: "N4", level: 1 }, effect: lv => `近防伤害 +${lv * 5}%` },
+  { id: "R0", branch: "repair", name: "解锁维修车", levels: 1, cost: 1, trainLevel: 3, prereq: null, effect: () => `可装备维修车；每次有效到站额外修复 12 点` },
+  { id: "R1", branch: "repair", name: "高效维修", levels: 3, cost: 1, trainLevel: 3, prereq: { id: "R0", level: 1 }, effect: lv => `维修车恢复量 +${lv * 8}%` },
+  { id: "R2", branch: "repair", name: "通用零件", levels: 3, cost: 2, trainLevel: 5, prereq: { id: "R0", level: 1 }, effect: lv => `基础到站维修量 +${lv * 5}%` },
+  { id: "R3", branch: "repair", name: "备件扩容", levels: 2, cost: 2, trainLevel: 8, prereq: { id: "R1", level: 3 }, effect: lv => `维修车固定到站修复额外 +${lv * 2} 点` },
+  { id: "R4", branch: "repair", name: "维修专精", levels: 1, cost: 4, trainLevel: 12, prereq: { branchPoints: 14 }, spec: "repair", effect: () => `选择到站大修或行进抢修` },
+  { id: "R5", branch: "repair", name: "维修协议", levels: 2, cost: 2, trainLevel: 20, prereq: { id: "R4", level: 1 }, effect: lv => `维修车恢复量 +${lv * 8}%` },
+  { id: "D0", branch: "radar", name: "解锁雷达车", levels: 1, cost: 1, trainLevel: 5, prereq: null, effect: () => `可装备雷达车；经验拾取半径 +15%` },
+  { id: "D1", branch: "radar", name: "广域接收", levels: 3, cost: 1, trainLevel: 5, prereq: { id: "D0", level: 1 }, effect: lv => `经验拾取半径 +${lv * 5}%` },
+  { id: "D2", branch: "radar", name: "数据回收", levels: 3, cost: 2, trainLevel: 8, prereq: { id: "D0", level: 1 }, effect: lv => `研究数据结算收益 +${lv * 3}%` },
+  { id: "D3", branch: "radar", name: "雷达专精", levels: 1, cost: 4, trainLevel: 15, prereq: { branchPoints: 10 }, spec: "radar", effect: () => `选择战术标定或勘探分析` },
+  { id: "D4", branch: "radar", name: "精密定位", levels: 3, cost: 2, trainLevel: 20, prereq: { id: "D3", level: 1 }, effect: lv => `经验拾取半径 +${lv * 4}%` },
+  { id: "C0", branch: "storage", name: "解锁仓储车", levels: 1, cost: 1, trainLevel: 4, prereq: null, effect: () => `可装备仓储车；失败保留率 +20 个百分点` },
+  { id: "C1", branch: "storage", name: "防震货柜", levels: 2, cost: 1, trainLevel: 4, prereq: { id: "C0", level: 1 }, effect: lv => `失败保留率 +${lv * 4} 个百分点` },
+  { id: "C2", branch: "storage", name: "扩容回收", levels: 3, cost: 2, trainLevel: 5, prereq: { id: "C0", level: 1 }, effect: lv => `废料结算收益 +${lv * 3}%` },
+  { id: "C3", branch: "storage", name: "仓储专精", levels: 1, cost: 5, trainLevel: 12, prereq: { branchPoints: 9 }, spec: "storage", effect: () => `选择装甲仓或回收货柜` },
+  { id: "C4", branch: "storage", name: "组件分拣", levels: 3, cost: 2, trainLevel: 20, prereq: { id: "C3", level: 1 }, effect: lv => `技术组件结算收益 +${lv * 2}%` },
+]);
+const NODE_BY_ID = Object.freeze(Object.fromEntries(TALENT_NODES.map(node => [node.id, node])));
+
+const SPEC_OPTIONS = Object.freeze({
+  hull: [
+    { id: "fortress", name: "移动堡垒", desc: "最大耐久额外 +16%" },
+    { id: "reserve", name: "应急储备", desc: "每局首次因伤害耐久 ≤30% 时，立即恢复最大耐久的 18%" },
+  ],
+  pointDefense: [
+    { id: "intercept", name: "拦截阵列", desc: "攻击间隔 ×0.85、伤害 ×0.90，优先攻击最接近列车的目标" },
+    { id: "heavy", name: "重型近防", desc: "单发伤害 ×1.35、间隔 ×1.20，对精英额外 ×1.15" },
+  ],
+  repair: [
+    { id: "overhaul", name: "到站大修", desc: "每次有效到站额外恢复最大耐久的 4%" },
+    { id: "field", name: "行进抢修", desc: "每累计 10 秒有效行进战斗，恢复最大耐久的 0.5%" },
+  ],
+  radar: [
+    { id: "tactical", name: "战术标定", desc: "无人机与列车近防对精英伤害 +6%" },
+    { id: "survey", name: "勘探分析", desc: "研究数据结算收益额外 +6%" },
+  ],
+  storage: [
+    { id: "armorBay", name: "装甲仓", desc: "失败保留率额外 +10 个百分点" },
+    { id: "cargoBay", name: "回收货柜", desc: "废料结算收益额外 +6%，失败保留率 -8 个百分点" },
+  ],
+});
+const SPEC_NODE = Object.freeze({ hull: "H5", pointDefense: "N4", repair: "R4", radar: "D3", storage: "C3" });
+
+// ---------------------------------------------------------------------------
+// v0.10 permanent research (需求 §15-§18). Seven tracks, Lv0-30, tiered
+// per-level gains with diminishing returns after Lv10 and Lv20.
+// ---------------------------------------------------------------------------
+
+const RESEARCH_TRACKS = Object.freeze([
+  { id: "fireControl", group: "drone", name: "火控算法", kind: "attack", scope: "北辰及所有无人机伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+  { id: "cycleControl", group: "drone", name: "循环控制", kind: "attack", scope: "无人机普通攻击基础间隔", tiers: [[.008, -1], [.004, -1], [.002, -1]], unit: "-" },
+  { id: "rangeCalibration", group: "drone", name: "射程校准", kind: "attack", scope: "无人机索敌 / 攻击射程", tiers: [[.01, 1], [.003, 1], [.002, 1]], unit: "+" },
+  { id: "hullEngineering", group: "train", name: "车体工程", kind: "train", scope: "列车最大耐久", tiers: [[.02, 1], [.01, 1], [.005, 1]], unit: "+" },
+  { id: "armorMaterials", group: "train", name: "装甲材料", kind: "train", scope: "列车受到的直接攻击伤害（乘法叠算）", tiers: [[.01, 0], [.005, 0], [.0025, 0]], unit: "×", multiplicative: true },
+  { id: "repairEngineering", group: "train", name: "维修工程", kind: "train", scope: "基础到站、维修车、应急储备维修量", tiers: [[.025, 1], [.0125, 1], [.0075, 1]], unit: "+" },
+  { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+]);
+const RESEARCH_IDS = Object.freeze(RESEARCH_TRACKS.map(track => track.id));
+const RESEARCH_NAMES = Object.freeze(Object.fromEntries(RESEARCH_TRACKS.map(track => [track.id, track.name])));
+const trackById = id => RESEARCH_TRACKS.find(track => track.id === id);
+
+// Cost tables (需求 §18 / 两周成长计算表-成本曲线). Upgrade TO level L.
+// The data column funds the three attack tracks, the components column funds
+// the four train tracks; milestones charge the cross material on top.
+const RESEARCH_COST_BASE = {
+  scrap: [25, 30, 40, 50, 65, 85, 105, 130, 155, 185],
+  data: [3, 4, 6, 8, 11, 15, 19, 24, 30, 36],
+  components: [1, 1, 1, 1, 2, 2, 3, 3, 4, 5],
+};
+function researchCostFor(id, toLevel) {
+  const L = Math.max(1, Math.min(MAX_RESEARCH_LEVEL, Math.floor(toLevel)));
+  const scrap = L <= 10 ? RESEARCH_COST_BASE.scrap[L - 1] : 185 + 7 * (L - 10);
+  const data = L <= 10 ? RESEARCH_COST_BASE.data[L - 1] : 36 + Math.ceil(1.75 * (L - 10));
+  const components = L <= 10 ? RESEARCH_COST_BASE.components[L - 1] : 5 + Math.ceil(0.4 * (L - 10));
+  const attack = trackById(id)?.kind === "attack";
+  let extraComponents = 0, extraData = 0;
+  if (L === 5) { if (attack) extraComponents = 1; else extraData = 5; }
+  if (L % 5 === 0 && L >= 10) { if (attack) extraComponents = 3; else extraData = 15; }
+  return { scrap, data: attack ? data : extraData, components: attack ? extraComponents : components, attack };
+}
+
+// Fixed-precision resource bookkeeping (需求 §19.2/§20.5): store thousandths.
+const fix3 = value => Math.max(0, Math.round((Number(value) || 0) * 1000) / 1000);
+function copyResources(value = {}) { return { scrap: fix3(value.scrap), components: fix3(value.components), data: fix3(value.data) }; }
+const floorResources = value => ({ scrap: Math.floor(value.scrap), components: Math.floor(value.components), data: Math.floor(value.data) });
+
+// ---------------------------------------------------------------------------
+// Train level, XP curve and functional car slots (需求 §5-§6).
+// ---------------------------------------------------------------------------
+
+function xpToNext(level) { return 150 + 200 * (Math.max(1, Math.min(MAX_TRAIN_LEVEL, level)) - 1); }
+function talentPoints(meta) { return 2 * Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(meta?.train?.level) || 1))); }
+function carSlots(meta) { const level = Math.max(1, Math.floor(Number(meta?.train?.level) || 1)); return level >= 18 ? 4 : level >= 8 ? 3 : 2; }
+function trainSlots(meta) { return carSlots(meta) + 1; }
+function unlockedCars(meta) {
+  const nodes = meta?.talents?.nodes || {};
+  return ["hangar", ...TALENT_BRANCHES.map(branch => branch.car).filter(car => car && nodes[CAR_UNLOCK_NODE[car]] > 0)];
+}
+function carUnlocked(meta, carId) { return carId === "hangar" || (meta?.talents?.nodes?.[CAR_UNLOCK_NODE[carId]] || 0) > 0; }
+
+// ---------------------------------------------------------------------------
+// Talent validation (需求 §7 / §26.1).
+// ---------------------------------------------------------------------------
+
+function normalizeTalents(value) {
+  const src = value && typeof value === "object" ? value : {};
+  const nodes = {};
+  for (const node of TALENT_NODES) nodes[node.id] = Math.max(0, Math.min(node.levels, Math.floor(Number(src.nodes?.[node.id]) || 0)));
+  const specs = {};
+  for (const branch of TALENT_BRANCHES) {
+    const allowed = SPEC_OPTIONS[branch.id].map(option => option.id);
+    const chosen = src.specs?.[branch.id];
+    // A spec only counts while its spec node is owned.
+    specs[branch.id] = nodes[SPEC_NODE[branch.id]] > 0 && allowed.includes(chosen) ? chosen : null;
+  }
+  return { nodes, specs };
+}
+function branchSpent(talents, branchId) {
+  let spent = 0;
+  for (const node of TALENT_NODES) if (node.branch === branchId) spent += (talents?.nodes?.[node.id] || 0) * node.cost;
+  return spent;
+}
+function spentPoints(talents) { return TALENT_BRANCHES.reduce((sum, branch) => sum + branchSpent(talents, branch.id), 0); }
+function availablePoints(meta) { return talentPoints(meta) - spentPoints(meta.talents); }
+// Why a node level cannot be raised right now: null when it can.
+function nodeBlockReason(meta, talents, nodeId) {
+  const node = NODE_BY_ID[nodeId];
+  if (!node) return "未知节点";
+  const level = talents.nodes[nodeId] || 0;
+  if (level >= node.levels) return "已满级";
+  if ((meta?.train?.level || 1) < node.trainLevel) return `需要列车 Lv.${node.trainLevel}`;
+  if (node.prereq?.id && (talents.nodes[node.prereq.id] || 0) < node.prereq.level) {
+    const prereq = NODE_BY_ID[node.prereq.id];
+    return `需要 ${prereq.name}${node.prereq.level >= prereq.levels ? " 满级" : ` ${node.prereq.level} 级`}`;
+  }
+  if (node.prereq?.branchPoints !== undefined && branchSpent(talents, node.branch) < node.prereq.branchPoints) {
+    // Points already inside the node being checked do not count as "已投入".
+    return `需要本分支已投入 ${node.prereq.branchPoints} 点`;
+  }
+  if (node.spec && !talents.specs[node.branch] && (talents.nodes[node.id] || 0) >= node.levels) return "已满级";
+  if (spentPoints(talents) + node.cost > talentPoints(meta)) return "天赋点不足";
+  if (branchSpent(talents, node.branch) + node.cost > TALENT_BRANCHES.find(branch => branch.id === node.branch).cap) return "超出分支上限";
+  return null;
+}
+function branchFullReason(talents, branchId) {
+  const branch = TALENT_BRANCHES.find(item => item.id === branchId);
+  return branchSpent(talents, branchId) >= branch.cap ? `本分支已达 ${branch.cap} 点上限` : null;
+}
+// Full legality report for an allocation (used by apply + presets, 需求 §14/§26.1).
+function talentProblems(meta, talents, options = {}) {
+  const level = options.level ?? meta.train.level;
+  const problems = [];
+  let spent = 0;
+  for (const node of TALENT_NODES) {
+    const level2 = talents.nodes[node.id] || 0;
+    if (level2 < 0 || level2 > node.levels) { problems.push(`${node.name}等级非法`); continue; }
+    if (level2 > 0) {
+      if (level < node.trainLevel) problems.push(`${node.name}需要列车 Lv.${node.trainLevel}`);
+      if (node.prereq?.id && (talents.nodes[node.prereq.id] || 0) < node.prereq.level) problems.push(`${node.name}前置不满足`);
+      if (node.prereq?.branchPoints !== undefined && branchSpent(talents, node.branch) - level2 * node.cost < node.prereq.branchPoints) problems.push(`${node.name}需要本分支已投入 ${node.prereq.branchPoints} 点`);
+    }
+    spent += level2 * node.cost;
+  }
+  if (spent > 2 * level) problems.push(`投入 ${spent} 点超过可用 ${2 * level} 点`);
+  for (const branch of TALENT_BRANCHES) if (branchSpent(talents, branch.id) > branch.cap) problems.push(`${branch.name}分支超过 ${branch.cap} 点上限`);
+  for (const branch of TALENT_BRANCHES) {
+    const spec = talents.specs?.[branch.id];
+    if (spec && !(talents.nodes[SPEC_NODE[branch.id]] > 0)) problems.push(`${branch.name}专精未解锁`);
+  }
+  return problems;
+}
+
+// ---------------------------------------------------------------------------
+// Derived attributes (需求 §17). buildStats is the single computation shared
+// by the combat engine, the settlement and every UI preview - nobody else may
+// re-derive these formulas.
+// ---------------------------------------------------------------------------
+
+function researchTiers(level) {
+  const L = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Math.floor(Number(level) || 0)));
+  return [Math.min(L, 10), Math.min(Math.max(L - 10, 0), 10), Math.min(Math.max(L - 20, 0), 10)];
+}
+function researchMultiplier(id, level) {
+  const track = trackById(id);
+  if (!track) return 1;
+  const [a, b, c] = researchTiers(level);
+  if (track.multiplicative) return Math.pow(1 - track.tiers[0][0], a) * Math.pow(1 - track.tiers[1][0], b) * Math.pow(1 - track.tiers[2][0], c);
+  const sign = track.tiers[0][1];
+  const sum = a * track.tiers[0][0] + b * track.tiers[1][0] + c * track.tiers[2][0];
+  return 1 + sign * sum;
+}
+
+function buildStats(meta) {
+  const talents = meta.talents, research = meta.research;
+  const nl = id => talents.nodes[id] || 0;
+  const equipped = new Set(meta.loadout || ["hangar"]);
+  const pdOn = equipped.has("pointDefense") && nl("N0") > 0;
+  const repairOn = equipped.has("repair") && nl("R0") > 0;
+  const radarOn = equipped.has("radar") && nl("D0") > 0;
+  const storageOn = equipped.has("storage") && nl("C0") > 0;
+
+  const hullTalent = 1 + .04 * nl("H1") + .06 * nl("H3") + (talents.specs.hull === "fortress" ? .16 : 0);
+  const hullResearch = researchMultiplier("hullEngineering", research.hullEngineering);
+  const buffer = .03 * nl("H2");
+  const armorMaterials = researchMultiplier("armorMaterials", research.armorMaterials);
+  const repairEngineering = researchMultiplier("repairEngineering", research.repairEngineering);
+  const maxHp = 100 * hullTalent * hullResearch;
+
+  const stats = {
+    maxHp,
+    damageTakenMul: (1 - buffer) * armorMaterials,
+    droneDamageMul: researchMultiplier("fireControl", research.fireControl),
+    droneIntervalMul: researchMultiplier("cycleControl", research.cycleControl),
+    droneRangeMul: researchMultiplier("rangeCalibration", research.rangeCalibration),
+    repairMul: repairEngineering,
+    eliteDamageMul: radarOn && talents.specs.radar === "tactical" ? 1.06 : 1,
+    pickupRadiusMul: radarOn ? 1 + .15 + .05 * nl("D1") + .04 * nl("D4") : 1,
+    dataYieldMul: radarOn ? 1 + .03 * nl("D2") + (talents.specs.radar === "survey" ? .06 : 0) : 1,
+    scrapYieldMul: storageOn ? 1 + .03 * nl("C2") + (talents.specs.storage === "cargoBay" ? .06 : 0) : 1,
+    componentYieldMul: storageOn ? 1 + .02 * nl("C4") : 1,
+    failureKeep: Math.min(.90, .50 + (storageOn ? .20 + .04 * nl("C1") + (talents.specs.storage === "armorBay" ? .10 : talents.specs.storage === "cargoBay" ? -.08 : 0) : 0)),
+    // 到站维修分层：基础(25+局内repair模块) ×(1+H4+R2)；维修车 (12+R3+大修%)×(1+R1+R5)；整体 ×维修工程。
+    stationBaseMul: 1 + .05 * nl("H4") + (repairOn ? .05 * nl("R2") : 0),
+    repairCar: repairOn ? {
+      flat: 12 + 2 * nl("R3"),
+      overhaulPct: talents.specs.repair === "overhaul" ? .04 : 0,
+      mul: 1 + .08 * nl("R1") + .08 * nl("R5"),
+    } : null,
+    fieldRepairPer10s: repairOn && talents.specs.repair === "field" ? maxHp * .005 * (1 + .08 * nl("R1") + .08 * nl("R5")) * repairEngineering : 0,
+    emergencyReserve: talents.specs.hull === "reserve" ? maxHp * .18 * repairEngineering : 0,
+    pd: null,
+    carFlags: { pointDefense: pdOn, repair: repairOn, radar: radarOn, storage: storageOn },
+  };
+  if (pdOn) {
+    const heavy = talents.specs.pointDefense === "heavy", intercept = talents.specs.pointDefense === "intercept";
+    stats.pd = {
+      rangeMul: 1 + .08 * nl("N1"),
+      intervalMul: (1 - .05 * nl("N2")) * (intercept ? .85 : heavy ? 1.20 : 1),
+      damageMul: (1 + .10 * nl("N3") + .05 * nl("N5")) * (intercept ? .90 : heavy ? 1.35 : 1) * researchMultiplier("trainFireControl", research.trainFireControl),
+      eliteMul: heavy ? 1.15 : 1,
+      intercept,
+    };
+  }
+  return stats;
+}
+
+// ---------------------------------------------------------------------------
+// Meta shape v2, persistence and v0.9 -> v0.10 migration (需求 §23-§24).
+// ---------------------------------------------------------------------------
+
+function emptyTalents() { return normalizeTalents({}); }
+function emptyPreset(name) { return { name, talents: emptyTalents(), loadout: ["hangar"] }; }
 
 function emptyMeta() {
   const regions = {};
   for (const region of REGIONS) regions[region.id] = { unlocked: region.id === "wasteland", clears: 0, repaired: false };
   const research = {}; for (const id of RESEARCH_IDS) research[id] = 0;
   return {
-    version: 1,
+    version: SAVE_VERSION,
     resources: { scrap: 0, components: 0, data: 0 },
-    train: { level: 1, xp: 0 },
-    unlockedCars: ["hangar", "pointDefense", "storage", "radar", "repair"],
-    loadout: ["hangar", "pointDefense", "storage"],
+    train: { level: 1, xp: 0, totalXp: 0 },
+    talents: emptyTalents(),
+    presets: [emptyPreset("方案 A"), emptyPreset("方案 B"), emptyPreset("方案 C")],
+    freeRefits: 3,
+    loadout: ["hangar"],
     selectedRegion: "wasteland",
     regions,
     blueprints: [],
     research,
     totals: { expeditions: 0, extracts: 0, wins: 0, losses: 0 },
+    migration: null,
   };
 }
-function copyResources(value = {}) { return { scrap: Math.max(0, Math.floor(Number(value.scrap) || 0)), components: Math.max(0, Math.floor(Number(value.components) || 0)), data: Math.max(0, Math.floor(Number(value.data) || 0)) }; }
-function trainSlots(meta) { return Math.min(7, 4 + Math.floor((Math.max(1, meta?.train?.level || 1) - 1) / 5)); }
+
+// Old research cost (v0.9): 8 + level*8 data per level, nothing else.
+function legacyResearchRefund(levels) {
+  let data = 0;
+  for (let L = 0; L < levels; L++) data += 8 + L * 8;
+  return data;
+}
+
+function migrateFromV1(src) {
+  const meta = emptyMeta();
+  const old = src && typeof src === "object" ? src : {};
+  const level = Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(old.train?.level) || 1)));
+  meta.train.level = level;
+  // In-level XP maps by progress ratio between the two curves (§24.2).
+  const oldXpToNext = 70 + (level - 1) * 35;
+  const oldXp = Math.max(0, Math.floor(Number(old.train?.xp) || 0));
+  meta.train.xp = Math.min(xpToNext(level) - 1, Math.floor((oldXp / oldXpToNext) * xpToNext(level)));
+  meta.train.totalXp = 0;
+  for (let L = 1; L < level; L++) meta.train.totalXp += xpToNext(L);
+  meta.train.totalXp += meta.train.xp;
+
+  meta.resources = copyResources({ ...old.resources });
+
+  // Old research fully refunded in data (§24.3); the seven new tracks start at Lv0.
+  let refundData = 0;
+  const oldResearch = old.research && typeof old.research === "object" ? old.research : {};
+  for (const value of Object.values(oldResearch)) refundData += legacyResearchRefund(Math.max(0, Math.floor(Number(value) || 0)));
+
+  // Retired blueprints convert into a one-time resource compensation (§21).
+  const ownedBlueprints = [...new Set(Array.isArray(old.blueprints) ? old.blueprints : [])].filter(id => BLUEPRINTS.some(bp => bp.id === id));
+  let converted = [];
+  for (const id of ownedBlueprints) {
+    if (BLUEPRINTS.find(bp => bp.id === id)?.retired) {
+      meta.resources.scrap += BLUEPRINT_COMPENSATION.scrap;
+      meta.resources.components += BLUEPRINT_COMPENSATION.components;
+      meta.resources.data += BLUEPRINT_COMPENSATION.data;
+      converted.push(id);
+    }
+  }
+  meta.resources.data += refundData;
+  meta.blueprints = ownedBlueprints;
+
+  // Map the old loadout onto unlock nodes within the new point budget (§24.4).
+  const priority = ["pointDefense", "repair", "storage", "radar"];
+  const oldFunctional = (Array.isArray(old.loadout) ? old.loadout : []).filter(id => id !== "hangar" && CAR_UNLOCK_NODE[id]);
+  const wanted = priority.filter(id => oldFunctional.includes(id) || (Array.isArray(old.unlockedCars) ? old.unlockedCars.includes(id) : false));
+  let budget = talentPoints(meta), loadout = ["hangar"];
+  for (const car of wanted) {
+    const node = NODE_BY_ID[CAR_UNLOCK_NODE[car]];
+    if (budget < node.cost || level < node.trainLevel) continue;
+    meta.talents.nodes[node.id] = 1; budget -= node.cost;
+    if (oldFunctional.includes(car)) loadout.push(car);
+  }
+  loadout = loadout.slice(0, 1 + carSlots(meta));
+  meta.loadout = loadout;
+  meta.presets[0] = { name: "方案 A", talents: normalizeTalents(meta.talents), loadout };
+
+  const oldTotals = old.totals && typeof old.totals === "object" ? old.totals : {};
+  meta.totals = { expeditions: Math.max(0, Math.floor(Number(oldTotals.expeditions) || 0)), extracts: Math.max(0, Math.floor(Number(oldTotals.extracts) || 0)), wins: Math.max(0, Math.floor(Number(oldTotals.wins) || 0)), losses: Math.max(0, Math.floor(Number(oldTotals.losses) || 0)) };
+  for (const region of REGIONS) {
+    const saved = old.regions?.[region.id] || {};
+    meta.regions[region.id] = { unlocked: region.id === "wasteland" || !!saved.unlocked, clears: Math.max(0, Math.floor(Number(saved.clears) || 0)), repaired: !!saved.repaired };
+  }
+  meta.selectedRegion = meta.regions[old.selectedRegion]?.unlocked ? old.selectedRegion : "wasteland";
+  meta.migration = { from: 1, to: SAVE_VERSION, refundedData: fix3(refundData), convertedBlueprints: converted, legacyLoadout: oldFunctional.slice(0, 6) };
+  return meta;
+}
+
 function normalizeMeta(value) {
+  if (value && Number(value.version) !== SAVE_VERSION && !value.talents) return migrateFromV1(value);
   const base = emptyMeta(), src = value && typeof value === "object" ? value : {};
   const result = { ...base, ...src };
+  result.version = SAVE_VERSION;
   result.resources = copyResources(src.resources || base.resources);
-  result.train = { level: Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(src.train?.level) || 1))), xp: Math.max(0, Math.floor(Number(src.train?.xp) || 0)) };
-  result.unlockedCars = [...new Set(["hangar", ...(Array.isArray(src.unlockedCars) ? src.unlockedCars : base.unlockedCars)])].filter(id => CAR_DEFS.some(car => car.id === id));
+  result.train = {
+    level: Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(src.train?.level) || 1))),
+    xp: Math.max(0, Math.min(xpToNext(Math.max(1, Math.floor(Number(src.train?.level) || 1))) - 1, Math.floor(Number(src.train?.xp) || 0))),
+    totalXp: Math.max(0, fix3(src.train?.totalXp) || 0),
+  };
+  result.talents = normalizeTalents(src.talents);
+  // Illegal saved allocations (e.g. externally edited) fall back to a legal
+  // subset rather than silently granting effects. Trimming runs from the
+  // dependency tail backwards so a single bad late node never wipes the
+  // branches that depend on nothing.
+  if (talentProblems(result, result.talents).length) {
+    for (let i = TALENT_NODES.length - 1; i >= 0; i--) {
+      const node = TALENT_NODES[i];
+      while ((result.talents.nodes[node.id] || 0) > 0 && talentProblems(result, result.talents).length) result.talents.nodes[node.id]--;
+    }
+    result.talents = normalizeTalents(result.talents);
+  }
+  result.presets = [0, 1, 2].map(index => {
+    const saved = Array.isArray(src.presets) ? src.presets[index] : null;
+    if (!saved || typeof saved !== "object") return emptyPreset(`方案 ${"ABC"[index]}`);
+    return { name: String(saved.name || `方案 ${"ABC"[index]}`).slice(0, 12), talents: normalizeTalents(saved.talents), loadout: ["hangar", ...(Array.isArray(saved.loadout) ? saved.loadout : []).filter(id => id !== "hangar")] };
+  });
+  result.freeRefits = Math.max(0, Math.min(99, Math.floor(Number(src.freeRefits ?? base.freeRefits) || 0)));
+  const allowed = new Set(unlockedCars(result));
+  const requested = Array.isArray(src.loadout) ? src.loadout : base.loadout;
+  const picked = [...new Set(["hangar", ...requested])].filter(id => allowed.has(id) && CAR_DEFS.some(car => car.id === id));
+  result.loadout = picked.slice(0, Math.max(1, carSlots(result) + 1));
+  if (!result.loadout.includes("hangar")) result.loadout.unshift("hangar");
   result.regions = {};
   for (const region of REGIONS) {
     const saved = src.regions?.[region.id] || {};
@@ -1712,15 +2176,23 @@ function normalizeMeta(value) {
   result.blueprints = [...new Set(Array.isArray(src.blueprints) ? src.blueprints : [])].filter(id => BLUEPRINTS.some(bp => bp.id === id));
   result.research = {};
   for (const id of RESEARCH_IDS) result.research[id] = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Math.floor(Number(src.research?.[id]) || 0)));
-  const allowed = new Set(result.unlockedCars);
-  const requested = Array.isArray(src.loadout) ? src.loadout : base.loadout;
-  const picked = [...new Set(["hangar", ...requested])].filter(id => allowed.has(id));
-  result.loadout = picked.slice(0, Math.max(1, trainSlots(result) - 1));
-  if (!result.loadout.includes("hangar")) result.loadout.unshift("hangar");
   result.totals = { expeditions: Math.max(0, Number(src.totals?.expeditions) || 0), extracts: Math.max(0, Number(src.totals?.extracts) || 0), wins: Math.max(0, Number(src.totals?.wins) || 0), losses: Math.max(0, Number(src.totals?.losses) || 0) };
+  result.migration = src.migration && typeof src.migration === "object" ? src.migration : null;
   return result;
 }
-function loadMeta(storage) { try { return normalizeMeta(storage?.getItem ? JSON.parse(storage.getItem(STORAGE_KEY) || "null") : null); } catch { return emptyMeta(); } }
+function loadMeta(storage) {
+  try {
+    if (!storage?.getItem) return emptyMeta();
+    const raw = storage.getItem(STORAGE_KEY);
+    if (!raw) return emptyMeta();
+    const parsed = JSON.parse(raw);
+    // §24.1: keep a one-time snapshot of the legacy save before migrating.
+    if (parsed && Number(parsed.version) !== SAVE_VERSION && !parsed.talents) {
+      try { storage.getItem(BACKUP_KEY) || storage.setItem(BACKUP_KEY, raw); } catch { /* snapshot best effort */ }
+    }
+    return normalizeMeta(parsed);
+  } catch { return emptyMeta(); }
+}
 function saveMeta(storage, meta) { try { if (!storage?.setItem) return false; storage.setItem(STORAGE_KEY, JSON.stringify(normalizeMeta(meta))); return true; } catch { return false; } }
 function regionById(id) { return REGIONS.find(region => region.id === id) || REGIONS[0]; }
 function blueprintById(id) { return BLUEPRINTS.find(bp => bp.id === id); }
@@ -1731,46 +2203,179 @@ function planFor(meta) {
 }
 function setRegion(meta, regionId) { const next = normalizeMeta(meta); if (next.regions[regionId]?.unlocked) next.selectedRegion = regionId; return next; }
 function setLoadout(meta, ids) {
-  const next = normalizeMeta(meta), allowed = new Set(next.unlockedCars), maxFunctional = Math.max(0, trainSlots(next) - 2);
+  const next = normalizeMeta(meta), allowed = new Set(unlockedCars(next)), maxFunctional = carSlots(next);
   const selected = [...new Set((ids || []).filter(id => id !== "hangar" && allowed.has(id)))].slice(0, maxFunctional);
   next.loadout = ["hangar", ...selected]; return next;
 }
-function createRun(meta, plan = planFor(meta)) { return { plan: { ...plan, cars: [...plan.cars] }, banked: copyResources(), risk: copyResources(), bankedBlueprints: [], riskBlueprints: [], stationsBanked: 0, eliteKills: 0, specialKills: 0 }; }
-function awardRisk(run, type, amount) { if (!run?.risk || !Object.hasOwn(run.risk, type)) return run; run.risk[type] += Math.max(0, Math.floor(Number(amount) || 0)); return run; }
+
+// ---------------------------------------------------------------------------
+// Refit: draft, presets, single paid application (需求 §14).
+// ---------------------------------------------------------------------------
+
+function refitCost(meta) { return 10 + Math.ceil(Math.max(1, Math.floor(Number(meta?.train?.level) || 1)) / 2); }
+// A paid change withdraws points or swaps a purchased spec (§14.2); adding to
+// untouched nodes, loadout edits and renames stay free.
+function refitIsPaid(currentTalents, nextTalents) {
+  const before = currentTalents.nodes, after = nextTalents.nodes;
+  for (const node of TALENT_NODES) if ((after[node.id] || 0) < (before[node.id] || 0)) return true;
+  for (const branch of TALENT_BRANCHES) if ((before[SPEC_NODE[branch.id]] || 0) > 0 && (after[SPEC_NODE[branch.id]] || 0) > 0 && currentTalents.specs[branch.id] !== nextTalents.specs[branch.id]) return true;
+  return false;
+}
+function applyTalents(meta, draftTalents, options = {}) {
+  const next = normalizeMeta(meta);
+  const problems = talentProblems(next, draftTalents);
+  if (problems.length) return { meta: next, applied: false, problems };
+  const loadout = Array.isArray(options.loadout) ? options.loadout : next.loadout;
+  const draft = { ...next, talents: normalizeTalents(draftTalents), loadout };
+  const normalizedDraft = normalizeMeta(draft);
+  const paid = refitIsPaid(next.talents, normalizedDraft.talents);
+  let charged = 0, freeRefits = next.freeRefits;
+  if (paid) {
+    if (freeRefits > 0) freeRefits -= 1;
+    else {
+      const cost = refitCost(next);
+      if (next.resources.scrap < cost) return { meta: next, applied: false, problems: [`废料不足，还需 ${Math.ceil(cost - next.resources.scrap)} 废料`], cost };
+      normalizedDraft.resources.scrap = fix3(normalizedDraft.resources.scrap - cost);
+      charged = cost;
+    }
+  }
+  normalizedDraft.freeRefits = freeRefits;
+  return { meta: normalizeMeta(normalizedDraft), applied: true, problems: [], paid, charged, freeRefits };
+}
+function savePreset(meta, index, talents, loadout) {
+  const next = normalizeMeta(meta);
+  const slot = next.presets[Math.max(0, Math.min(2, Math.floor(index)))];
+  if (!slot) return next;
+  slot.talents = normalizeTalents(talents);
+  const cars = Array.isArray(loadout) ? loadout : next.loadout;
+  slot.loadout = ["hangar", ...cars.filter(id => id !== "hangar")];
+  return next;
+}
+function loadPreset(meta, index) {
+  const next = normalizeMeta(meta);
+  const slot = next.presets[Math.max(0, Math.min(2, Math.floor(index)))];
+  if (!slot) return { meta: next, talents: next.talents, problems: ["方案不存在"] };
+  const presetMeta = normalizeMeta({ ...next, talents: slot.talents, loadout: slot.loadout });
+  const problems = talentProblems(presetMeta, slot.talents);
+  return { meta: next, talents: slot.talents, loadout: slot.loadout, problems };
+}
+function renamePreset(meta, index, name) {
+  const next = normalizeMeta(meta);
+  const slot = next.presets[Math.max(0, Math.min(2, Math.floor(index)))];
+  if (slot) slot.name = String(name || slot.name).slice(0, 12);
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Research purchases (需求 §18/§22.2).
+// ---------------------------------------------------------------------------
+
+function researchCost(meta, id) {
+  const level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[id]) || 0));
+  if (level >= MAX_RESEARCH_LEVEL || !trackById(id)) return null;
+  return researchCostFor(id, level + 1);
+}
+function buyResearch(meta, id) {
+  const next = normalizeMeta(meta);
+  if (!RESEARCH_IDS.includes(id)) return { meta: next, purchased: false };
+  const cost = researchCost(next, id);
+  if (!cost) return { meta: next, purchased: false };
+  const short = [];
+  if (next.resources.scrap < cost.scrap) short.push(`废料 ${Math.ceil(cost.scrap - next.resources.scrap)}`);
+  if (next.resources.data < cost.data) short.push(`数据 ${Math.ceil(cost.data - next.resources.data)}`);
+  if (next.resources.components < cost.components) short.push(`组件 ${Math.ceil(cost.components - next.resources.components)}`);
+  if (short.length) return { meta: next, purchased: false, cost, short };
+  next.resources.scrap = fix3(next.resources.scrap - cost.scrap);
+  next.resources.data = fix3(next.resources.data - cost.data);
+  next.resources.components = fix3(next.resources.components - cost.components);
+  next.research[id]++;
+  return { meta: next, purchased: true, cost };
+}
+// Display strings for the research UI: cumulative total and next-level delta.
+function researchEffectText(id, level) {
+  const track = trackById(id);
+  if (!track) return { total: "", next: "" };
+  const fmt = value => {
+    if (track.unit === "×") return `${(value * 100).toFixed(2)}%`;
+    const sign = track.unit === "-" ? -1 : 1;
+    return `${sign > 0 ? "+" : ""}${(Math.abs(1 - value) * 100).toFixed(1)}%`;
+  };
+  const total = researchMultiplier(id, level);
+  const next = researchMultiplier(id, Math.min(MAX_RESEARCH_LEVEL, level + 1));
+  return { total: fmt(total), next: level >= MAX_RESEARCH_LEVEL ? "" : fmt(next) };
+}
+
+// ---------------------------------------------------------------------------
+// Run lifecycle: risk/banked resources, yields, settlement (需求 §19-§20).
+// ---------------------------------------------------------------------------
+
+function createRun(meta, plan = planFor(meta)) {
+  const normalized = normalizeMeta(meta);
+  return { plan: { ...plan, cars: [...plan.cars] }, stats: buildStats(normalized), banked: copyResources(), risk: copyResources(), bankedBlueprints: [], riskBlueprints: [], stationsBanked: 0, eliteKills: 0, specialKills: 0, regionReward: plan?.region?.reward || 1 };
+}
+// Yields apply exactly once, at award time, using the departure snapshot.
+function awardRisk(run, type, amount) {
+  if (!run?.risk || !Object.hasOwn(run.risk, type)) return run;
+  const mul = { scrap: run.stats?.scrapYieldMul ?? 1, data: run.stats?.dataYieldMul ?? 1, components: run.stats?.componentYieldMul ?? 1 }[type] ?? 1;
+  run.risk[type] = fix3(run.risk[type] + Math.max(0, Number(amount) || 0) * mul);
+  return run;
+}
 function addBlueprintRisk(run, id) { if (run && blueprintById(id) && !run.riskBlueprints.includes(id) && !run.bankedBlueprints.includes(id)) run.riskBlueprints.push(id); return run; }
-function bankRisk(run) { if (!run) return run; for (const key of Object.keys(run.risk)) { run.banked[key] += run.risk[key]; run.risk[key] = 0; } run.bankedBlueprints.push(...run.riskBlueprints.filter(id => !run.bankedBlueprints.includes(id))); run.riskBlueprints = []; run.stationsBanked += 1; return run; }
-function trainUpgradeCost(meta) {
-  const level=Math.max(1,Number(meta?.train?.level)||1);
-  return level>=MAX_TRAIN_LEVEL?{scrap:Infinity,components:Infinity}:{scrap:35+level*25,components:1+Math.floor((level-1)/4)};
+function bankRisk(run) {
+  if (!run) return run;
+  for (const key of Object.keys(run.risk)) { run.banked[key] = fix3(run.banked[key] + run.risk[key]); run.risk[key] = 0; }
+  run.bankedBlueprints.push(...run.riskBlueprints.filter(id => !run.bankedBlueprints.includes(id)));
+  run.riskBlueprints = [];
+  run.stationsBanked += 1;
+  // Station arrival is part of the process reward pool: +1 research data.
+  awardRisk(run, "data", 1);
+  return run;
 }
-function upgradeTrain(meta) {
-  const next=normalizeMeta(meta),cost=trainUpgradeCost(next);
-  if(!Number.isFinite(cost.scrap)||next.resources.scrap<cost.scrap||next.resources.components<cost.components)return {meta:next,purchased:false,cost};
-  next.resources.scrap-=cost.scrap;next.resources.components-=cost.components;next.train.level=Math.min(MAX_TRAIN_LEVEL,next.train.level+1);
-  return {meta:next,purchased:true,cost};
+function applyTrainXp(meta, amount) {
+  const next = normalizeMeta(meta);
+  const gain = Math.max(0, Math.floor(Number(amount) || 0));
+  next.train.xp += gain; next.train.totalXp = fix3((next.train.totalXp || 0) + gain);
+  while (next.train.level < MAX_TRAIN_LEVEL && next.train.xp >= xpToNext(next.train.level)) { next.train.xp -= xpToNext(next.train.level); next.train.level++; }
+  if (next.train.level >= MAX_TRAIN_LEVEL) next.train.xp = Math.min(next.train.xp, xpToNext(MAX_TRAIN_LEVEL) - 1);
+  return next;
 }
-function researchCost(meta, id) { const level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[id]) || 0)); return level >= MAX_RESEARCH_LEVEL ? Infinity : 8 + level * 8; }
-function buyResearch(meta, id) { const next = normalizeMeta(meta); if (!RESEARCH_IDS.includes(id)) return { meta: next, purchased: false }; const cost = researchCost(next, id); if (!Number.isFinite(cost) || next.resources.data < cost) return { meta: next, purchased: false }; next.resources.data -= cost; next.research[id]++; return { meta: next, purchased: true, cost }; }
-function researchProfile(meta, id) {
-  const key = id === "gun" || id.startsWith("escort") ? "rapid" : id, level = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Number(meta?.research?.[key]) || 0));
-  return { id: key, level, damageMultiplier: 1 + level * .03, specialized: level >= 3 };
-}
-function trainBonuses(meta) { const level = Math.max(1, Number(meta?.train?.level) || 1); return { hpMultiplier: 1 + Math.min(20, level - 1) * .018, droneDamageMultiplier: 1 + Math.min(20, level - 1) * .012, repairMultiplier: 1 + Math.min(15, level - 1) * .02 }; }
-function xpToNext(level) { return 70 + Math.max(0, level - 1) * 35; }
-function applyTrainXp(meta, amount) { const next = normalizeMeta(meta); next.train.xp += Math.max(0, Math.floor(Number(amount) || 0)); while (next.train.level < MAX_TRAIN_LEVEL && next.train.xp >= xpToNext(next.train.level)) { next.train.xp -= xpToNext(next.train.level); next.train.level++; } return next; }
 function rollBlueprint(meta, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(meta?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id)); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
+
+// XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
+// a failed run keeps completed segments and converts current-segment progress
+// into at most 39 XP.
+function expeditionXp(run, outcome, options = {}) {
+  if (outcome === "won") return (run.stationsBanked + 1) * 40 + 40;
+  if (outcome === "lost") {
+    const progress = Math.max(0, Math.min(1, Number(options.segmentProgress) || 0));
+    return run.stationsBanked * 40 + Math.min(39, Math.floor(40 * progress));
+  }
+  return run.stationsBanked * 40;
+}
+
 function settleRun(meta, run, outcome, options = {}) {
-  let next = normalizeMeta(meta); if (!run) return { meta: next, gained: copyResources(), blueprints: [] };
-  const gained = copyResources(run.banked); const blueprints = [...run.bankedBlueprints];
+  let next = normalizeMeta(meta);
+  if (!run) return { meta: next, gained: copyResources(), blueprints: [] };
+  const gained = copyResources(run.banked);
+  const blueprints = [...run.bankedBlueprints];
   if (outcome === "won" || outcome === "extracted") {
-    for (const key of Object.keys(run.risk)) gained[key] += run.risk[key];
+    for (const key of Object.keys(run.risk)) gained[key] = fix3(gained[key] + run.risk[key]);
     blueprints.push(...run.riskBlueprints);
   } else {
-    let keep = options.storageActive ? .70 : .50;
-    if (options.storageActive && hasBlueprint(next, "cargo-lock")) keep = .78;
-    for (const key of Object.keys(run.risk)) gained[key] += Math.floor(run.risk[key] * keep);
+    const keep = run.stats?.failureKeep ?? .50;
+    for (const key of Object.keys(run.risk)) gained[key] = fix3(gained[key] + run.risk[key] * keep);
   }
-  next.resources.scrap += gained.scrap; next.resources.components += gained.components; next.resources.data += gained.data;
+  // Clear bonus (需求 §19.1): scrap 30 / data 3 / components 1, scaled by the
+  // region coefficient and the departure yield snapshot, awarded once.
+  if (outcome === "won") {
+    const regionReward = run.regionReward || 1, stats = run.stats || {};
+    gained.scrap = fix3(gained.scrap + 30 * regionReward * (stats.scrapYieldMul ?? 1));
+    gained.data = fix3(gained.data + 3 * regionReward * (stats.dataYieldMul ?? 1));
+    gained.components = fix3(gained.components + 1 * regionReward * (stats.componentYieldMul ?? 1));
+  }
+  next.resources.scrap = fix3(next.resources.scrap + gained.scrap);
+  next.resources.components = fix3(next.resources.components + gained.components);
+  next.resources.data = fix3(next.resources.data + gained.data);
   const uniqueBlueprints = [...new Set(blueprints)].filter(id => blueprintById(id) && !next.blueprints.includes(id));
   next.blueprints.push(...uniqueBlueprints);
   next.totals.expeditions++; if (outcome === "won") next.totals.wins++; else if (outcome === "extracted") next.totals.extracts++; else next.totals.losses++;
@@ -1779,13 +2384,25 @@ function settleRun(meta, run, outcome, options = {}) {
     regionState.clears++; if (regionState.clears >= 2) regionState.repaired = true;
     for (const id of regionById(regionId).next) if (next.regions[id]) next.regions[id].unlocked = true;
   }
-  const participation = Math.min(18, Math.floor((options.kills || 0) * .5 + (options.elapsed || 0) * .12));
-  const xp = participation + run.stationsBanked * 10 + (outcome === "won" ? 40 : outcome === "extracted" ? 15 : 0);
+  const xp = expeditionXp(run, outcome, options);
   next = applyTrainXp(next, xp);
   return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
 }
 
-const api = { STORAGE_KEY, gameStorage, MAX_TRAIN_LEVEL, CAR_DEFS, REGIONS, BLUEPRINTS, RESEARCH_IDS, RESEARCH_NAMES, MAX_RESEARCH_LEVEL, emptyMeta, normalizeMeta, loadMeta, saveMeta, trainSlots, regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout, createRun, awardRisk, addBlueprintRisk, bankRisk, trainUpgradeCost, upgradeTrain, researchCost, buyResearch, researchProfile, trainBonuses, xpToNext, rollBlueprint, settleRun };
+const api = {
+  STORAGE_KEY, BACKUP_KEY, gameStorage, MAX_TRAIN_LEVEL, MAX_RESEARCH_LEVEL, SAVE_VERSION,
+  CAR_DEFS, CAR_UNLOCK_NODE, REGIONS, BLUEPRINTS, BLUEPRINT_COMPENSATION,
+  TALENT_BRANCHES, TALENT_NODES, NODE_BY_ID, SPEC_OPTIONS, SPEC_NODE,
+  RESEARCH_IDS, RESEARCH_NAMES, RESEARCH_TRACKS, RESEARCH_COST_BASE,
+  emptyMeta, normalizeMeta, migrateFromV1, loadMeta, saveMeta,
+  trainSlots, carSlots, unlockedCars, carUnlocked, talentPoints, spentPoints, availablePoints, branchSpent,
+  nodeBlockReason, branchFullReason, talentProblems, normalizeTalents, emptyTalents,
+  buildStats, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
+  refitCost, refitIsPaid, applyTalents, savePreset, loadPreset, renamePreset, emptyPreset,
+  regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout,
+  createRun, awardRisk, addBlueprintRisk, bankRisk, expeditionXp,
+  researchCost, buyResearch, xpToNext, applyTrainXp, rollBlueprint, settleRun, copyResources, floorResources, fix3,
+};
 if (typeof module !== "undefined" && globalThis.__bundledExports) globalThis.__bundledExports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;
 })();
@@ -1847,7 +2464,7 @@ function addText(text,x,y,color){if(state.texts.length>=24)return;state.texts.pu
 
 
 
-function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",4);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
+function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
 function killEnemy(e, fromBlast=false){
   if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
   state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);
@@ -1858,6 +2475,7 @@ function killEnemy(e, fromBlast=false){
     if(["charger","climber","spitter"].includes(e.kind)){state.longtermRun.specialKills++;if(Math.random()<.18)state.drops.push({type:"research-data",x:e.x,y:e.y,life:7});}
     if(e.elite){
       state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
+      longterm.awardRisk(state.longtermRun,"data",1);
       if(Math.random()<.14){const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
     }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
   }
@@ -1870,14 +2488,22 @@ function killEnemy(e, fromBlast=false){
 function combatTargets() {
   return [...state.enemies.filter(e=>!e.dead&&e.delay<=0),...(state.boss&&!state.boss.dead?[state.boss]:[])];
 }
+// Elite tagging is defined exactly once (需求 §11): elites and the boss share
+// the elite condition, nobody else may re-derive it.
+function isEliteTarget(target){return !!target?.elite||target===state.boss;}
+// 战术标定 (需求 §11/§17.4) applies once, at the final damage path, to drone
+// and bond damage only - point defense folds its own elite factor in.
 function damageTarget(target, amount, owner) {
   if(!target||target.dead||target.hp<=0||!Number.isFinite(amount)||amount<=0)return 0;
   const source=typeof owner==="string"?{owner}:owner||{};
-  const actual=Math.min(Math.max(0,target.hp),amount);
+  let applied=amount;
+  if(isEliteTarget(target)&&state.runStats&&source.owner&&!String(source.owner).startsWith("train"))
+    applied*=state.runStats.eliteDamageMul;
+  const actual=Math.min(Math.max(0,target.hp),applied);
   if(source.owner){
     const stats=source.bondId?bondStatsFor(source.bondId,source.bondLevel):normalStatsFor(source.owner);
     stats.damage+=actual;
-    if(target.hp<=amount)stats.kills++;
+    if(target.hp<=applied)stats.kills++;
   }
   target.hp-=actual; target.hit=1;
   if(target.hp<=0)target===state.boss?killBoss():killEnemy(target);
@@ -1920,7 +2546,26 @@ function nearestTarget(origin,range=Infinity){
   if(boss&&!boss.dead){const squared=(boss.x-origin.x)**2+(boss.y-origin.y)**2;if(squared<distance&&squared<=(range+(boss.r||0))**2)nearest=boss;}
   return nearest;
 }
-function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12))*(state.runStats?.damageTakenMul??1);applyTrainDamage(damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+// All direct train damage funnels through here so 冲击缓冲/装甲材料 and the
+// one-shot 应急储备 trigger from a single place (需求 §8/§17).
+function applyTrainDamage(amount){
+  state.trainHp=Math.max(0,state.trainHp-amount);
+  const reserve=state.runStats?.emergencyReserve||0;
+  if(reserve>0&&!state.emergencyReserveUsed&&state.trainHp>0&&state.trainHp<=state.maxTrainHp*.3){
+    state.emergencyReserveUsed=true;
+    const healed=Math.min(state.maxTrainHp-state.trainHp,healTrain(reserve));
+    if(healed>0){burst(state.train.x,state.train.y,"#7ce9a0",20,120);showToast("应急储备启动 · 恢复 "+Math.ceil(healed));}
+  }
+  return amount;
+}
+function healTrain(amount){
+  const before=state.trainHp;
+  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+Math.max(0,amount));
+  // 有效维修量 (需求 §22.3): only HP actually restored counts, never overflow.
+  state.effectiveRepair=(state.effectiveRepair||0)+(state.trainHp-before);
+  return state.trainHp-before;
+}
 function releaseCarSuppression(enemy){
   const id=enemy?.suppressedCar;if(!id)return;
   if(!state.enemies.some(other=>other!==enemy&&!other.dead&&other.attached&&other.suppressedCar===id))delete state.disabledCars[id];
@@ -1971,11 +2616,12 @@ function spawnEnemy(delay=0) {
 
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
-  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{storageActive:carEnabled("storage"),kills:state.kills,elapsed:state.routeElapsed});
+  const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
+  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
   state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }
-function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
+function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;const damageMul=state.runStats?.droneDamageMul??1;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5*damageMul;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8*damageMul;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
 function beginRoute(event) {
   state.activeEvent=event||routeEvents.ROUTE_EVENTS?.[0]||null;
   state.routeModifiers=routeEvents.applyRouteModifiers({routeDistance:balance.routeDuration(state.station),enemySpeed:1,enemyHp:1,eliteChance:1,coreChance:1,rewardMultiplier:1,scrapMultiplier:1},state.activeEvent,state.activeContract);
@@ -2144,8 +2790,9 @@ function chooseUpgrade(u) {
   syncSwarm();
   const droneId = u.id === "rapid" ? "gun" : u.id;
   const displayLevel = effects.droneLevel(state.modules, droneId);
-  const research = longterm.researchProfile(state.metaProfile, droneId);
-  if (displayLevel === 10 && research.specialized && ["missile", "piercing"].includes(droneId) && !state.breakthroughs[droneId]) {
+  // v0.10: the old per-drone research Lv3 gate is gone with that system; the
+  // Lv.10 breakthrough choice itself keeps its previous rules (需求 §2/§26.1).
+  if (displayLevel === 10 && ["missile", "piercing"].includes(droneId) && !state.breakthroughs[droneId]) {
     const options = breakthroughOptions(droneId);
     if (options.length) return { weapon: droneId, breakthrough: options };
   }
@@ -2171,8 +2818,14 @@ function enterStation() {
   state.mode = "station"; state.timer = 0; state.enemies = []; state.boss = null; state.drops = [];
   presentation.hideBoss();
   longterm.bankRisk(state.longtermRun); state.disabledCars = {};
-  const fieldRepair = carEnabled("repair") ? (longterm.hasBlueprint(state.metaProfile, "field-repair") ? 18 : 12) : 0;
-  state.trainHp = Math.min(state.maxTrainHp, state.trainHp + Math.round((25 + level("repair") * 18 + fieldRepair) * longterm.trainBonuses(state.metaProfile).repairMultiplier));
+  // 到站维修分层 (需求 §17): base ×(1+H4+R2), repair car (12+R3+大修%)×(1+R1+R5),
+  // then the whole sum ×维修工程. H4 and the research part work without a car.
+  const S = state.runStats || {};
+  let heal = (25 + level("repair") * 18) * (S.stationBaseMul ?? 1);
+  if (S.repairCar) heal += (S.repairCar.flat + S.repairCar.overhaulPct * state.maxTrainHp) * S.repairCar.mul;
+  const beforeHeal = state.trainHp;
+  state.trainHp = Math.min(state.maxTrainHp, state.trainHp + heal * (S.repairMul ?? 1));
+  state.effectiveRepair = (state.effectiveRepair || 0) + (state.trainHp - beforeHeal);
   state.shieldReady = !!level("shield"); state.selectedUpgrade = null;
   state.rerollUsed = false;
   const data = {
@@ -2238,7 +2891,7 @@ function damageSummary() {
       kills: v.kills,
     };
   });
-  return { drones, bonds, train: fmt(state.trainDamage) };
+  return { drones, bonds, train: fmt(state.trainDamage), pointDefense: fmt(state.weaponStats?.["train-point-defense"]?.damage), effectiveRepair: fmt(state.effectiveRepair) };
 }
 
 
@@ -2329,9 +2982,11 @@ function bladePositions() {
   });
 }
 // Bonds belong exclusively to Beichen. A volley snapshots each active skill level.
+// 火控算法 covers bond volleys too, multiplied exactly once here (需求 §17.1).
 function fireCommandVolley(target,p,bonds){
   const origin=state.drone,angle=Math.atan2(target.y-origin.y,target.x-origin.x);
   origin.angle=angle;
+  const damageMul=state.runStats?.droneDamageMul??1;
   const blue=bonds.find(b=>b.id==="blue");
   if(!blue){gameAudio?.play("shot");fireProfile(origin,p,"#8ff6ff");normalStatsFor("command").volleys++;}
   for(const bond of bonds){
@@ -2339,19 +2994,19 @@ function fireCommandVolley(target,p,bonds){
     bondStatsFor(bond.id,bond.level).casts++;
     if(bond.id==="red"){
       state.shots.push({...source,x:origin.x,y:origin.y,vx:Math.cos(angle)*bond.speed,vy:Math.sin(angle)*bond.speed,
-        missile:true,target,life:bond.life,damage:bond.damage,radius:bond.radius,seekRange:bond.range,turnRate:bond.turnRate,
-        burnDamage:bond.burnDamage,burnDuration:bond.duration,burnTick:bond.tick,color:"#ff6445"});
+        missile:true,target,life:bond.life,damage:bond.damage*damageMul,radius:bond.radius,seekRange:bond.range,turnRate:bond.turnRate,
+        burnDamage:bond.burnDamage*damageMul,burnDuration:bond.duration,burnTick:bond.tick,color:"#ff6445"});
     }else if(bond.id==="purple"){
       state.shots.push({...source,x:origin.x,y:origin.y,vx:Math.cos(angle)*bond.speed,vy:Math.sin(angle)*bond.speed,
-        bounce:true,life:bond.life,bounces:bond.bounces,damage:bond.damage,hitRadius:bond.hitRadius,
-        arcRadius:bond.arcRadius,arcDamage:bond.arcDamage,arcInterval:bond.arcInterval,arcClock:0,color:"#be81ff"});
+        bounce:true,life:bond.life,bounces:bond.bounces,damage:bond.damage*damageMul,hitRadius:bond.hitRadius,
+        arcRadius:bond.arcRadius,arcDamage:bond.arcDamage*damageMul,arcInterval:bond.arcInterval,arcClock:0,color:"#be81ff"});
     }else{
       const end={x:origin.x+Math.cos(angle)*bond.range,y:origin.y+Math.sin(angle)*bond.range};
       for(const enemy of combatTargets()){
         const forward=(enemy.x-origin.x)*Math.cos(angle)+(enemy.y-origin.y)*Math.sin(angle);
         if(forward<0||forward>bond.range+(enemy.r||0))continue;
         const lateral=Math.abs((enemy.x-origin.x)*Math.sin(angle)-(enemy.y-origin.y)*Math.cos(angle));
-        if(lateral<=(enemy.r||0)+bond.width/2)damageTarget(enemy,bond.damage,source);
+        if(lateral<=(enemy.r||0)+bond.width/2)damageTarget(enemy,bond.damage*damageMul,source);
       }
       gameAudio?.play("laser");
       state.weaponFx.push({kind:"bondLaser",...source,x:origin.x,y:origin.y,tx:end.x,ty:end.y,width:bond.width,life:.36,maxLife:.36});
@@ -2524,42 +3179,48 @@ function alignedTargetCount(origin,target,range=330,width=26){
   }
   return count;
 }
+// 列车近防 (需求 §9/§17): range/interval/damage all derive from the frozen
+// run snapshot; 拦截阵列 targets the enemy closest to the train, 重型近防
+// carries its own elite factor here (damageTarget only handles drone sources).
 function pointDefenseTick(dt){
   state.pointDefenseClock=Math.max(0,(state.pointDefenseClock||0)-dt);
-  if(!carEnabled("pointDefense")||state.pointDefenseClock>0)return;
-  const origin=carPosition(1+state.expeditionPlan.cars.indexOf("pointDefense"));
-  const target=nearestTarget(origin,92);if(!target)return;
-  const amount=damageTarget(target,.8*(longterm.hasBlueprint(state.metaProfile,"pd-array")?1.22:1),{owner:"train-point-defense"});
+  const pd=state.runStats?.pd;
+  if(!carEnabled("pointDefense")||!pd||state.pointDefenseClock>0)return;
+  const origin=pd.intercept?state.train:carPosition(1+state.expeditionPlan.cars.indexOf("pointDefense"));
+  const range=92*pd.rangeMul;
+  const target=pd.intercept
+    ?combatTargets().filter(e=>Math.hypot(e.x-state.train.x,e.y-state.train.y)<=range+ (e.r||0))
+      .sort((a,b)=>Math.hypot(a.x-state.train.x,a.y-state.train.y)-Math.hypot(b.x-state.train.x,b.y-state.train.y))[0]
+    :nearestTarget(origin,range);
+  if(!target)return;
+  const eliteFactor=isEliteTarget(target)?pd.eliteMul:1;
+  const amount=damageTarget(target,.8*pd.damageMul*eliteFactor,{owner:"train-point-defense"});
   state.trainDamage=(state.trainDamage||0)+amount;
   state.weaponFx.push({kind:"stationBeam",x:origin.x,y:origin.y,tx:target.x,ty:target.y,life:.1,maxLife:.1});
-  state.pointDefenseClock=.42;
+  state.pointDefenseClock=.42*pd.intervalMul;
 }
+// v0.10 permanent research applies the three drone multipliers exactly once
+// here (需求 §17): damage 火控算法, interval 循环控制, range 射程校准 (ranges
+// only - radii, blast areas and laser widths are out of scope per §17.3).
 function applyResearchProfile(id,profile){
-  const q={...profile},research=longterm.researchProfile(state.metaProfile,id),bonus=longterm.trainBonuses(state.metaProfile);
-  q.damage=(q.damage||0)*research.damageMultiplier*bonus.droneDamageMultiplier;
-  if(research.specialized){
-    if(research.id==="rapid")q.interval*=.92;
-    if(research.id==="missile"||research.id==="incendiary")q.radius=(q.radius||0)*1.15;
-    if(research.id==="ricochet")q.bounces=(q.bounces||0)+1;
-    if(research.id==="chain")q.targets=(q.targets||1)+1;
-    if(research.id==="piercing")q.pierce=(q.pierce||0)+1;
-    if(research.id==="scatter")q.projectileCount=(q.projectileCount||1)+1;
-    if(research.id==="blades"){q.range=(q.range||0)*1.12;q.radius=(q.radius||q.range)*1.12;}
-  }
-  if(research.id==="rapid"&&longterm.hasBlueprint(state.metaProfile,"swift-feed"))q.damage*=1.08;
-  if(research.id==="piercing"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"rail-lens"))q.pierce=(q.pierce||0)+1;
-  if(research.id==="chain"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"arc-resonator"))q.targets=(q.targets||1)+1;
-  if(research.id==="missile"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"missile-guidance"))q.radius=(q.radius||0)*1.12;
-  if(research.id==="incendiary"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"incendiary-gel"))q.radius=(q.radius||0)*1.12;
-  if(research.id==="ricochet"&&research.specialized&&longterm.hasBlueprint(state.metaProfile,"ricochet-prism"))q.bounces=(q.bounces||0)+1;
-  const path=state.breakthroughs?.[research.id];
+  const q={...profile},S=state.runStats;
+  q.damage=(q.damage||0)*(S?.droneDamageMul??1);
+  if(q.interval)q.interval*=S?.droneIntervalMul??1;
+  if(q.range)q.range*=S?.droneRangeMul??1;
+  const path=state.breakthroughs?.[id];
   if(profile.breakthrough&&path){
-    if(research.id==="missile"&&path==="cluster"){q.damage*=.90;q.cluster=true;}
-    if(research.id==="missile"&&path==="heavy"){q.damage*=1.22;q.radius=(q.radius||0)*1.18;q.interval*=1.12;}
-    if(research.id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
-    if(research.id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
+    if(id==="missile"&&path==="cluster"){q.damage*=.90;q.cluster=true;}
+    if(id==="missile"&&path==="heavy"){q.damage*=1.22;q.radius=(q.radius||0)*1.18;q.interval*=1.12;}
+    if(id==="piercing"&&path==="focus"){q.damage*=1.24;q.pierce=(q.pierce||0)+2;}
+    if(id==="piercing"&&path==="split"){q.damage*=.74;q.projectileCount=2;q.spread=.055;}
   }
-  if(research.id==="chain"&&longterm.hasBlueprint(state.metaProfile,"chain-overload"))q.damage*=1.08;
+  // Lv.10 breakthrough blueprint enhancers stay active (需求 §21): they modify
+  // the in-run breakthrough choice, not the permanent stat stack.
+  if(longterm.hasBlueprint(state.metaProfile,"rail-lens")&&path==="focus")q.pierce=(q.pierce||0)+1;
+  if(longterm.hasBlueprint(state.metaProfile,"arc-resonator")&&id==="chain")q.targets=(q.targets||1)+1;
+  if(longterm.hasBlueprint(state.metaProfile,"missile-guidance")&&path==="heavy")q.radius=(q.radius||0)*1.12;
+  if(longterm.hasBlueprint(state.metaProfile,"incendiary-gel")&&id==="incendiary")q.radius=(q.radius||0)*1.12;
+  if(longterm.hasBlueprint(state.metaProfile,"ricochet-prism")&&id==="ricochet")q.bounces=(q.bounces||0)+1;
   q.frequency=q.interval?1/q.interval:0;
   if(profile.singleTargetDps && profile.damage && profile.interval)
     q.singleTargetDps=profile.singleTargetDps*(q.damage/profile.damage)*(profile.interval/q.interval)*((q.projectileCount||1)/(profile.projectileCount||1));
@@ -3040,6 +3701,7 @@ function drawCommandRing(){const ring=state.commandRing;if(!ring)return;const al
 
 
 
+
 function stepEnemy(e,dt){
   if(e.kind==="climber"){
     const target=carPosition(Math.max(1,Math.min(state.trainLength-1,e.targetCarIndex||1)));
@@ -3073,7 +3735,7 @@ function updateHostileShots(dt){
   for(const s of state.hostileShots){
     s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
     if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
-      state.trainHp=Math.max(0,state.trainHp-s.damage*(1-Math.min(.36,level("armor")*.12)));
+      applyTrainDamage(s.damage*(1-Math.min(.36,state.modules.armor||0)*.12)*(state.runStats?.damageTakenMul??1));
       state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
     }
   }
@@ -3154,10 +3816,13 @@ function beginRun(plan) {
   state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
-  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0;
-  const metaBonuses = longterm.trainBonuses(state.metaProfile);
+  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
+  // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).
+  state.runStats = state.longtermRun.stats;
+  state.emergencyReserveUsed = false; state.fieldRepairClock = 0;
+  const startHp = Math.round(state.runStats.maxHp);
   const seed = routeEvents.createSeed(Date.now());
-  Object.assign(state, { nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "contractChoice", visualTime: 0, paused: false, runSeed: seed, activeEvent: null, activeContract: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, station: 1, timer: 60, maxTrainHp: Math.round(100 * metaBonuses.hpMultiplier), trainHp: Math.round(100 * metaBonuses.hpMultiplier), scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: state.expeditionPlan?.trainLength || balance.START_TRAIN_LENGTH, fireClock: 0, escortClock: .2, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, coreHitCounter: 0, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, commandRing: null, rerollUsed: false, ...progression.createProgression({ routeDistanceTotal: 60 }) });
+  Object.assign(state, { nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "contractChoice", visualTime: 0, paused: false, runSeed: seed, activeEvent: null, activeContract: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, station: 1, timer: 60, maxTrainHp: startHp, trainHp: startHp, scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: state.expeditionPlan?.trainLength || balance.START_TRAIN_LENGTH, fireClock: 0, escortClock: .2, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, coreHitCounter: 0, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, commandRing: null, rerollUsed: false, ...progression.createProgression({ routeDistanceTotal: 60 }) });
   state.train.x = W / 2; state.train.y = H / 2;
   Object.assign(state.drone, { x: W / 2 + 45, y: H / 2 - 40, moveSpeed: control.DRONE_MOVE_SPEED, flightAngle: -Math.PI / 2, direction: 0, bank: 0, thrust: 0, vx: 0, vy: 0 });
   presentation.resetJoystick();
@@ -3190,9 +3855,10 @@ function update(dt, refreshHud = true) {
   updateSwarm(dt);
   state.commandRing = control.advanceCommandRing(state.commandRing, dt);
   state.drops = progression.expireDrops(state.drops, dt);
+  const pickupRadius = (28 + level("magnet") * 16) * (state.runStats?.pickupRadiusMul ?? 1);
   for (let i = state.drops.length - 1; i >= 0; i--) {
     const drop = state.drops[i];
-    if (Math.hypot(drop.x - state.drone.x, drop.y - state.drone.y) < 28 + level("magnet") * 16) {
+    if (Math.hypot(drop.x - state.drone.x, drop.y - state.drone.y) < pickupRadius) {
       if (drop.type === "meta-tech") { longterm.awardRisk(state.longtermRun, "components", 1); state.drops.splice(i, 1); showToast("技术组件已回收 · 风险资源"); continue; }
       if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1 + (longterm.hasBlueprint(state.metaProfile, "bio-scan") ? 1 : 0)); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
       if (drop.type === "repair-kit") { state.trainHp = Math.min(state.maxTrainHp, state.trainHp + 12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
@@ -3229,10 +3895,19 @@ function update(dt, refreshHud = true) {
       b.summon = 6; showToast("感染巨兽召集尸群");
     }
     if (Math.hypot(b.x - state.train.x, b.y - state.train.y) < 55) {
-      state.trainHp = Math.max(0, state.trainHp - 7 * dt); state.hurtFlash = .1;
+      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1)); state.hurtFlash = .1;
     }
   }
   updateHostileShots(dt);
+  // 行进抢修 (需求 §10): only effective combat time accumulates; the remainder
+  // carries across segments within the same run and resets on departure.
+  if (state.runStats?.fieldRepairPer10s) {
+    state.fieldRepairClock = (state.fieldRepairClock || 0) + dt;
+    while (state.fieldRepairClock >= 10) {
+      state.fieldRepairClock -= 10;
+      healTrain(state.runStats.fieldRepairPer10s);
+    }
+  }
   pointDefenseTick(dt);
   const trainProfile = effects.trainWeaponProfile({ modules: state.modules });
   if (trainProfile.railgunDamage && state.railClock > trainProfile.railgunInterval) { fireRailgun(trainProfile); state.railClock = 0; }
@@ -3790,6 +4465,8 @@ function drawResultScreen(u, state, host, registerRegion) {
     for (const bond of bonds) rows.push(["r", [bond.name + " · " + bond.stage, "伤害 " + bond.damage]]);
   }
   rows.push(["r", ["车炮　" + dmg.train, ""]]);
+  rows.push(["r", ["列车近防　" + (dmg.pointDefense || "0"), ""]]);
+  rows.push(["r", ["有效维修　" + (dmg.effectiveRepair || "0"), ""]]);
   let cardH = Y(36);
   for (const [kind] of rows) cardH += kind === "r" ? Y(26) : kind === "s" ? Y(42) : Y(24);
   box(c, T.card, X(21), y, X(363), cardH, X(5));
@@ -4046,10 +4723,12 @@ const host = {
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
-  trainSlots: 4, trainLength: 4, xpToNext: 1, trainUpgradeCost: 0, trainUpgradeComponents: 0,
-  maxedTrain: false, canUpgradeTrain: false, regionMeta: null, regionTags: {}, blueprintText: "",
+  trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
+  talent: { branch: "hull", draft: null, notice: "" },
+  presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
+  regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.9.0-rc.5",
+  version: "v0.10.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -4057,16 +4736,15 @@ let regions = [];
 
 // -- host data assembly -------------------------------------------------------
 
-// Same display copy the DOM research page shows (meta-ui.js compactDescriptions).
+// Same display copy the DOM research page shows (meta-ui.js RESEARCH_COPY).
 const RESEARCH_COPY = {
-  rapid: "近程高频点射，提高射速与伤害。",
-  missile: "远程追踪弹，高伤爆炸清理尸群。",
-  incendiary: "投掷燃烧弹，在地面留下火墙。",
-  ricochet: "中程能量球，反弹穿过尸群。",
-  chain: "连锁电弧，密集目标伤害更高。",
-  piercing: "远程磁轨弹，贯穿多个敌人。",
-  scatter: "近程扇形霰弹，贴近尸群清扫。",
-  blades: "近战持续切割，主动靠近尸群。",
+  fireControl: "提高北辰与所有无人机的伤害。",
+  cycleControl: "缩短无人机普通攻击的基础间隔。",
+  rangeCalibration: "扩大无人机索敌与攻击射程。",
+  hullEngineering: "提高列车最大耐久。",
+  armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
+  repairEngineering: "提高所有到站维修与应急储备的维修量。",
+  trainFireControl: "提高列车自身近防炮的伤害。",
 };
 
 function regionStatus(meta, regionId) {
@@ -4078,28 +4756,105 @@ function regionStatus(meta, regionId) {
   return { status, tag: unlocked ? status : "未解锁" };
 }
 
+// Talent draft lives on the host exactly like the DOM page keeps one in
+// meta-ui.js: edits are free previews, the single apply call commits. The
+// reset derives from state.metaProfile (updated by applyTalents itself) -
+// host.meta may still hold the previous frame's copy at action time.
+function draftFromProfile() {
+  const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
+  host.talent.draft = { nodes, specs };
+}
+function draftDirty() {
+  const current = host.meta?.talents;
+  if (!current || !host.talent.draft) return false;
+  for (const node of (longterm.TALENT_NODES || []))
+    if ((host.talent.draft.nodes[node.id] || 0) !== (current.nodes[node.id] || 0)) return true;
+  for (const key in host.talent.draft.specs) if (host.talent.draft.specs[key] !== current.specs[key]) return true;
+  return false;
+}
+function withdrawNode(nodeId) {
+  const draft = host.talent.draft;
+  draft.nodes[nodeId] = Math.max(0, (draft.nodes[nodeId] || 0) - 1);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const node of longterm.TALENT_NODES) {
+      if (!(draft.nodes[node.id] > 0) || !node.prereq?.id) continue;
+      if ((draft.nodes[node.prereq.id] || 0) < node.prereq.level) { draft.nodes[node.id] = 0; changed = true; }
+    }
+    for (const branchId of Object.keys(longterm.SPEC_NODE))
+      if (draft.specs[branchId] && !(draft.nodes[longterm.SPEC_NODE[branchId]] > 0)) draft.specs[branchId] = null;
+  }
+}
+function raiseNode(nodeId) {
+  const node = longterm.NODE_BY_ID[nodeId], draft = host.talent.draft;
+  if (!node || (draft.nodes[nodeId] || 0) >= node.levels || longterm.nodeBlockReason(host.meta, draft, nodeId)) return;
+  draft.nodes[nodeId] = (draft.nodes[nodeId] || 0) + 1;
+}
+
 function refreshHostData() {
   const profile = state.metaProfile;
   host.meta = profile;
   const plan = longterm.planFor(profile);
   host.trainLength = plan.trainLength;
   host.trainSlots = longterm.trainSlots(profile);
+  host.carSlots = longterm.carSlots(profile);
   host.xpToNext = longterm.xpToNext(profile.train.level);
-  const cost = longterm.trainUpgradeCost(profile);
-  host.maxedTrain = !Number.isFinite(cost.scrap);
-  host.trainUpgradeCost = host.maxedTrain ? 0 : cost.scrap;
-  host.trainUpgradeComponents = cost.components;
-  host.canUpgradeTrain = !host.maxedTrain
-    && profile.resources.scrap >= cost.scrap && profile.resources.components >= cost.components;
-  host.carDefs = (longterm.CAR_DEFS || []).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
-  host.unlockedCars = profile.unlockedCars || [];
+  host.talentPoints = longterm.talentPoints(profile);
+  if (!host.talent.draft) draftFromProfile();
+  host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
+  host.unlockedCars = longterm.unlockedCars(profile);
   host.loadoutCars = (profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
-  host.researchRows = (longterm.RESEARCH_IDS || []).map(id => {
-    const costData = longterm.researchCost(profile, id);
-    const maxed = !Number.isFinite(costData);
+  // Talent panel data for the canvas painter.
+  host.branchRows = (longterm.TALENT_BRANCHES || []).map(branch => ({
+    id: branch.id, name: branch.name, cap: branch.cap,
+    spent: longterm.branchSpent(host.talent.draft, branch.id),
+    equipped: !branch.car || (profile.loadout || []).includes(branch.car),
+    active: host.talent.branch === branch.id,
+  }));
+  host.nodeRows = (longterm.TALENT_NODES || []).filter(node => node.branch === host.talent.branch).map(node => ({
+    id: node.id, name: node.name, cost: node.cost, levels: node.levels,
+    level: host.talent.draft.nodes[node.id] || 0,
+    block: longterm.nodeBlockReason(profile, host.talent.draft, node.id),
+    effect: host.talent.draft.nodes[node.id] > 0 ? node.effect(host.talent.draft.nodes[node.id]) : node.effect(1),
+  }));
+  host.specRows = (longterm.SPEC_OPTIONS?.[host.talent.branch] || []).map(option => ({
+    branch: host.talent.branch, id: option.id, name: option.name, desc: option.desc,
+    owned: (host.talent.draft.nodes[longterm.SPEC_NODE[host.talent.branch]] || 0) > 0,
+    active: host.talent.draft.specs[host.talent.branch] === option.id,
+  }));
+  host.presetRows = (profile.presets || []).map((preset, index) => ({
+    index, name: preset.name, spent: longterm.spentPoints(preset.talents), cars: Math.max(0, preset.loadout.length - 1),
+  }));
+  const dirty = draftDirty();
+  const problems = dirty ? longterm.talentProblems(profile, host.talent.draft) : [];
+  const paid = dirty && longterm.refitIsPaid(profile.talents, host.talent.draft);
+  const cost = longterm.refitCost(profile);
+  const currentStats = longterm.buildStats(profile);
+  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft }) : currentStats;
+  host.talentSummary = {
+    points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
+    dirty, problems,
+    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料`,
+    canApply: dirty && !problems.length,
+    rows: [
+      `最大耐久 ${Math.round(currentStats.maxHp)} → ${Math.round(nextStats.maxHp)}`,
+      `无人机伤害 ×${currentStats.droneDamageMul.toFixed(2)} → ×${nextStats.droneDamageMul.toFixed(2)}`,
+      `失败保留率 ${(currentStats.failureKeep * 100).toFixed(0)}% → ${(nextStats.failureKeep * 100).toFixed(0)}%`,
+    ],
+  };
+  host.researchRows = (longterm.RESEARCH_TRACKS || []).map(track => {
+    const costData = longterm.researchCost(profile, track.id);
+    const maxed = !costData;
+    const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
+    const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id, name: longterm.RESEARCH_NAMES?.[id] || id, level: profile.research[id] || 0,
-      cost: maxed ? 0 : costData, maxed, desc: RESEARCH_COPY[id] || "研究等级影响对应无人机的长期性能。",
+      id: track.id, group: track.group, name: track.name, scope: track.scope,
+      level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
+      cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
+      desc: RESEARCH_COPY[track.id] || "",
+      affordable: !maxed && profile.resources.scrap >= costData.scrap
+        && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
     };
   });
   const selectedRegion = profile.selectedRegion || "wasteland";
@@ -4111,6 +4866,11 @@ function refreshHostData() {
   for (const id of profile.blueprints || []) {
     const bp = longterm.blueprintById(id);
     if (bp) host.blueprintNames[id] = bp.name;
+  }
+  // 出发页摘要 (需求 §22.3)，与 DOM 版 meta-ui.js 同一口径。
+  {
+    const S = longterm.buildStats(profile);
+    host.departureSummary = `伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp / 100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
   }
   host.blueprintText = (profile.blueprints || []).length
     ? (profile.blueprints || []).map(id => { const bp = longterm.blueprintById(id); return bp ? bp.name + "：" + bp.description : id; }).join("\n")
@@ -4171,6 +4931,7 @@ function backToMenu() {
   state.metaProfile = longterm.loadMeta(metaStorage);
   state.record = runRecord.loadRecord(metaStorage);
   host.levelPicks = null; host.breakthrough = null; host.stationData = null; host.resultData = null; host.routeCards = null; host.page = "battle"; host.scroll = 0;
+  host.talent.draft = null; host.talent.notice = "";
   refreshHostData();
   drawOverlay();
 }
@@ -4258,9 +5019,36 @@ function applyAction(action) {
       const next = longterm.setLoadout(state.metaProfile, cars);
       if (next) { state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile); }
     }
-  } else if (action.trainUpgrade) {
-    const result = longterm.upgradeTrain(state.metaProfile);
-    if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }
+  } else if (action.talentBranch) {
+    host.talent.branch = action.talentBranch;
+  } else if (action.talentPlus) {
+    raiseNode(action.talentPlus);
+  } else if (action.talentMinus) {
+    withdrawNode(action.talentMinus);
+  } else if (action.talentSpec) {
+    const [branchId, optionId] = action.talentSpec;
+    host.talent.draft.specs[branchId] = host.talent.draft.specs[branchId] === optionId ? null : optionId;
+  } else if (action.presetLoad !== undefined) {
+    const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
+    host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
+    host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
+  } else if (action.presetSave !== undefined) {
+    state.metaProfile = longterm.savePreset(state.metaProfile, action.presetSave, host.talent.draft, state.metaProfile.loadout);
+    longterm.saveMeta(metaStorage, state.metaProfile);
+    host.talent.notice = "草稿已存入方案";
+  } else if (action.talentReset) {
+    draftFromProfile();
+    host.talent.notice = "";
+  } else if (action.talentApply) {
+    const result = longterm.applyTalents(state.metaProfile, host.talent.draft);
+    if (result.applied) {
+      state.metaProfile = result.meta;
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      draftFromProfile();
+      host.talent.notice = result.charged ? `已支付改装费 ${result.charged} 废料` : result.paid ? `已消耗 1 次免费重构（剩 ${result.freeRefits} 次）` : "";
+    } else {
+      host.talent.notice = result.problems.join("；");
+    }
   } else if (action.research) {
     const result = longterm.buyResearch(state.metaProfile, action.research);
     if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }

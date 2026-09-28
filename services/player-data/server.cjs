@@ -11,7 +11,7 @@ class ApiError extends Error {constructor(status,message){super(message);this.st
 const object=x=>x&&typeof x==='object'&&!Array.isArray(x);
 function validate(payload){
  if(!object(payload)||payload.schemaVersion!==1||!object(payload.meta)||!object(payload.record)
-   ||payload.meta.version!==1||payload.record.version!==1
+   ||![1,2].includes(payload.meta.version)||payload.record.version!==1
    ||!object(payload.meta.resources)||!object(payload.meta.train)
    ||Object.keys(payload).some(k=>!['schemaVersion','meta','record'].includes(k)))throw new ApiError(400,'invalid_save');
  if(Buffer.byteLength(JSON.stringify(payload))>MAX_PAYLOAD)throw new ApiError(413,'save_too_large');
@@ -25,15 +25,26 @@ function validate(payload){
  walk(payload);
  const m=payload.meta, r=payload.record;
  const integer=value=>Number.isSafeInteger(value)&&value>=0&&value<=1e12;
- if(!['scrap','components','data'].every(k=>integer(m.resources[k]))
+ // v0.10 resources use fixed-3 fractional bookkeeping (需求 §19.2).
+ const fixed3=value=>Number.isFinite(value)&&value>=0&&value<=1e12&&Math.abs(value*1000-Math.round(value*1000))<1e-6;
+ if(!['scrap','components','data'].every(k=>integer(m.resources[k])||fixed3(m.resources[k]))
    ||!integer(m.train.xp)||!Number.isInteger(m.train.level)||m.train.level<1||m.train.level>30
    ||!object(m.totals)||!['expeditions','extracts','wins','losses'].every(k=>integer(m.totals[k]))
-   ||!object(m.research)||!meta.RESEARCH_IDS.every(k=>Number.isInteger(m.research[k])&&m.research[k]>=0&&m.research[k]<=3)
+   ||!object(m.research)||!meta.RESEARCH_IDS.every(k=>Number.isInteger(m.research[k])&&m.research[k]>=0&&m.research[k]<=meta.MAX_RESEARCH_LEVEL)
    ||!object(m.regions)||!meta.REGIONS.every(region=>object(m.regions[region.id])&&integer(m.regions[region.id].clears)&&typeof m.regions[region.id].unlocked==='boolean'&&typeof m.regions[region.id].repaired==='boolean')
    ||!meta.REGIONS.some(region=>region.id===m.selectedRegion)
    ||!['runs','bestStations','bestKills','bestCombo','bestScrap'].every(k=>integer(r[k]))
    ||!(r.latest===null||object(r.latest)))throw new ApiError(400,'invalid_save');
- for(const [key,allowed,max] of [['loadout',meta.CAR_DEFS.map(c=>c.id),6],['unlockedCars',meta.CAR_DEFS.map(c=>c.id),5],['blueprints',meta.BLUEPRINTS.map(b=>b.id),12]]){
+ // v0.10: talents/presets exist on version-2 saves; unlockedCars is derived now.
+ if(m.version===2){
+   if(!object(m.talents)||!object(m.talents.nodes)||!object(m.talents.specs)
+     ||!Array.isArray(m.presets)||m.presets.length!==3
+     ||!Number.isInteger(m.freeRefits)||m.freeRefits<0||m.freeRefits>99
+     ||!meta.TALENT_NODES.every(node=>m.talents.nodes[node.id]===undefined
+        ||Number.isInteger(m.talents.nodes[node.id])&&m.talents.nodes[node.id]>=0&&m.talents.nodes[node.id]<=node.levels))
+     throw new ApiError(400,'invalid_save');
+ }
+ for(const [key,allowed,max] of [['loadout',meta.CAR_DEFS.map(c=>c.id),6],['blueprints',meta.BLUEPRINTS.map(b=>b.id),12]]){
    if(!Array.isArray(m[key])||m[key].length>max||!m[key].every(id=>allowed.includes(id)))throw new ApiError(400,'invalid_save');
  }
  return payload;

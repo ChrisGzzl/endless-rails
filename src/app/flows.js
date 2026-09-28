@@ -140,7 +140,7 @@ function renderDamageSummary(){
   $("resultBondDamage").innerHTML=live.map(b=>{
     return `<div class="bond-result"><span>${b.name} · ${b.stage}<em>${b.damage}</em></span><small>北辰释放 ${b.casts} 次 · 击杀 ${b.kills}</small></div>`;
   }).join("");
-  $("resultTrainDamage").textContent=`车炮　${data.train}`;
+  $("resultTrainDamage").innerHTML=`<span>车炮　<em>${data.train}</em></span><span>近防　<em>${data.pointDefense}</em></span><span>有效维修　<em>${data.effectiveRepair}</em></span>`;
 }
 
 // Register the three flow screens this panel owns so the engine and the sim

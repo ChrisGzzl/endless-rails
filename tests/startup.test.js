@@ -25,7 +25,8 @@ assert.equal(clickError, null, "clicking start must not fail");
 assert.equal(elements.startScreen.hidden, true, "clicking start must hide the start screen");
 assert.equal(elements.metaScreen.hidden, true, "train tab remains hidden during expedition");
 assert.equal(elements.metaRegionList.children.length, 4);
-assert.equal(elements.metaResearchList.children.length, 8);
+// v0.10: two research group headers + seven permanent research rows.
+assert.equal(elements.metaResearchList.children.length, 9);
 
 assert.equal(elements.phaseLabel.textContent, "远征契约", "clicking start must open the contract choice");
 assert.equal(elements.contractScreen.hidden, false, "clicking start must show contract choices before combat");

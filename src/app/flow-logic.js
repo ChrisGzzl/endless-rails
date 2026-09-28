@@ -85,8 +85,9 @@ function chooseUpgrade(u) {
   syncSwarm();
   const droneId = u.id === "rapid" ? "gun" : u.id;
   const displayLevel = effects.droneLevel(state.modules, droneId);
-  const research = longterm.researchProfile(state.metaProfile, droneId);
-  if (displayLevel === 10 && research.specialized && ["missile", "piercing"].includes(droneId) && !state.breakthroughs[droneId]) {
+  // v0.10: the old per-drone research Lv3 gate is gone with that system; the
+  // Lv.10 breakthrough choice itself keeps its previous rules (需求 §2/§26.1).
+  if (displayLevel === 10 && ["missile", "piercing"].includes(droneId) && !state.breakthroughs[droneId]) {
     const options = breakthroughOptions(droneId);
     if (options.length) return { weapon: droneId, breakthrough: options };
   }
@@ -112,8 +113,14 @@ function enterStation() {
   state.mode = "station"; state.timer = 0; state.enemies = []; state.boss = null; state.drops = [];
   presentation.hideBoss();
   longterm.bankRisk(state.longtermRun); state.disabledCars = {};
-  const fieldRepair = carEnabled("repair") ? (longterm.hasBlueprint(state.metaProfile, "field-repair") ? 18 : 12) : 0;
-  state.trainHp = Math.min(state.maxTrainHp, state.trainHp + Math.round((25 + level("repair") * 18 + fieldRepair) * longterm.trainBonuses(state.metaProfile).repairMultiplier));
+  // 到站维修分层 (需求 §17): base ×(1+H4+R2), repair car (12+R3+大修%)×(1+R1+R5),
+  // then the whole sum ×维修工程. H4 and the research part work without a car.
+  const S = state.runStats || {};
+  let heal = (25 + level("repair") * 18) * (S.stationBaseMul ?? 1);
+  if (S.repairCar) heal += (S.repairCar.flat + S.repairCar.overhaulPct * state.maxTrainHp) * S.repairCar.mul;
+  const beforeHeal = state.trainHp;
+  state.trainHp = Math.min(state.maxTrainHp, state.trainHp + heal * (S.repairMul ?? 1));
+  state.effectiveRepair = (state.effectiveRepair || 0) + (state.trainHp - beforeHeal);
   state.shieldReady = !!level("shield"); state.selectedUpgrade = null;
   state.rerollUsed = false;
   const data = {
@@ -179,7 +186,7 @@ function damageSummary() {
       kills: v.kills,
     };
   });
-  return { drones, bonds, train: fmt(state.trainDamage) };
+  return { drones, bonds, train: fmt(state.trainDamage), pointDefense: fmt(state.weaponStats?.["train-point-defense"]?.damage), effectiveRepair: fmt(state.effectiveRepair) };
 }
 
 export { settleFinish, prepareContractChoice, chooseContract, prepareRouteEvent, prepareLevelUp, breakthroughOptions, chooseUpgrade, chooseBreakthrough, enterStation, rollStationUpgrades, selectStationUpgrade, rerollStation, departStation, extractRun, damageSummary, eventIntel };

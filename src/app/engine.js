@@ -22,7 +22,7 @@ import { showToast, updateParticles } from "../sim/fx.js";
 import { spawnWave, spawnEnemy } from "../sim/spawn.js";
 import { stepEnemy, updateHostileShots } from "../sim/enemies.js";
 import { applyResearchProfile, pointDefenseTick, fireRailgun, updateShots, bladePositions, updateArsenal } from "../sim/weapons.js";
-import { releaseCarSuppression, collideTrain, nearestTarget, bladeHuntTarget, damageTarget, normalStatsFor, bondStatsFor, areaHit, ricochetBurst, killEnemy, killBoss } from "../sim/combat.js";
+import { releaseCarSuppression, collideTrain, nearestTarget, bladeHuntTarget, damageTarget, normalStatsFor, bondStatsFor, areaHit, ricochetBurst, killEnemy, killBoss, applyTrainDamage, healTrain } from "../sim/combat.js";
 import { syncSwarm, updateSwarm, beginRoute, pulse, settleLongterm } from "../sim/run.js";
 import { stationCenter, stationTurrets, startDocking, updateDocking } from "../sim/docking.js";
 import { upgradePool, experiencePool } from "../sim/station.js";
@@ -68,10 +68,13 @@ function beginRun(plan) {
   state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
-  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0;
-  const metaBonuses = longterm.trainBonuses(state.metaProfile);
+  state.metaSettlement = null; state.metaSettled = false; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
+  // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).
+  state.runStats = state.longtermRun.stats;
+  state.emergencyReserveUsed = false; state.fieldRepairClock = 0;
+  const startHp = Math.round(state.runStats.maxHp);
   const seed = routeEvents.createSeed(Date.now());
-  Object.assign(state, { nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "contractChoice", visualTime: 0, paused: false, runSeed: seed, activeEvent: null, activeContract: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, station: 1, timer: 60, maxTrainHp: Math.round(100 * metaBonuses.hpMultiplier), trainHp: Math.round(100 * metaBonuses.hpMultiplier), scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: state.expeditionPlan?.trainLength || balance.START_TRAIN_LENGTH, fireClock: 0, escortClock: .2, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, coreHitCounter: 0, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, commandRing: null, rerollUsed: false, ...progression.createProgression({ routeDistanceTotal: 60 }) });
+  Object.assign(state, { nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "contractChoice", visualTime: 0, paused: false, runSeed: seed, activeEvent: null, activeContract: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, station: 1, timer: 60, maxTrainHp: startHp, trainHp: startHp, scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: state.expeditionPlan?.trainLength || balance.START_TRAIN_LENGTH, fireClock: 0, escortClock: .2, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, coreHitCounter: 0, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, commandRing: null, rerollUsed: false, ...progression.createProgression({ routeDistanceTotal: 60 }) });
   state.train.x = W / 2; state.train.y = H / 2;
   Object.assign(state.drone, { x: W / 2 + 45, y: H / 2 - 40, moveSpeed: control.DRONE_MOVE_SPEED, flightAngle: -Math.PI / 2, direction: 0, bank: 0, thrust: 0, vx: 0, vy: 0 });
   presentation.resetJoystick();
@@ -104,9 +107,10 @@ function update(dt, refreshHud = true) {
   updateSwarm(dt);
   state.commandRing = control.advanceCommandRing(state.commandRing, dt);
   state.drops = progression.expireDrops(state.drops, dt);
+  const pickupRadius = (28 + level("magnet") * 16) * (state.runStats?.pickupRadiusMul ?? 1);
   for (let i = state.drops.length - 1; i >= 0; i--) {
     const drop = state.drops[i];
-    if (Math.hypot(drop.x - state.drone.x, drop.y - state.drone.y) < 28 + level("magnet") * 16) {
+    if (Math.hypot(drop.x - state.drone.x, drop.y - state.drone.y) < pickupRadius) {
       if (drop.type === "meta-tech") { longterm.awardRisk(state.longtermRun, "components", 1); state.drops.splice(i, 1); showToast("技术组件已回收 · 风险资源"); continue; }
       if (drop.type === "research-data") { longterm.awardRisk(state.longtermRun, "data", 1 + (longterm.hasBlueprint(state.metaProfile, "bio-scan") ? 1 : 0)); state.drops.splice(i, 1); showToast("研究数据已回收 · 风险资源"); continue; }
       if (drop.type === "repair-kit") { state.trainHp = Math.min(state.maxTrainHp, state.trainHp + 12); state.drops.splice(i, 1); showToast("现场维修 +12"); continue; }
@@ -143,10 +147,19 @@ function update(dt, refreshHud = true) {
       b.summon = 6; showToast("感染巨兽召集尸群");
     }
     if (Math.hypot(b.x - state.train.x, b.y - state.train.y) < 55) {
-      state.trainHp = Math.max(0, state.trainHp - 7 * dt); state.hurtFlash = .1;
+      applyTrainDamage(7 * dt * (state.runStats?.damageTakenMul ?? 1)); state.hurtFlash = .1;
     }
   }
   updateHostileShots(dt);
+  // 行进抢修 (需求 §10): only effective combat time accumulates; the remainder
+  // carries across segments within the same run and resets on departure.
+  if (state.runStats?.fieldRepairPer10s) {
+    state.fieldRepairClock = (state.fieldRepairClock || 0) + dt;
+    while (state.fieldRepairClock >= 10) {
+      state.fieldRepairClock -= 10;
+      healTrain(state.runStats.fieldRepairPer10s);
+    }
+  }
   pointDefenseTick(dt);
   const trainProfile = effects.trainWeaponProfile({ modules: state.modules });
   if (trainProfile.railgunDamage && state.railClock > trainProfile.railgunInterval) { fireRailgun(trainProfile); state.railClock = 0; }

@@ -1,6 +1,6 @@
 "use strict";
 
-import { state, level, gameAudio, effects, longterm, routeEvents, balance, metaStorage, carEnabled, presentation } from "../app/engine.js";
+import { state, level, gameAudio, effects, longterm, routeEvents, balance, metaStorage, presentation } from "../app/engine.js";
 import { cameraView } from "./world.js";
 import { nearestTarget, bladeHuntTarget, killEnemy, killBoss } from "./combat.js";
 import { burst, showToast } from "./fx.js";
@@ -8,11 +8,12 @@ import { spawnWave } from "./spawn.js";
 
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
-  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{storageActive:carEnabled("storage"),kills:state.kills,elapsed:state.routeElapsed});
+  const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
+  const settlement=longterm.settleRun(state.metaProfile,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
   state.metaProfile=settlement.meta;state.metaSettlement=settlement;state.metaSettled=true;longterm.saveMeta(metaStorage,state.metaProfile);
   window.EndlessRailsMetaUI?.refresh?.();return settlement;
 }
-function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
+function pulse(){if(state.mode!=="combat"||state.paused||state.pulseClock>0)return;gameAudio?.play("pulse");state.pulseClock=Math.max(3.8,7-level("overclock")*1.4);state.shake=12;const damageMul=state.runStats?.droneDamageMul??1;state.enemies.forEach(e=>{if(!e.dead&&Math.hypot(e.x-state.train.x,e.y-state.train.y)<190){e.hp-=4.5*damageMul;burst(e.x,e.y,"#5de1df",10,100);if(e.hp<=0)killEnemy(e)}});if(state.boss&&Math.hypot(state.boss.x-state.train.x,state.boss.y-state.train.y)<220){state.boss.hp-=8*damageMul;state.boss.hit=1;if(state.boss.hp<=0)killBoss()}burst(state.train.x,state.train.y,"#5de1df",34,170);showToast("电磁脉冲")}
 function beginRoute(event) {
   state.activeEvent=event||routeEvents.ROUTE_EVENTS?.[0]||null;
   state.routeModifiers=routeEvents.applyRouteModifiers({routeDistance:balance.routeDuration(state.station),enemySpeed:1,enemyHp:1,eliteChance:1,coreChance:1,rewardMultiplier:1,scrapMultiplier:1},state.activeEvent,state.activeContract);

@@ -4,7 +4,7 @@ import { state, level, balance, effects, progression, longterm } from "../app/en
 import { TAU } from "../view/surface.js";
 import { burst, addText, showToast, showCombo } from "./fx.js";
 
-function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",4);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
+function killBoss(){if(!state.boss||state.boss.dead)return;state.boss.dead=true;state.score+=1200;state.scrap+=80;if(state.longtermRun){longterm.awardRisk(state.longtermRun,"components",2);longterm.awardRisk(state.longtermRun,"data",3);const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)longterm.addBlueprintRisk(state.longtermRun,bp);}state.shake=15;burst(state.boss.x,state.boss.y,"#ffb45f",60,190);showToast("感染巨兽核心崩解 · 高价值资料已回收")}
 function killEnemy(e, fromBlast=false){
   if(e.rewarded)return;e.dead=true;e.rewarded=true;releaseCarSuppression(e);
   state.kills++;state.combo++;state.bestCombo=Math.max(state.bestCombo,state.combo);
@@ -15,6 +15,7 @@ function killEnemy(e, fromBlast=false){
     if(["charger","climber","spitter"].includes(e.kind)){state.longtermRun.specialKills++;if(Math.random()<.18)state.drops.push({type:"research-data",x:e.x,y:e.y,life:7});}
     if(e.elite){
       state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
+      longterm.awardRisk(state.longtermRun,"data",1);
       if(Math.random()<.14){const bp=longterm.rollBlueprint(state.metaProfile,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
     }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
   }
@@ -27,14 +28,22 @@ function killEnemy(e, fromBlast=false){
 function combatTargets() {
   return [...state.enemies.filter(e=>!e.dead&&e.delay<=0),...(state.boss&&!state.boss.dead?[state.boss]:[])];
 }
+// Elite tagging is defined exactly once (需求 §11): elites and the boss share
+// the elite condition, nobody else may re-derive it.
+function isEliteTarget(target){return !!target?.elite||target===state.boss;}
+// 战术标定 (需求 §11/§17.4) applies once, at the final damage path, to drone
+// and bond damage only - point defense folds its own elite factor in.
 function damageTarget(target, amount, owner) {
   if(!target||target.dead||target.hp<=0||!Number.isFinite(amount)||amount<=0)return 0;
   const source=typeof owner==="string"?{owner}:owner||{};
-  const actual=Math.min(Math.max(0,target.hp),amount);
+  let applied=amount;
+  if(isEliteTarget(target)&&state.runStats&&source.owner&&!String(source.owner).startsWith("train"))
+    applied*=state.runStats.eliteDamageMul;
+  const actual=Math.min(Math.max(0,target.hp),applied);
   if(source.owner){
     const stats=source.bondId?bondStatsFor(source.bondId,source.bondLevel):normalStatsFor(source.owner);
     stats.damage+=actual;
-    if(target.hp<=amount)stats.kills++;
+    if(target.hp<=applied)stats.kills++;
   }
   target.hp-=actual; target.hit=1;
   if(target.hp<=0)target===state.boss?killBoss():killEnemy(target);
@@ -77,10 +86,29 @@ function nearestTarget(origin,range=Infinity){
   if(boss&&!boss.dead){const squared=(boss.x-origin.x)**2+(boss.y-origin.y)**2;if(squared<distance&&squared<=(range+(boss.r||0))**2)nearest=boss;}
   return nearest;
 }
-function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12));state.trainHp=Math.max(0,state.trainHp-damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+function collideTrain(e){e.dead=true;releaseCarSuppression(e);if(state.shieldReady){state.shieldReady=false;burst(e.x,e.y,"#7ce9e6",14,80);showToast("护盾挡下撞击");return}const damage=(e.elite?11:6)*(e.kind==="charger"?1.8:1)*(1-Math.min(.36,level("armor")*.12))*(state.runStats?.damageTakenMul??1);applyTrainDamage(damage);state.hurtFlash=.3;state.shake=5;burst(e.x,e.y,"#f16d63",9,60);addText("-"+Math.ceil(damage),state.train.x,state.train.y-40,"#f16d63")}
+// All direct train damage funnels through here so 冲击缓冲/装甲材料 and the
+// one-shot 应急储备 trigger from a single place (需求 §8/§17).
+function applyTrainDamage(amount){
+  state.trainHp=Math.max(0,state.trainHp-amount);
+  const reserve=state.runStats?.emergencyReserve||0;
+  if(reserve>0&&!state.emergencyReserveUsed&&state.trainHp>0&&state.trainHp<=state.maxTrainHp*.3){
+    state.emergencyReserveUsed=true;
+    const healed=Math.min(state.maxTrainHp-state.trainHp,healTrain(reserve));
+    if(healed>0){burst(state.train.x,state.train.y,"#7ce9a0",20,120);showToast("应急储备启动 · 恢复 "+Math.ceil(healed));}
+  }
+  return amount;
+}
+function healTrain(amount){
+  const before=state.trainHp;
+  state.trainHp=Math.min(state.maxTrainHp,state.trainHp+Math.max(0,amount));
+  // 有效维修量 (需求 §22.3): only HP actually restored counts, never overflow.
+  state.effectiveRepair=(state.effectiveRepair||0)+(state.trainHp-before);
+  return state.trainHp-before;
+}
 function releaseCarSuppression(enemy){
   const id=enemy?.suppressedCar;if(!id)return;
   if(!state.enemies.some(other=>other!==enemy&&!other.dead&&other.attached&&other.suppressedCar===id))delete state.disabledCars[id];
 }
 
-export { releaseCarSuppression, collideTrain, nearestTarget, bladeHuntTarget, combatTargets, damageTarget, normalStatsFor, bondStatsFor, areaHit, ricochetBurst, killEnemy, killBoss };
+export { releaseCarSuppression, collideTrain, nearestTarget, bladeHuntTarget, combatTargets, damageTarget, normalStatsFor, bondStatsFor, areaHit, ricochetBurst, killEnemy, killBoss, applyTrainDamage, healTrain, isEliteTarget };

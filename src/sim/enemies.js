@@ -1,6 +1,7 @@
 "use strict";
 
-import { state, motion, level, longterm } from "../app/engine.js";
+import { state, motion, longterm } from "../app/engine.js";
+import { applyTrainDamage } from "./combat.js";
 import { TAU } from "../view/surface.js";
 import { WORLD_SPEED, carPosition } from "./world.js";
 import { burst, showToast } from "./fx.js";
@@ -38,7 +39,7 @@ function updateHostileShots(dt){
   for(const s of state.hostileShots){
     s.x+=s.vx*dt;s.y+=s.vy*dt;s.life-=dt;
     if(Math.hypot(s.x-state.train.x,s.y-state.train.y)<27){
-      state.trainHp=Math.max(0,state.trainHp-s.damage*(1-Math.min(.36,level("armor")*.12)));
+      applyTrainDamage(s.damage*(1-Math.min(.36,state.modules.armor||0)*.12)*(state.runStats?.damageTakenMul??1));
       state.hurtFlash=.15;s.life=0;burst(s.x,s.y,"#cce855",5,45);
     }
   }
