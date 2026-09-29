@@ -25,7 +25,7 @@ import { inspectFleet, inspectRows, tabNote, pauseSummaryText } from "./telemetr
 const SCREEN_MODES = ["contractChoice", "routeChoice", "levelup", "station", "result"];
 const host = {
   page: "battle",
-  scroll: 0, contentHeight: 0, viewportHeight: 800,
+  scroll: 0, contentHeight: 0, viewportHeight: 800, trainWorkshopOpen: false,
   levelPicks: null, breakthrough: null, stationData: null, resultData: null,
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
@@ -35,7 +35,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.2.1",
+  version: "v0.10.3",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -111,6 +111,7 @@ function refreshHostData() {
   host.carSlots = longterm.carSlots(profile);
   host.trainUpgradeCost = profile.train.level < longterm.MAX_TRAIN_LEVEL ? longterm.trainUpgradeCost(profile.train.level) : null;
   host.talentPoints = longterm.talentPoints(profile);
+  host.appliedPoints = host.talentPoints - longterm.spentPoints(profile.talents);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
   host.unlockedCars = longterm.unlockedCars(host.talent.loadout ? { ...profile, talents: host.talent.draft } : profile);
@@ -315,6 +316,7 @@ function applyAction(action) {
     if (host.page !== action.homeTab) {
       if (host.page === "train" && draftDirty()) { host.talent.notice = "请先应用或重置草稿，再切换页面"; return; }
       host.page = action.homeTab; host.scroll = 0;
+      if (host.page !== "train") host.trainWorkshopOpen = false;
     }
   } else if (action.selectRegion) {
     const next = longterm.setRegion(state.metaProfile, action.selectRegion);
@@ -342,6 +344,9 @@ function applyAction(action) {
   } else if (action.talentSpec) {
     const [branchId, optionId] = action.talentSpec;
     host.talent.draft.specs[branchId] = host.talent.draft.specs[branchId] === optionId ? null : optionId;
+  } else if (action.trainWorkshopToggle) {
+    host.trainWorkshopOpen = !host.trainWorkshopOpen;
+    host.scroll = 0;
   } else if (action.presetLoad !== undefined) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };

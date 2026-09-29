@@ -565,27 +565,36 @@ function sectionHead(u, y, b, span) {
 
 function drawTrainTab(u, host, registerRegion) {
   const { c, X, Y, F, vw } = u;
-  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "废料升级列车，分配改装点并调整编组。");
-  // Status card: level purchase, points, resources.
+  pageHeading(u, "TRAIN WORKSHOP", "我的列车", "升级列车获得改装点，选择车厢决定远征方式。");
+  // The fixed header already holds all three resources; the card shows the asset.
   let y = Y(177.8);
-  fill(c, HT.card, X(14), y, X(382), Y(144), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(144), X(5)); c.stroke();
-  text(c, `列车 Lv.${host.meta.train.level} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(15), F(13), "#25383B", { weight: "800" });
+  fill(c, "#1C424C", X(14), y, X(382), Y(160), X(6));
+  paintUiIcon(c, "trainNav", X(285), y + Y(13), X(90), Y(70));
+  text(c, "远征列车", X(26), y + Y(18), F(10), "#B8D3D2", { weight: "700" });
+  text(c, `列车 Lv.${host.meta.train.level}`, X(26), y + Y(42), F(22), "#FFF7E8", { weight: "850" });
   const affordable = host.trainUpgradeCost !== null && host.meta.resources.scrap >= host.trainUpgradeCost;
-  fill(c, affordable ? "#274850" : "#817D73", X(26), y + Y(28), X(358), Y(44), X(4));
-  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1} · ${host.trainUpgradeCost} 废料`, X(205), y + Y(50), F(13), affordable ? "#FFE6A0" : "#E1D9C9", { align: "center", weight: "800" });
-  if (affordable) registerRegion({ x: X(26), y: y + Y(28), w: X(358), h: Y(44), action: { trainUpgrade: true } });
   const summary = host.talentSummary;
-  text(c, `改装点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(86), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
-  const res = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
-  res.forEach(([key, label], i) => {
-    const rx = X(26) + i * X(122);
-    paintUiIcon(c, key, rx, y + Y(98), X(23), X(23));
-    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(104), F(12), HT.ink);
-    text(c, label, rx + X(30), y + Y(117), F(9), HT.muted);
+  text(c, `改装点 ${host.appliedPoints} / ${host.talentPoints} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(64), F(10), "#E2C789");
+  fill(c, affordable ? "#EFBF69" : "#81999B", X(26), y + Y(84), X(358), Y(44), X(4));
+  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1} · ${host.trainUpgradeCost} 废料`, X(205), y + Y(106), F(13), affordable ? "#25383B" : "#F2F0E4", { align: "center", weight: "800" });
+  if (affordable) registerRegion({ x: X(26), y: y + Y(84), w: X(358), h: Y(44), action: { trainUpgrade: true } });
+  text(c, host.trainUpgradeCost === null ? "当前等级上限" : affordable ? "每级获得 2 改装点" : `废料还差 ${Math.ceil(host.trainUpgradeCost - host.meta.resources.scrap)}`, X(26), y + Y(145), F(10), "#D0DCD4");
+  y += Y(171);
+  y = sectionHead(u, y, "当前编组", `${Math.max(0, host.meta.loadout.length - 1)} / ${host.carSlots} 功能车厢`);
+  const appliedCars = host.meta.loadout.filter(id => id !== "hangar");
+  appliedCars.forEach((id, i) => {
+    const x = X(14) + (i % 2) * X(195), rowY = y + Math.floor(i / 2) * Y(53);
+    fill(c, HT.card, x, rowY, X(187), Y(47), X(4));
+    paintUiIcon(c, CAR_ICONS[id] || "train", x + X(5), rowY + Y(5), X(37), Y(37));
+    text(c, host.carDefs.find(car => car.id === id)?.name || id, x + X(46), rowY + Y(24), F(11), HT.ink, { weight:"700" });
   });
-  text(c, `改装：${summary.costText}`, X(26), y + Y(134), F(10), "#586A65");
-  y += Y(144) + Y(12);
+  y += Y(Math.max(1, Math.ceil(appliedCars.length / 2)) * 53 + 8);
+  fill(c, "#23515B", X(14), y, X(382), Y(46), X(5));
+  text(c, host.trainWorkshopOpen ? "收起改装台 ↑" : "打开改装台 ›", X(205), y + Y(23), F(13), "#F6F0DF", { align:"center", weight:"800" });
+  registerRegion({ x:X(14), y, w:X(382), h:Y(46), action:{ trainWorkshopToggle:true } });
+  y += Y(57);
+  if (!host.trainWorkshopOpen) return y + Y(18);
+  y = sectionHead(u, y, "车厢与天赋", "草稿应用后生效");
   // Presets A/B/C.
   y = sectionHead(u, y, "改装方案", "点按载入 · 保存当前草稿");
   const chipW = X(120), gap = X(11);
@@ -676,12 +685,23 @@ function drawTrainTab(u, host, registerRegion) {
     });
     y += h + Y(12);
   }
-  // Complete stat diff remains scrollable; the action bar stays fixed below.
+  // Preview and actions belong at the end of the workshop, not over its content.
   const sh = Y(30 + summary.rows.length * 19);
   fill(c, "#102F3A", X(14), y, X(382), sh, X(6));
   text(c, "改装属性预览", X(28), y + Y(14), F(11), "#FFD053", { weight: "800" });
   summary.rows.forEach((line, i) => text(c, line, X(28), y + Y(36) + i * Y(19), F(10), "#C9D5D1"));
   y += sh + Y(14);
+  const notice = summary.problems.join("；") || host.talent.notice;
+  text(c, `草稿可用 ${summary.points} 点 · ${summary.costText}`, X(22), y + Y(8), F(10), HT.ink, { weight:"750" });
+  if (notice) text(c, notice.slice(0, 42), X(22), y + Y(26), F(10), summary.problems.length ? "#A4372D" : "#2F6B5E");
+  const actionY = y + Y(37);
+  fill(c, "#DAD1BC", X(14), actionY, X(183), Y(44), X(4));
+  text(c, "重置草稿", X(105), actionY + Y(22), F(12), summary.dirty ? HT.ink : "#8D9692", { align:"center", weight:"750" });
+  if (summary.dirty) registerRegion({ x:X(14), y:actionY, w:X(183), h:Y(44), action:{ talentReset:true } });
+  fill(c, summary.canApply ? "#EFB340" : "#9E9787", X(205), actionY, X(191), Y(44), X(4));
+  text(c, "应用改装", X(300), actionY + Y(22), F(12), summary.canApply ? "#263B3E" : "#F1EBDD", { align:"center", weight:"800" });
+  if (summary.canApply) registerRegion({ x:X(205), y:actionY, w:X(191), h:Y(44), action:{ talentApply:true } });
+  y = actionY + Y(54);
   // Secondary: back to departure.
   fill(c, "#F6EDDA", X(14), y, X(382), Y(44), X(4));
   c.strokeStyle = "#CEC3AB"; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(44), X(4)); c.stroke();
@@ -690,29 +710,17 @@ function drawTrainTab(u, host, registerRegion) {
   return y + Y(44) + Y(23);
 }
 
-function drawTrainFooter(u, host, registerRegion) {
-  const { c, X, Y, F } = u, summary = host.talentSummary;
-  const y = Y(622), h = Y(108), notice = summary.problems.join("；") || host.talent.notice;
-  fill(c, "#102F3A", 0, y, X(410), h);
-  text(c, `草稿可用改装点 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
-  const preview = summary.rows[0];
-  text(c, preview.slice(0, 37), X(14), y + Y(31), F(10), "#C9D5D1");
-  if (summary.rows.length > 1) text(c, `${summary.rows[1].slice(0, 30)}${summary.rows.length > 2 ? ` · 另 ${summary.rows.length - 2} 项` : ""}`, X(14), y + Y(47), F(9), "#C9D5D1");
-  if (notice) text(c, notice.slice(0, 32), X(14), y + Y(64), F(9), summary.problems.length ? "#FF9D8A" : "#9FD3C8");
-  fill(c, "#1B434C", X(205), y + Y(72), X(72), Y(34), X(4));
-  text(c, "重置", X(241), y + Y(89), F(11), summary.dirty ? "#EEEADD" : "#6C8791", { align: "center", weight: "700" });
-  if (summary.dirty) registerRegion({ x: X(205), y: y + Y(72), w: X(72), h: Y(34), action: { talentReset: true } });
-  fill(c, summary.canApply ? "#EFB340" : "#897B61", X(286), y + Y(72), X(110), Y(34), X(4));
-  text(c, "应用改装", X(341), y + Y(89), F(12), summary.canApply ? "#263B3E" : "#C9C2B5", { align: "center", weight: "800" });
-  if (summary.canApply) registerRegion({ x: X(286), y: y + Y(72), w: X(110), h: Y(34), action: { talentApply: true } });
-}
-
 // -- research tab ----------------------------------------------------------------
 
 function drawResearchTab(u, host, registerRegion) {
   const { c, X, Y, F } = u;
-  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "将远征资源投入无人机与列车的永久属性。");
+  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "火控强化无人机，工程提升列车生存。");
   let y = Y(177.8);
+  fill(c, "#1C424C", X(14), y, X(382), Y(55), X(5));
+  text(c, "✦", X(35), y + Y(27), F(22), "#F3CC72", { align:"center" });
+  text(c, "选择研究方向", X(62), y + Y(18), F(13), "#F3F0DC", { weight:"800" });
+  text(c, "每项独立升级 · 顶部显示当前资源", X(62), y + Y(38), F(10), "#C8D8D1");
+  y += Y(68);
   const groups = [["drone", "无人机战斗 · 主材料研究数据"], ["train", "列车工程 · 主材料技术组件"]];
   for (const [groupId, groupLabel] of groups) {
     y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
@@ -730,6 +738,8 @@ function drawResearchTab(u, host, registerRegion) {
       text(c, `Lv.${row.level}/${row.max} · ${row.scope}`, X(77), y + Y(26), F(9), "#586B6C", { weight: "700" });
       text(c, row.desc, X(77), y + Y(39), F(9.5), "#586B6C");
       text(c, `累计 ${row.effect}${row.maxed ? "" : ` → 下一级 ${row.nextEffect}`}`, X(77), y + Y(53), F(10), "#2F6B5E", { weight: "700" });
+      fill(c, "#D1D6C9", X(77), y + Y(58), X(110), Y(3), X(2));
+      fill(c, groupId === "drone" ? "#4A91AD" : "#BD9255", X(77), y + Y(58), X(110 * row.level / row.max), Y(3), X(2));
       if (!row.maxed) {
         const costBits = [`废料 ${row.cost.scrap}`, groupId === "drone" ? `数据 ${row.cost.data}` : `组件 ${row.cost.components}`];
         if (row.cost.attack && row.cost.components > 0) costBits.push(`组件 ${row.cost.components}`);
@@ -916,7 +926,7 @@ function drawHome(u, host, registerRegion) {
   } else {
     const scroll = Math.max(0, host.scroll || 0);
     c.save();
-    const bottom = host.page === "train" ? u.Y(622) : u.Y(730);
+    const bottom = u.Y(730);
     c.beginPath(); c.rect(0, Y64(u), vw, bottom - Y64(u)); c.clip();
     c.translate(0, -scroll);
     const scrolledRegion = region => {
@@ -930,7 +940,6 @@ function drawHome(u, host, registerRegion) {
     c.restore();
     host.contentHeight = contentH;
     host.viewportHeight = bottom;
-    if (host.page === "train") drawTrainFooter(u, host, registerRegion);
   }
   drawTabsBar(u, host, registerRegion);
 }
@@ -4795,7 +4804,7 @@ function pauseSummaryText() {
 const SCREEN_MODES = ["contractChoice", "routeChoice", "levelup", "station", "result"];
 const host = {
   page: "battle",
-  scroll: 0, contentHeight: 0, viewportHeight: 800,
+  scroll: 0, contentHeight: 0, viewportHeight: 800, trainWorkshopOpen: false,
   levelPicks: null, breakthrough: null, stationData: null, resultData: null,
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
@@ -4805,7 +4814,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.2.1",
+  version: "v0.10.3",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -4881,6 +4890,7 @@ function refreshHostData() {
   host.carSlots = longterm.carSlots(profile);
   host.trainUpgradeCost = profile.train.level < longterm.MAX_TRAIN_LEVEL ? longterm.trainUpgradeCost(profile.train.level) : null;
   host.talentPoints = longterm.talentPoints(profile);
+  host.appliedPoints = host.talentPoints - longterm.spentPoints(profile.talents);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
   host.unlockedCars = longterm.unlockedCars(host.talent.loadout ? { ...profile, talents: host.talent.draft } : profile);
@@ -5085,6 +5095,7 @@ function applyAction(action) {
     if (host.page !== action.homeTab) {
       if (host.page === "train" && draftDirty()) { host.talent.notice = "请先应用或重置草稿，再切换页面"; return; }
       host.page = action.homeTab; host.scroll = 0;
+      if (host.page !== "train") host.trainWorkshopOpen = false;
     }
   } else if (action.selectRegion) {
     const next = longterm.setRegion(state.metaProfile, action.selectRegion);
@@ -5112,6 +5123,9 @@ function applyAction(action) {
   } else if (action.talentSpec) {
     const [branchId, optionId] = action.talentSpec;
     host.talent.draft.specs[branchId] = host.talent.draft.specs[branchId] === optionId ? null : optionId;
+  } else if (action.trainWorkshopToggle) {
+    host.trainWorkshopOpen = !host.trainWorkshopOpen;
+    host.scroll = 0;
   } else if (action.presetLoad !== undefined) {
     const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
     host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };

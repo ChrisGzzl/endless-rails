@@ -7,7 +7,7 @@ import { metaStorage } from "./game.js";
   const storage = metaStorage;
   let meta = metaApi.loadMeta(storage);
   const screen = $("startScreen"), regionList = $("metaRegionList"), carList = $("metaCarList"), researchList = $("metaResearchList");
-  const resourceText = $("metaResources"), trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton");
+  const trainText = $("metaTrainLevel"), loadoutText = $("metaLoadoutSummary"), startButton = $("metaStartButton");
   if (!screen || !regionList || !carList || !researchList || !startButton) return;
   const icon = id => `<i class="ui-icon ui-icon--${id}" aria-hidden="true"></i>`;
 
@@ -18,6 +18,12 @@ import { metaStorage } from "./game.js";
   // draftLoadout is null while the lineup follows the save; loading a preset
   // drafts the preset's cars too (需求 §14.3), committed by the same apply.
   let draft = null, draftLoadout = null, branch = "hull", presetNotice = "", presetConfirm = null;
+  const workshop = $("trainWorkshop"), workshopOpen = $("trainWorkshopOpen");
+  function showWorkshop(show, focus = false) {
+    workshop.hidden = !show;
+    workshopOpen.setAttribute("aria-expanded", String(show));
+    if (focus) (show ? $("trainWorkshopClose") : workshopOpen).focus?.();
+  }
   function draftFromMeta() { draft = { nodes: { ...meta.talents.nodes }, specs: { ...meta.talents.specs } }; draftLoadout = null; presetNotice = ""; presetConfirm = null; }
   const sameCars = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
   function draftDirty() {
@@ -257,7 +263,7 @@ import { metaStorage } from "./game.js";
         const maxed = !cost;
         const effect = metaApi.researchEffectText(track.id, level);
         const nextEffect = metaApi.researchEffectText(track.id, Math.min(metaApi.MAX_RESEARCH_LEVEL, level + 1));
-        const row = document.createElement("div"); row.className = "meta-research-row";
+        const row = document.createElement("div"); row.className = `meta-research-row meta-research-row--${group[0]}`;
         let costLine = "已达当前上限", missing = [];
         if (!maxed) {
           const parts = [`${icon("scrap")}废料 ${cost.scrap}`, `${icon(cost.attack ? "data" : "components")}${cost.attack ? "数据" : "组件"} ${cost.attack ? cost.data : cost.components}`];
@@ -269,6 +275,7 @@ import { metaStorage } from "./game.js";
         row.innerHTML = `<span class="research-icon" data-weapon="${track.id}">${icon(metaApi.RESEARCH_ICONS[track.id])}</span>
           <span class="research-copy"><b>${track.name}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL} · ${track.scope}</small>
           <small>${RESEARCH_COPY[track.id]}</small>
+          <span class="research-progress" role="progressbar" aria-label="${track.name}研究进度" aria-valuemin="0" aria-valuemax="${metaApi.MAX_RESEARCH_LEVEL}" aria-valuenow="${level}"><i style="width:${100 * level / metaApi.MAX_RESEARCH_LEVEL}%"></i></span>
           <small class="research-effect">累计 ${effect.total}${maxed ? "" : ` → 下一级 ${nextEffect.total}`}</small>
           <small class="research-cost">${costLine}</small>${missing.length ? `<small class="research-short">${missing.join(" · ")}</small>` : ""}</span>
           <button type="button" data-research="${track.id}" aria-label="${maxed ? track.name + "已满级" : missing.length ? `升级${track.name}，${missing.join("，")}` : `升级${track.name}`}" ${maxed || missing.length ? "disabled" : ""}>${maxed ? "已满级" : "升级"}</button>`;
@@ -307,18 +314,26 @@ import { metaStorage } from "./game.js";
     meta = metaApi.normalizeMeta(meta);
     if (!draft) draftFromMeta();
     const upgradeCost = meta.train.level < metaApi.MAX_TRAIN_LEVEL ? metaApi.trainUpgradeCost(meta.train.level) : null;
-    trainText.textContent = `列车 Lv.${meta.train.level} · 功能车厢 ${metaApi.carSlots(meta)} 槽`;
+    trainText.textContent = `列车 Lv.${meta.train.level}`;
     const upgradeButton = $("metaTrainUpgradeButton");
     upgradeButton.textContent = upgradeCost === null ? "列车已满级" : `升级至 Lv.${meta.train.level + 1} · ${upgradeCost} 废料`;
     upgradeButton.disabled = upgradeCost === null || meta.resources.scrap < upgradeCost;
     upgradeButton.setAttribute("aria-label", upgradeCost === null ? "列车已满级" : `升级列车需要 ${upgradeCost} 废料，当前 ${Math.floor(meta.resources.scrap)} 废料`);
-    resourceText.innerHTML = [['scrap','废料'],['components','组件'],['data','数据']].map(([key,label])=>`<span>${icon(key)}<b>${compact(meta.resources[key])}</b><small>${label}</small></span>`).join('');
+    $("trainUpgradeHint").textContent = upgradeCost === null ? "列车已达当前等级上限" : `每升 1 级获得 2 改装点 · 当前废料 ${Math.floor(meta.resources.scrap)}${meta.resources.scrap < upgradeCost ? ` · 还差 ${Math.ceil(upgradeCost - meta.resources.scrap)}` : ""}`;
+    const fire = S.droneDamageMul, hull = S.maxHp / 100;
+    $("trainPowerLabel").textContent = `火力 ×${fire.toFixed(2)} · 耐久 ×${hull.toFixed(2)}`;
+    $("trainPowerFill").style.width = `${Math.min(100, 24 + Math.max(fire, hull) * 22)}%`;
     const points = metaApi.talentPoints(meta) - metaApi.spentPoints(draft);
     const pointsEl = $("metaTalentPoints");
-    pointsEl.textContent = `改装点（草稿）${points} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
+    pointsEl.textContent = `可用改装点 ${metaApi.talentPoints(meta) - metaApi.spentPoints(meta.talents)} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
     pointsEl.classList.toggle("bad", points < 0);
     const carNames = cars => cars.filter(id => id !== "hangar").map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ") || "未选功能车厢";
     const slots = metaApi.carSlots(meta);
+    $("trainBuildCount").textContent = `${Math.max(0, meta.loadout.length - 1)} / ${slots} 功能车厢`;
+    $("trainBuildCars").innerHTML = meta.loadout.filter(id => id !== "hangar").map(id => {
+      const car = metaApi.CAR_DEFS.find(item => item.id === id);
+      return `<span>${icon(id)}<b>${car?.name || id}</b></span>`;
+    }).join("") + (meta.loadout.length - 1 < slots ? `<span class="train-build-preview__empty"><b>＋ 空车位</b></span>` : "");
     loadoutText.textContent = `已应用 ${meta.loadout.length - 1}/${slots} · ${carNames(meta.loadout)}${draftLoadout && !sameCars(draftLoadout, meta.loadout) ? `\n草稿 ${draftLoadout.length - 1}/${slots} · ${carNames(draftLoadout)}（待应用）` : ""}`;
     renderRegions(); renderCars(); renderBranchTabs(); renderNodes(); renderPresets(); renderSummary(); renderResearch();
     const blueprints=$("metaBlueprintList");
@@ -337,6 +352,7 @@ import { metaStorage } from "./game.js";
       if(active&&focus)button.focus?.();
     }
     meta=metaApi.loadMeta(storage);draftFromMeta();render();
+    if (name !== "train") showWorkshop(false);
     window.EndlessRailsSettings?.refresh();
   }
   function open(tab='battle') { screen.hidden=false;selectTab(tab); }
@@ -354,6 +370,11 @@ import { metaStorage } from "./game.js";
     meta = result.meta; save(); render();
   });
   $("talentReset").addEventListener("click", () => { draftFromMeta(); render(); });
+  workshopOpen.addEventListener("click", () => { showWorkshop(true, true); workshop.scrollIntoView?.({ block: "start", behavior: "smooth" }); });
+  $("trainWorkshopClose").addEventListener("click", () => {
+    if (draftDirty() && (!window.confirm || !window.confirm("改装草稿尚未应用，收起后仍会保留。确认收起？"))) return;
+    showWorkshop(false, true);
+  });
   $("talentApply").addEventListener("click", () => {
     const result = metaApi.applyTalents(meta, draft, { loadout: draftLoadout || meta.loadout });
     if (!result.applied) { presetNotice = result.problems.join("；"); render(); return; }
