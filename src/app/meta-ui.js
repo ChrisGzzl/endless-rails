@@ -260,9 +260,9 @@ import { metaStorage } from "./game.js";
         const row = document.createElement("div"); row.className = "meta-research-row";
         let costLine = "已达当前上限", missing = [];
         if (!maxed) {
-          const parts = [`${icon("scrap")}${cost.scrap}`, `${icon(cost.attack ? "data" : "components")}${cost.attack ? cost.data : cost.components}`];
-          if (cost.attack && cost.components > 0) parts.push(`${icon("components")}${cost.components}`);
-          if (!cost.attack && cost.data > 0) parts.push(`${icon("data")}${cost.data}`);
+          const parts = [`${icon("scrap")}废料 ${cost.scrap}`, `${icon(cost.attack ? "data" : "components")}${cost.attack ? "数据" : "组件"} ${cost.attack ? cost.data : cost.components}`];
+          if (cost.attack && cost.components > 0) parts.push(`${icon("components")}组件 ${cost.components}`);
+          if (!cost.attack && cost.data > 0) parts.push(`${icon("data")}数据 ${cost.data}`);
           costLine = parts.join(" ");
           missing = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => meta.resources[key] < cost[key]).map(([key, name]) => `${name}还差 ${Math.ceil(cost[key] - meta.resources[key])}`);
         }
@@ -281,7 +281,7 @@ import { metaStorage } from "./game.js";
       }
     }
     $("researchDetails").innerHTML = [
-      "所有研究从 Lv1 起开放，无等待时间或每日限额；数据足够即可升级。",
+      "所有研究从 Lv1 起开放，无等待时间或每日限额；所列资源足够即可升级。",
       "Lv1-10 基础研究、Lv11-20 进阶研究、Lv21-30 长期研究：单级收益逐段递减。",
       "装甲材料按乘法叠算，界面显示实际受伤降低比例而非等级百分比。",
       "无人机战斗三项主消耗研究数据（里程碑需少量组件）；列车工程四项主消耗技术组件（里程碑需少量数据）。",

@@ -731,9 +731,9 @@ function drawResearchTab(u, host, registerRegion) {
       text(c, row.desc, X(77), y + Y(39), F(9.5), "#586B6C");
       text(c, `累计 ${row.effect}${row.maxed ? "" : ` → 下一级 ${row.nextEffect}`}`, X(77), y + Y(53), F(10), "#2F6B5E", { weight: "700" });
       if (!row.maxed) {
-        const costBits = [`废${row.cost.scrap}`, groupId === "drone" ? `数${row.cost.data}` : `组${row.cost.components}`];
-        if (row.cost.attack && row.cost.components > 0) costBits.push(`组${row.cost.components}`);
-        if (!row.cost.attack && row.cost.data > 0) costBits.push(`数${row.cost.data}`);
+        const costBits = [`废料 ${row.cost.scrap}`, groupId === "drone" ? `数据 ${row.cost.data}` : `组件 ${row.cost.components}`];
+        if (row.cost.attack && row.cost.components > 0) costBits.push(`组件 ${row.cost.components}`);
+        if (!row.cost.attack && row.cost.data > 0) costBits.push(`数据 ${row.cost.data}`);
         text(c, costBits.join(" · "), X(77), y + Y(67), F(9), "#8A6B1F", { weight: "700" });
         if (row.missing.length) text(c, row.missing.join(" · "), X(77), y + Y(79), F(9), "#A4372D", { weight: "700" });
       }
@@ -4805,7 +4805,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.2",
+  version: "v0.10.2.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };

@@ -75,6 +75,8 @@ const profile = () => {
   assert.deepEqual(meta.loadMeta(saved).loadout, ['hangar', 'pointDefense', 'radar', 'storage']);
   const row = e.metaResearchList.children.find(child => child.innerHTML?.includes('火控算法'));
   assert.match(row.innerHTML, /research-cost/);
+  assert.match(row.innerHTML, /废料 13/);
+  assert.match(row.innerHTML, /数据 3/);
   assert.match(row.innerHTML, /废料还差/);
   assert.match(row.innerHTML, /data-research="fireControl"[^>]*disabled/);
 }
