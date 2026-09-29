@@ -17,7 +17,7 @@ function gameStorage(host) {
 }
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 30;
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const MAX_SETTLED_RUN_IDS = 256; // Bounded by the development save service's 32 KiB payload.
 
 const CAR_DEFS = Object.freeze([
@@ -152,7 +152,9 @@ const RESEARCH_COST_BASE = {
 };
 function researchCostFor(id, toLevel) {
   const L = Math.max(1, Math.min(MAX_RESEARCH_LEVEL, Math.floor(toLevel)));
-  const scrap = L <= 10 ? RESEARCH_COST_BASE.scrap[L - 1] : 185 + 7 * (L - 10);
+  // Train levels now share the scrap budget. Keep research's specialist
+  // material costs while reserving roughly half the two-week scrap for train.
+  const scrap = Math.ceil((L <= 10 ? RESEARCH_COST_BASE.scrap[L - 1] : 185 + 7 * (L - 10)) / 2);
   const data = L <= 10 ? RESEARCH_COST_BASE.data[L - 1] : 36 + Math.ceil(1.75 * (L - 10));
   const components = L <= 10 ? RESEARCH_COST_BASE.components[L - 1] : 5 + Math.ceil(0.4 * (L - 10));
   const attack = trackById(id)?.kind === "attack";
@@ -168,10 +170,23 @@ function copyResources(value = {}) { return { scrap: fix3(value.scrap), componen
 const floorResources = value => ({ scrap: Math.floor(value.scrap), components: Math.floor(value.components), data: Math.floor(value.data) });
 
 // ---------------------------------------------------------------------------
-// Train level, XP curve and functional car slots (需求 §5-§6).
+// Manual train purchase and functional car slots.
 // ---------------------------------------------------------------------------
 
-function xpToNext(level) { return 150 + 200 * (Math.max(1, Math.min(MAX_TRAIN_LEVEL, level)) - 1); }
+const legacyXpToNext = level => 150 + 200 * (Math.max(1, Math.min(MAX_TRAIN_LEVEL, level)) - 1);
+function trainUpgradeCost(level) {
+  const n = Math.max(1, Math.min(MAX_TRAIN_LEVEL - 1, Math.floor(Number(level) || 1)));
+  return Math.round(50 + 20 * n + 1.3 * n * n);
+}
+function buyTrainUpgrade(meta) {
+  const next = normalizeMeta(meta);
+  if (next.train.level >= MAX_TRAIN_LEVEL) return { meta: next, purchased: false, maxed: true };
+  const cost = trainUpgradeCost(next.train.level);
+  if (next.resources.scrap < cost) return { meta: next, purchased: false, cost, short: Math.ceil(cost - next.resources.scrap) };
+  next.resources.scrap = fix3(next.resources.scrap - cost);
+  next.train.level++;
+  return { meta: next, purchased: true, cost };
+}
 function talentPoints(meta) { return 2 * Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(meta?.train?.level) || 1))); }
 function carSlots(meta) { const level = Math.max(1, Math.floor(Number(meta?.train?.level) || 1)); return level >= 18 ? 4 : level >= 8 ? 3 : 2; }
 function trainSlots(meta) { return carSlots(meta) + 1; }
@@ -221,7 +236,7 @@ function nodeBlockReason(meta, talents, nodeId) {
     return `需要本分支已投入 ${node.prereq.branchPoints} 点`;
   }
   if (node.spec && !talents.specs[node.branch] && (talents.nodes[node.id] || 0) >= node.levels) return "已满级";
-  if (spentPoints(talents) + node.cost > talentPoints(meta)) return "天赋点不足";
+  if (spentPoints(talents) + node.cost > talentPoints(meta)) return "改装点不足";
   if (branchSpent(talents, node.branch) + node.cost > TALENT_BRANCHES.find(branch => branch.id === node.branch).cap) return "超出分支上限";
   return null;
 }
@@ -379,7 +394,7 @@ function emptyMeta() {
   return {
     version: SAVE_VERSION,
     resources: { scrap: 0, components: 0, data: 0 },
-    train: { level: 1, xp: 0, totalXp: 0 },
+    train: { level: 1 },
     talents: emptyTalents(),
     presets: [emptyPreset("方案 A"), emptyPreset("方案 B"), emptyPreset("方案 C")],
     freeRefits: 3,
@@ -406,15 +421,13 @@ function migrateFromV1(src) {
   const old = src && typeof src === "object" ? src : {};
   const level = Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(old.train?.level) || 1)));
   meta.train.level = level;
-  // In-level XP maps by progress ratio between the two curves (§24.2).
+  // Preserve the old in-level progress as equivalent scrap.
   const oldXpToNext = 70 + (level - 1) * 35;
   const oldXp = Math.max(0, Math.floor(Number(old.train?.xp) || 0));
-  meta.train.xp = Math.min(xpToNext(level) - 1, Math.floor((oldXp / oldXpToNext) * xpToNext(level)));
-  meta.train.totalXp = 0;
-  for (let L = 1; L < level; L++) meta.train.totalXp += xpToNext(L);
-  meta.train.totalXp += meta.train.xp;
-
   meta.resources = copyResources({ ...old.resources });
+  // Preserve the earned fraction of the next level as wallet scrap. No XP
+  // field or partial purchase survives the migration.
+  if (level < MAX_TRAIN_LEVEL) meta.resources.scrap += Math.floor(Math.min(1, oldXp / oldXpToNext) * trainUpgradeCost(level));
 
   // Old research fully refunded in data (§24.3); the seven new tracks start at Lv0.
   let refundData = 0;
@@ -467,10 +480,15 @@ function normalizeMeta(value) {
   const result = { ...base, ...src };
   result.version = SAVE_VERSION;
   result.resources = copyResources(src.resources || base.resources);
+  // One-time v2 conversion: retain bought levels, exchange unspent progress
+  // for scrap. Once saved as v3, normalization never credits it again.
+  if (Number(src.version) === 2 && src.train?.xp > 0 && src.train?.level < MAX_TRAIN_LEVEL) {
+    const level = Math.max(1, Math.floor(Number(src.train.level) || 1));
+    const fraction = Math.min(1, Number(src.train.xp) / legacyXpToNext(level));
+    result.resources.scrap = fix3(result.resources.scrap + Math.floor(fraction * trainUpgradeCost(level)));
+  }
   result.train = {
     level: Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(src.train?.level) || 1))),
-    xp: Math.max(0, Math.min(xpToNext(Math.max(1, Math.floor(Number(src.train?.level) || 1))) - 1, Math.floor(Number(src.train?.xp) || 0))),
-    totalXp: Math.max(0, fix3(src.train?.totalXp) || 0),
   };
   result.talents = normalizeTalents(src.talents);
   // Illegal saved allocations (e.g. externally edited) fall back to a legal
@@ -665,34 +683,14 @@ function bankRisk(run) {
   run.stationsBanked += 1;
   return run;
 }
-function applyTrainXp(meta, amount) {
-  const next = normalizeMeta(meta);
-  const gain = Math.max(0, Math.floor(Number(amount) || 0));
-  next.train.xp += gain; next.train.totalXp = fix3((next.train.totalXp || 0) + gain);
-  while (next.train.level < MAX_TRAIN_LEVEL && next.train.xp >= xpToNext(next.train.level)) { next.train.xp -= xpToNext(next.train.level); next.train.level++; }
-  if (next.train.level >= MAX_TRAIN_LEVEL) next.train.xp = Math.min(next.train.xp, xpToNext(MAX_TRAIN_LEVEL) - 1);
-  return next;
-}
 // Accepts the account meta or a plain owned-id array; combat passes the
 // departure snapshot's copy (修订方案 §4/需求 §20.1).
 function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id) && blueprintById(id) && !blueprintById(id).retired); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
 
-// XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
-// a failed run keeps completed segments and converts current-segment progress
-// into at most 39 XP.
-function expeditionXp(run, outcome, options = {}) {
-  if (outcome === "won") return (run.stationsBanked + 1) * 40 + 40;
-  if (outcome === "lost") {
-    const progress = Math.max(0, Math.min(1, Number(options.segmentProgress) || 0));
-    return run.stationsBanked * 40 + Math.min(39, Math.floor(40 * progress));
-  }
-  return run.stationsBanked * 40;
-}
-
 function settleRun(meta, run, outcome, options = {}) {
   let next = normalizeMeta(meta);
   if (!run) return { meta: next, gained: copyResources(), blueprints: [] };
-  if ((run.id && next.settledRunIds.includes(run.id)) || (Number.isSafeInteger(run.startExpeditions) && next.totals.expeditions > run.startExpeditions)) return { meta: next, gained: copyResources(), blueprints: [], trainXp: 0, alreadySettled: true };
+  if ((run.id && next.settledRunIds.includes(run.id)) || (Number.isSafeInteger(run.startExpeditions) && next.totals.expeditions > run.startExpeditions)) return { meta: next, gained: copyResources(), blueprints: [], alreadySettled: true };
   const gained = copyResources(run.banked);
   const blueprints = [...run.bankedBlueprints];
   if (outcome === "won" || outcome === "extracted") {
@@ -721,10 +719,8 @@ function settleRun(meta, run, outcome, options = {}) {
     regionState.clears++; if (regionState.clears >= 2) regionState.repaired = true;
     for (const id of regionById(regionId).next) if (next.regions[id]) next.regions[id].unlocked = true;
   }
-  const xp = expeditionXp(run, outcome, options);
-  next = applyTrainXp(next, xp);
   if (run.id) next.settledRunIds = [...next.settledRunIds, run.id].slice(-MAX_SETTLED_RUN_IDS);
-  return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
+  return { meta: next, gained, blueprints: uniqueBlueprints };
 }
 
 const api = {
@@ -738,8 +734,8 @@ const api = {
   buildStats, buildChangeRows, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
   refitCost, refitIsPaid, applyTalents, savePreset, loadPreset, renamePreset, emptyPreset,
   regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout,
-  createRun, awardRisk, addBlueprintRisk, bankRisk, expeditionXp,
-  researchCost, buyResearch, xpToNext, applyTrainXp, rollBlueprint, settleRun, copyResources, floorResources, fix3,
+  createRun, awardRisk, addBlueprintRisk, bankRisk,
+  researchCost, buyResearch, trainUpgradeCost, buyTrainUpgrade, rollBlueprint, settleRun, copyResources, floorResources, fix3,
 };
 if (typeof module !== "undefined" && module.exports) module.exports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;

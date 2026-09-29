@@ -30,12 +30,12 @@ const host = {
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
-  trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
+  trainSlots: 4, carSlots: 2, trainLength: 4, trainUpgradeCost: null, talentPoints: 0,
   talent: { branch: "hull", draft: null, loadout: null, notice: "", confirmSave: null },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.5",
+  version: "v0.10.2",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -109,7 +109,7 @@ function refreshHostData() {
   host.trainLength = plan.trainLength;
   host.trainSlots = longterm.trainSlots(profile);
   host.carSlots = longterm.carSlots(profile);
-  host.xpToNext = longterm.xpToNext(profile.train.level);
+  host.trainUpgradeCost = profile.train.level < longterm.MAX_TRAIN_LEVEL ? longterm.trainUpgradeCost(profile.train.level) : null;
   host.talentPoints = longterm.talentPoints(profile);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
@@ -371,6 +371,13 @@ function applyAction(action) {
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
+  } else if (action.trainUpgrade) {
+    const result = longterm.buyTrainUpgrade(state.metaProfile);
+    if (result.purchased) {
+      state.metaProfile = result.meta;
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = `列车升至 Lv.${result.meta.train.level} · 改装点 +2`;
+    }
   } else if (action.talentApply) {
     const result = longterm.applyTalents(state.metaProfile, host.talent.draft, { loadout: host.talent.loadout || state.metaProfile.loadout });
     if (result.applied) {

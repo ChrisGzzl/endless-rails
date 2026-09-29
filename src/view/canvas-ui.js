@@ -524,7 +524,7 @@ function drawResultScreen(u, state, host, registerRegion) {
   text(c, host.resultBuild || "构筑：—", X(21), y + Y(12), F(14), T.slateBlue); y += Y(39);
   const gained = data.settlement?.gained;
   if (gained) {
-    const metaLines = [`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${data.settlement?.trainXp || 0}`];
+    const metaLines = [`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data}`];
     const bps = data.settlement?.blueprints || [];
     if (bps.length) metaLines.push("新蓝图：" + bps.map(id => host.blueprintNames?.[id] || id).join(" / "));
     box(c, T.card, X(21), y, X(363), Y(30) + Y(25.2) * metaLines.length, X(5));

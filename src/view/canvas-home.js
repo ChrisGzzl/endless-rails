@@ -283,29 +283,27 @@ function sectionHead(u, y, b, span) {
 
 function drawTrainTab(u, host, registerRegion) {
   const { c, X, Y, F, vw } = u;
-  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "分配天赋点、选择专精并调整编组。");
-  // Status card: level, xp bar, points, resources.
+  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "废料升级列车，分配改装点并调整编组。");
+  // Status card: level purchase, points, resources.
   let y = Y(177.8);
-  fill(c, HT.card, X(14), y, X(382), Y(118), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(118), X(5)); c.stroke();
-  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(14), F(13), "#25383B", { weight: "800" });
-  fill(c, HT.track, X(26), y + Y(26), X(358), Y(8), X(3));
-  const ratio = Math.min(1, host.meta.train.xp / Math.max(1, host.xpToNext));
-  if (ratio > 0) {
-    rr(c, X(26), y + Y(26), X(358) * ratio, Y(8), X(3));
-    c.fillStyle = grad(c, 0, y + Y(26), 0, y + Y(34), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
-  }
+  fill(c, HT.card, X(14), y, X(382), Y(144), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(144), X(5)); c.stroke();
+  text(c, `列车 Lv.${host.meta.train.level} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(15), F(13), "#25383B", { weight: "800" });
+  const affordable = host.trainUpgradeCost !== null && host.meta.resources.scrap >= host.trainUpgradeCost;
+  fill(c, affordable ? "#274850" : "#817D73", X(26), y + Y(28), X(358), Y(44), X(4));
+  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1} · ${host.trainUpgradeCost} 废料`, X(205), y + Y(50), F(13), affordable ? "#FFE6A0" : "#E1D9C9", { align: "center", weight: "800" });
+  if (affordable) registerRegion({ x: X(26), y: y + Y(28), w: X(358), h: Y(44), action: { trainUpgrade: true } });
   const summary = host.talentSummary;
-  text(c, `天赋点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(48), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
+  text(c, `改装点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(86), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
   const res = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   res.forEach(([key, label], i) => {
     const rx = X(26) + i * X(122);
-    paintUiIcon(c, key, rx, y + Y(64), X(23), X(23));
-    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(70), F(12), HT.ink);
-    text(c, label, rx + X(30), y + Y(83), F(9), HT.muted);
+    paintUiIcon(c, key, rx, y + Y(98), X(23), X(23));
+    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(104), F(12), HT.ink);
+    text(c, label, rx + X(30), y + Y(117), F(9), HT.muted);
   });
-  text(c, `改装：${summary.costText}`, X(26), y + Y(103), F(10), "#586A65");
-  y += Y(118) + Y(12);
+  text(c, `改装：${summary.costText}`, X(26), y + Y(134), F(10), "#586A65");
+  y += Y(144) + Y(12);
   // Presets A/B/C.
   y = sectionHead(u, y, "改装方案", "点按载入 · 保存当前草稿");
   const chipW = X(120), gap = X(11);
@@ -414,7 +412,7 @@ function drawTrainFooter(u, host, registerRegion) {
   const { c, X, Y, F } = u, summary = host.talentSummary;
   const y = Y(622), h = Y(108), notice = summary.problems.join("；") || host.talent.notice;
   fill(c, "#102F3A", 0, y, X(410), h);
-  text(c, `草稿可用点数 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
+  text(c, `草稿可用改装点 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
   const preview = summary.rows[0];
   text(c, preview.slice(0, 37), X(14), y + Y(31), F(10), "#C9D5D1");
   if (summary.rows.length > 1) text(c, `${summary.rows[1].slice(0, 30)}${summary.rows.length > 2 ? ` · 另 ${summary.rows.length - 2} 项` : ""}`, X(14), y + Y(47), F(9), "#C9D5D1");
@@ -523,10 +521,10 @@ function drawShopTab(u, host, registerRegion) {
   y += Y(260.2) + Y(8);
   fill(c, HT.card, X(14), y, X(392), Y(108), X(5));
   c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(392), Y(108), X(5)); c.stroke();
-  text(c, "可能包含", X(25), y + Y(15.5), F(13), HT.muted, { weight: "700" });
-  const goods = [["scrap", "废料"], ["components", "组件"], ["data", "数据"], ["supply", "特殊物资"]];
+  text(c, "可回收资源", X(25), y + Y(15.5), F(13), HT.muted, { weight: "700" });
+  const goods = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   goods.forEach(([icon, label], i) => {
-    const gx = X(25) + i * X(94.5);
+    const gx = X(48) + i * X(126);
     fill(c, "#DED6C5", gx, y + Y(34), X(44), X(44), X(4));
     paintUiIcon(c, icon, gx, y + Y(34), X(44), X(44));
     text(c, label, gx + X(22), y + Y(90), F(10), HT.ink, { align: "center" });

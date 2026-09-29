@@ -223,7 +223,7 @@ import { metaStorage } from "./game.js";
     const { rows } = summaryRows();
     $("talentSummaryRows").innerHTML = rows.map(line => `<span>${line}</span>`).join("");
     const pointsLine = $("talentPointsLine");
-    pointsLine.textContent = `可用点数 ${available}`;
+    pointsLine.textContent = `可用改装点 ${available}`;
     pointsLine.classList.toggle("bad", available < 0);
     $("talentCostLine").textContent = costText;
     $("talentReset").disabled = !draftDirty();
@@ -306,16 +306,16 @@ import { metaStorage } from "./game.js";
     $("homeLoadout").setAttribute('aria-label',`编组 ${trainLength} 节，${damage}，${support}，前往列车调整`);
     meta = metaApi.normalizeMeta(meta);
     if (!draft) draftFromMeta();
-    const nextXp = metaApi.xpToNext(meta.train.level);
-    trainText.textContent = `列车 Lv.${meta.train.level} · ${meta.train.xp}/${nextXp} XP · 功能车厢 ${metaApi.carSlots(meta)} 槽`;
+    const upgradeCost = meta.train.level < metaApi.MAX_TRAIN_LEVEL ? metaApi.trainUpgradeCost(meta.train.level) : null;
+    trainText.textContent = `列车 Lv.${meta.train.level} · 功能车厢 ${metaApi.carSlots(meta)} 槽`;
+    const upgradeButton = $("metaTrainUpgradeButton");
+    upgradeButton.textContent = upgradeCost === null ? "列车已满级" : `升级至 Lv.${meta.train.level + 1} · ${upgradeCost} 废料`;
+    upgradeButton.disabled = upgradeCost === null || meta.resources.scrap < upgradeCost;
+    upgradeButton.setAttribute("aria-label", upgradeCost === null ? "列车已满级" : `升级列车需要 ${upgradeCost} 废料，当前 ${Math.floor(meta.resources.scrap)} 废料`);
     resourceText.innerHTML = [['scrap','废料'],['components','组件'],['data','数据']].map(([key,label])=>`<span>${icon(key)}<b>${compact(meta.resources[key])}</b><small>${label}</small></span>`).join('');
-    $("metaTrainProgressFill").style.width=Math.min(100,meta.train.xp/nextXp*100)+'%';
-    $("metaTrainProgress").setAttribute('aria-valuemin','0');
-    $("metaTrainProgress").setAttribute('aria-valuemax',String(nextXp));
-    $("metaTrainProgress").setAttribute('aria-valuenow',String(meta.train.xp));
     const points = metaApi.talentPoints(meta) - metaApi.spentPoints(draft);
     const pointsEl = $("metaTalentPoints");
-    pointsEl.textContent = `天赋点（草稿）${points} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
+    pointsEl.textContent = `改装点（草稿）${points} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
     pointsEl.classList.toggle("bad", points < 0);
     const carNames = cars => cars.filter(id => id !== "hangar").map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ") || "未选功能车厢";
     const slots = metaApi.carSlots(meta);
@@ -348,6 +348,11 @@ import { metaStorage } from "./game.js";
   }
   function refresh() { meta = metaApi.loadMeta(storage); draftFromMeta(); if (!screen.hidden) render(); }
   startButton.addEventListener('click',()=>selectTab('battle',true));
+  $("metaTrainUpgradeButton").addEventListener("click", () => {
+    const result = metaApi.buyTrainUpgrade(meta);
+    if (!result.purchased) return;
+    meta = result.meta; save(); render();
+  });
   $("talentReset").addEventListener("click", () => { draftFromMeta(); render(); });
   $("talentApply").addEventListener("click", () => {
     const result = metaApi.applyTalents(meta, draft, { loadout: draftLoadout || meta.loadout });

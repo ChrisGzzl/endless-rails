@@ -5,18 +5,27 @@ const assert = require('node:assert/strict');
 const meta = require('../src/meta/longterm');
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} != ${b}`);
 
-// §5 等级与经验
-assert.equal(meta.xpToNext(1), 150);
-assert.equal(meta.xpToNext(29), 5750, 'Lv29→30 needs 5,750 XP per the curve sheet');
-let total = 0; for (let L = 1; L < 30; L++) total += meta.xpToNext(L);
-assert.equal(total, 85550, 'Lv1→Lv30 cumulative XP is 85,550');
+// 列车只使用长期废料购买整级，不积累局外经验。
+assert.equal(meta.trainUpgradeCost(1), 71);
+assert.equal(meta.trainUpgradeCost(29), 1723);
+let total = 0; for (let L = 1; L < 30; L++) total += meta.trainUpgradeCost(L);
+assert.equal(total, 21273, 'Lv1→Lv30 cumulative scrap');
+const noFunds = meta.emptyMeta();
+assert.equal(meta.buyTrainUpgrade(noFunds).purchased, false);
+assert.equal(meta.buyTrainUpgrade(noFunds).short, 71);
+noFunds.resources.scrap = 70.999;
+assert.equal(meta.buyTrainUpgrade(noFunds).purchased, false, 'a fractional shortfall cannot buy a partial level');
+noFunds.resources.scrap = 71;
+const bought = meta.buyTrainUpgrade(noFunds);
+assert.equal(bought.purchased, true); assert.equal(bought.meta.train.level, 2);
+assert.equal(bought.meta.resources.scrap, 0); assert.deepEqual(noFunds.train, { level: 1 });
 assert.equal(meta.talentPoints({ train: { level: 1 } }), 2, 'Lv1 grants two points');
 assert.equal(meta.talentPoints({ train: { level: 30 } }), 60, 'Lv30 grants sixty points');
 assert.deepEqual([1, 7, 8, 17, 18, 30].map(level => meta.carSlots({ train: { level } })), [2, 2, 3, 3, 4, 4], 'functional car slots are 2/3/4 by level band');
 
 // §18/成本曲线 研究成本与计算表逐级对账（废料/主材料/交叉材料）
-const XLSX_ATTACK = { 1: [25, 3, 0], 5: [65, 11, 1], 10: [185, 36, 3], 11: [192, 38, 0], 15: [220, 45, 3], 20: [255, 54, 3], 25: [290, 63, 3], 30: [325, 71, 3] };
-const XLSX_TRAIN = { 1: [25, 0, 1], 5: [65, 5, 2], 10: [185, 15, 5], 15: [220, 15, 7], 20: [255, 15, 9], 30: [325, 15, 13] };
+const XLSX_ATTACK = { 1: [13, 3, 0], 5: [33, 11, 1], 10: [93, 36, 3], 11: [96, 38, 0], 15: [110, 45, 3], 20: [128, 54, 3], 25: [145, 63, 3], 30: [163, 71, 3] };
+const XLSX_TRAIN = { 1: [13, 0, 1], 5: [33, 5, 2], 10: [93, 15, 5], 15: [110, 15, 7], 20: [128, 15, 9], 30: [163, 15, 13] };
 for (const [L, expect] of Object.entries(XLSX_ATTACK)) {
   const cost = meta.researchCostFor('fireControl', Number(L));
   assert.deepEqual([cost.scrap, cost.data, cost.components], expect, `attack research →Lv${L} matches the spreadsheet`);
@@ -25,7 +34,7 @@ for (const [L, expect] of Object.entries(XLSX_TRAIN)) {
   const cost = meta.researchCostFor('hullEngineering', Number(L));
   assert.deepEqual([cost.scrap, cost.data, cost.components], expect, `train research →Lv${L} matches the spreadsheet`);
 }
-for (const [target, expect] of [[10, [6090, 548, 104]], [20, [21735, 2048, 426]], [30, [42280, 4073, 908]]]) {
+for (const [target, expect] of [[10, [3066, 548, 104]], [20, [10906, 2048, 426]], [30, [21196, 4073, 908]]]) {
   const sums = { scrap: 0, data: 0, components: 0 };
   for (const id of meta.RESEARCH_IDS) for (let L = 1; L <= target; L++) {
     const cost = meta.researchCostFor(id, L);
@@ -177,13 +186,19 @@ const backup = new Map();
 const store = { getItem: key => backup.get(key) ?? null, setItem: (key, value) => backup.set(key, value) };
 store.setItem(meta.STORAGE_KEY, JSON.stringify(legacy));
 const migrated = meta.loadMeta(store);
-assert.equal(migrated.version, 2);
+assert.equal(migrated.version, 3);
 assert.equal(migrated.train.level, 12, 'levels up to 30 are kept');
-assert.equal(migrated.train.xp, Math.floor(35 / (70 + 11 * 35) * meta.xpToNext(12)), 'in-level XP maps by progress ratio');
+assert.deepEqual(migrated.train, {level:12}, 'migration removes the experience field');
 assert.equal(migrated.migration.refundedData, 48 + 8, 'old research is fully refunded in data');
 assert.deepEqual(migrated.migration.convertedBlueprints, ['pd-array', 'bio-scan'], 'stat blueprints convert, intel ones stay');
 assert.equal(migrated.resources.data, 10 + 56 + 30 * 2, 'refund + two blueprint compensations');
-assert.equal(migrated.resources.scrap, 500 + 90 * 2);
+assert.equal(migrated.resources.scrap, 500 + 90 * 2 + Math.floor(35 / (70 + 11 * 35) * meta.trainUpgradeCost(12)), 'old progress returns scrap once');
+const oldV2 = { ...meta.emptyMeta(), version: 2, resources: { scrap: 100, components: 0, data: 0 }, train: { level: 4, xp: 375, totalXp: 1000 } };
+const converted = meta.normalizeMeta(oldV2);
+assert.equal(converted.version, 3);
+assert.deepEqual(converted.train, { level: 4 });
+assert.equal(converted.resources.scrap, 100 + Math.floor(375 / (150 + 200 * 3) * meta.trainUpgradeCost(4)));
+assert.deepEqual(meta.normalizeMeta(converted), converted, 'v2 conversion is idempotent');
 // 旧编组映射：Lv12 三槽上限内按 近防>维修>仓储>雷达 生成合法起始编组（雷达节点仍解锁）
 assert.deepEqual(migrated.loadout, ['hangar', 'pointDefense', 'repair', 'storage'], 'slot cap drops the lowest-priority car from the formation');
 assert.equal(migrated.talents.nodes.N0, 1); assert.equal(migrated.talents.nodes.R0, 1);
@@ -193,7 +208,7 @@ assert.ok(meta.spentPoints(migrated.talents) <= meta.talentPoints(migrated), 'ma
 assert.equal(migrated.freeRefits, 3, 'migrated accounts get three free refits');
 assert.ok(migrated.blueprints.includes('radar-pulse'), 'kept blueprints stay in the collection');
 assert.equal(migrated.regions.wasteland.repaired, true, 'region progress survives');
-assert.equal(meta.loadMeta(store).train.xp, migrated.train.xp, 're-loading does not re-migrate or double-refund');
+assert.deepEqual(meta.loadMeta(store), migrated, 're-loading does not re-migrate or double-refund');
 assert.equal(backup.get(meta.BACKUP_KEY), JSON.stringify(legacy), 'the raw v0.9 save is snapshotted once');
 
 console.log('v0.10 talent tree, research curves, reference builds, stats, refit, presets and migration passed');

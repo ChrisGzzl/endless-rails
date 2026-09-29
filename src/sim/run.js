@@ -9,7 +9,7 @@ import { spawnWave } from "./spawn.js";
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
   const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
-  // Persist the whole resource/XP/record-of-settlement update before marking
+  // Persist the whole resource/record-of-settlement update before marking
   // this run complete. A failed write leaves it retryable in the current tab.
   const settlementSource=metaStorage?longterm.loadMeta(metaStorage):state.metaProfile;
   const settlement=longterm.settleRun(settlementSource,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});

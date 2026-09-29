@@ -5,9 +5,9 @@ const createGame=require('./test-harness.cjs');
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 const values=new Map(),storage={getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,String(value))};
 let m=meta.emptyMeta();m.resources={scrap:500,components:40,data:60};
-// 研究：attack 轨道升 1 级 = 废料 25 + 数据 3（无交叉材料）
+// 研究：attack 轨道升 1 级 = 废料 13 + 数据 3（无交叉材料）
 const r1=meta.buyResearch(m,'fireControl');assert.equal(r1.purchased,true);assert.equal(r1.meta.research.fireControl,1);
-assert.equal(r1.meta.resources.scrap,475);assert.equal(r1.meta.resources.data,57);
+assert.equal(r1.meta.resources.scrap,487);assert.equal(r1.meta.resources.data,57);
 // 资源不足时拒绝且不扣费（train 轨道 Lv1 需要组件 1 + 数据 5 里程碑）
 const broke=meta.emptyMeta();broke.resources={scrap:10,components:0,data:0};
 const r2=meta.buyResearch(broke,'hullEngineering');assert.equal(r2.purchased,false);
@@ -23,20 +23,14 @@ const armored=meta.normalizeMeta({train:{level:30},talents:{nodes:storeFull,spec
 const run2=meta.createRun(armored);run2.risk={scrap:100,components:10,data:10};
 const lost2=meta.settleRun(armored,run2,'lost');
 near(lost2.gained.scrap,88);
-// 通关：结算含通关奖励（区域系数 ×1、无收益天赋时 = 30/3/1），XP = (4+1)×40+40 = 240
+// 通关：结算含通关奖励（区域系数 ×1、无收益改装时 = 30/3/1）；列车不会自动升级。
 run.stationsBanked=4;
 const won=meta.settleRun(m,run,'won');assert.equal(won.meta.regions.ruins.unlocked,true);
-assert.equal(won.trainXp,240,'a full clear pays five segments plus the clear bonus');
+assert.deepEqual(won.meta.train, m.train, 'a full clear cannot grant automatic train levels or XP');
 near(won.gained.scrap,200+30);near(won.gained.data,20+1+3);near(won.gained.components,20+1);
 assert.deepEqual(won.blueprints,['radar-pulse']);
-// 失败 XP：已到站 2 次 + 当前进度 60%（24，未超过 39 上限）
 run.stationsBanked=2;
-const lostXp=meta.settleRun(m,run,'lost',{segmentProgress:.6});
-assert.equal(lostXp.trainXp,104);
-// 未完成段折算上限 39
-run.stationsBanked=0;
-assert.equal(meta.settleRun(m,run,'lost',{segmentProgress:1}).trainXp,39);
-assert.equal(meta.settleRun(meta.emptyMeta(),meta.createRun(m),'lost').trainXp,0,'immediate failure cannot farm train XP');
+assert.deepEqual(meta.settleRun(m,run,'lost').meta.train, m.train, 'failure also cannot grant automatic levels');
 const twice=meta.settleRun(won.meta,run,'won');
 assert.equal(twice.alreadySettled,true,'replaying a settled run is rejected by its persisted ID');
 assert.equal(twice.meta.totals.expeditions,won.meta.totals.expeditions);

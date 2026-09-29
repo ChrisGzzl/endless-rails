@@ -7,8 +7,8 @@ const createGame = require('./test-harness.cjs');
 
 // The entry query alone does not invalidate cached transitive ES modules.
 for (const [page, modules] of [
-  ['index.html', ['src/meta/longterm.js', 'src/app/meta-ui.js']],
-  ['canvas.html', ['src/meta/longterm.js', 'src/app/canvas-host.js', 'src/view/canvas-home.js']],
+  ['index.html', ['src/meta/longterm.js', 'src/app/meta-ui.js', 'src/app/flows.js', 'src/app/gm.js']],
+  ['canvas.html', ['src/meta/longterm.js', 'src/app/canvas-host.js', 'src/view/canvas-home.js', 'src/view/canvas-ui.js']],
 ]) {
   const html = fs.readFileSync(path.join(__dirname, '..', page), 'utf8');
   const imports = JSON.parse(html.match(/<script type="importmap">([^<]+)<\/script>/)[1]).imports;
@@ -27,6 +27,33 @@ const profile = () => {
   m.loadout = ['hangar', 'pointDefense', 'repair', 'radar'];
   return m;
 };
+
+// Both hosts expose an affordable, atomic train purchase; settlement does not
+// change level in the background.
+{
+  const saved = storage(), starting = meta.emptyMeta();
+  starting.resources.scrap = 70;
+  meta.saveMeta(saved, starting);
+  const { elements: e } = createGame({ storage: saved });
+  e.homeTabTrain.events.click();
+  assert.equal(e.metaTrainUpgradeButton.disabled, true);
+  assert.match(e.metaTrainUpgradeButton.textContent, /71 废料/);
+  starting.resources.scrap = 100; meta.saveMeta(saved, starting);
+  const game = createGame({ storage: saved });
+  game.elements.homeTabTrain.events.click();
+  game.elements.metaTrainUpgradeButton.events.click();
+  assert.equal(meta.loadMeta(saved).train.level, 2);
+  assert.equal(meta.loadMeta(saved).resources.scrap, 29);
+  assert.match(game.elements.metaTalentPoints.textContent, /改装点（草稿）4 \/ 4/);
+  const canvasSave = storage(); starting.resources.scrap = 100; meta.saveMeta(canvasSave, starting);
+  const canvas = createGame({ storage: canvasSave, entry: 'canvas.html' });
+  const host = canvas.run('window.EndlessRailsCanvasHost');
+  host.handleRegionAction({ homeTab: 'train' });
+  assert.ok(host.regions.some(region => region.action?.trainUpgrade), 'Canvas exposes upgrade hitbox');
+  host.handleRegionAction({ trainUpgrade: true });
+  assert.equal(meta.loadMeta(canvasSave).train.level, 2);
+  assert.equal(meta.loadMeta(canvasSave).resources.scrap, 29);
+}
 
 // Full slots require an explicit removal, and the resulting lineup stays a draft.
 {

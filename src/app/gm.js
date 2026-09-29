@@ -15,7 +15,7 @@ function setGMMeta(key,value){
   const next=longterm.normalizeMeta(state.metaProfile);
   if(key==="trainLevel"){
     const lv=Math.max(1,Math.min(longterm.MAX_TRAIN_LEVEL,Math.floor(Number(value)||1)));
-    next.train.level=lv;next.train.xp=0;
+    next.train.level=lv;
   }else if(key==="resources"){
     const [scrap,components,data]=String(value).split(/[,\s]+/).map(n=>Math.max(0,Math.floor(Number(n)||0)));
     next.resources={scrap:scrap||0,components:components||0,data:data||0};

@@ -38,6 +38,8 @@ test('invalid IDs cannot escape data folder; invalid payload cannot destroy exis
  const bad=payload();bad.meta.resources.scrap=-1;await assert.rejects(store.save('alice',put(1,'bad',bad)),/invalid_number/);
  bad.meta.resources.scrap=0;bad.meta.settledRunIds=['same','same'];await assert.rejects(store.save('alice',put(1,'duplicate-ledger',bad)),/invalid_save/);
  bad.meta.settledRunIds=[];
+ bad.meta.train.xp=1;await assert.rejects(store.save('alice',put(1,'old-xp',bad)),/invalid_save/);
+ delete bad.meta.train.xp;
  bad.meta.resources.scrap=0;bad.record.latest={text:'x'.repeat(33000)};await assert.rejects(store.save('alice',put(1,'large',bad)),/save_too_large/);
  assert.equal((await store.read('alice')).revision,1);
 });

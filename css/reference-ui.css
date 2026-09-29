@@ -136,7 +136,7 @@ body { background:#a5a394; }
 .shop-coming p { color:var(--muted); font-size:12px; }
 .supply-preview { padding:10px; margin-top:8px; }
 .supply-preview h3 { color:var(--muted); margin:0 0 7px; font-size:13px; }
-.supply-preview > div { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.supply-preview > div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
 .supply-preview span { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10px; }
 .supply-preview .ui-icon { width:44px; height:44px; border-radius:4px; background-color:#ded6c5; }
 .home-hub .sound-options { padding:4px 13px; }

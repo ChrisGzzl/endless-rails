@@ -26,7 +26,7 @@ assert.equal(run.risk.data, 0, 'nothing from the previous segment remains at ris
 assert.equal(run.stationsBanked, 1);
 const failed = meta.settleRun(owner, run, 'lost', { segmentProgress: 0 });
 assert.equal(failed.gained.data, 3.45, 'failure immediately after docking keeps arrival data');
-assert.equal(failed.trainXp, 40);
+assert.deepEqual(failed.meta.train, owner.train, 'arrival rewards do not automatically raise train level');
 
 const values = new Map();
 const storage = {
@@ -39,8 +39,7 @@ assert.ok(saved.settledRunIds.includes(run.id));
 const repeat = meta.settleRun(saved, run, 'won');
 assert.equal(repeat.alreadySettled, true, 'a reload cannot settle the same run again');
 assert.deepEqual(repeat.gained, { scrap: 0, components: 0, data: 0 });
-assert.equal(repeat.trainXp, 0);
-assert.deepEqual(repeat.meta, saved, 'replay does not change resources, XP, unlocks or totals');
+assert.deepEqual(repeat.meta, saved, 'replay does not change resources, levels, unlocks or totals');
 const later = meta.normalizeMeta({ ...saved, totals: { ...saved.totals, expeditions: saved.totals.expeditions + 257 }, settledRunIds: [] });
 assert.equal(meta.settleRun(later, run, 'won').alreadySettled, true, 'old runs stay spent after their IDs leave the bounded ledger');
 assert.equal(meta.saveMeta({ setItem() { throw new Error('quota'); } }, failed.meta), false);

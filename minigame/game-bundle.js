@@ -565,29 +565,27 @@ function sectionHead(u, y, b, span) {
 
 function drawTrainTab(u, host, registerRegion) {
   const { c, X, Y, F, vw } = u;
-  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "分配天赋点、选择专精并调整编组。");
-  // Status card: level, xp bar, points, resources.
+  pageHeading(u, "TRAIN WORKSHOP", "列车车间", "废料升级列车，分配改装点并调整编组。");
+  // Status card: level purchase, points, resources.
   let y = Y(177.8);
-  fill(c, HT.card, X(14), y, X(382), Y(118), X(5));
-  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(118), X(5)); c.stroke();
-  text(c, `列车 Lv.${host.meta.train.level} · ${host.meta.train.xp}/${host.xpToNext} XP · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(14), F(13), "#25383B", { weight: "800" });
-  fill(c, HT.track, X(26), y + Y(26), X(358), Y(8), X(3));
-  const ratio = Math.min(1, host.meta.train.xp / Math.max(1, host.xpToNext));
-  if (ratio > 0) {
-    rr(c, X(26), y + Y(26), X(358) * ratio, Y(8), X(3));
-    c.fillStyle = grad(c, 0, y + Y(26), 0, y + Y(34), [[0, "#7BC3D2"], [1, "#337086"]]); c.fill();
-  }
+  fill(c, HT.card, X(14), y, X(382), Y(144), X(5));
+  c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(144), X(5)); c.stroke();
+  text(c, `列车 Lv.${host.meta.train.level} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(15), F(13), "#25383B", { weight: "800" });
+  const affordable = host.trainUpgradeCost !== null && host.meta.resources.scrap >= host.trainUpgradeCost;
+  fill(c, affordable ? "#274850" : "#817D73", X(26), y + Y(28), X(358), Y(44), X(4));
+  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1} · ${host.trainUpgradeCost} 废料`, X(205), y + Y(50), F(13), affordable ? "#FFE6A0" : "#E1D9C9", { align: "center", weight: "800" });
+  if (affordable) registerRegion({ x: X(26), y: y + Y(28), w: X(358), h: Y(44), action: { trainUpgrade: true } });
   const summary = host.talentSummary;
-  text(c, `天赋点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(48), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
+  text(c, `改装点（草稿）${summary.points} / ${host.talentPoints} · 免费重构 ${host.meta.freeRefits} 次`, X(26), y + Y(86), F(11), summary.points < 0 ? "#B3362D" : "#2F6B5E", { weight: "700" });
   const res = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   res.forEach(([key, label], i) => {
     const rx = X(26) + i * X(122);
-    paintUiIcon(c, key, rx, y + Y(64), X(23), X(23));
-    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(70), F(12), HT.ink);
-    text(c, label, rx + X(30), y + Y(83), F(9), HT.muted);
+    paintUiIcon(c, key, rx, y + Y(98), X(23), X(23));
+    text(c, compactNum(host.meta.resources[key]), rx + X(30), y + Y(104), F(12), HT.ink);
+    text(c, label, rx + X(30), y + Y(117), F(9), HT.muted);
   });
-  text(c, `改装：${summary.costText}`, X(26), y + Y(103), F(10), "#586A65");
-  y += Y(118) + Y(12);
+  text(c, `改装：${summary.costText}`, X(26), y + Y(134), F(10), "#586A65");
+  y += Y(144) + Y(12);
   // Presets A/B/C.
   y = sectionHead(u, y, "改装方案", "点按载入 · 保存当前草稿");
   const chipW = X(120), gap = X(11);
@@ -696,7 +694,7 @@ function drawTrainFooter(u, host, registerRegion) {
   const { c, X, Y, F } = u, summary = host.talentSummary;
   const y = Y(622), h = Y(108), notice = summary.problems.join("；") || host.talent.notice;
   fill(c, "#102F3A", 0, y, X(410), h);
-  text(c, `草稿可用点数 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
+  text(c, `草稿可用改装点 ${summary.points} · ${summary.costText}`, X(14), y + Y(14), F(10), summary.points < 0 ? "#FF9D8A" : "#FFD053", { weight: "750" });
   const preview = summary.rows[0];
   text(c, preview.slice(0, 37), X(14), y + Y(31), F(10), "#C9D5D1");
   if (summary.rows.length > 1) text(c, `${summary.rows[1].slice(0, 30)}${summary.rows.length > 2 ? ` · 另 ${summary.rows.length - 2} 项` : ""}`, X(14), y + Y(47), F(9), "#C9D5D1");
@@ -805,10 +803,10 @@ function drawShopTab(u, host, registerRegion) {
   y += Y(260.2) + Y(8);
   fill(c, HT.card, X(14), y, X(392), Y(108), X(5));
   c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(392), Y(108), X(5)); c.stroke();
-  text(c, "可能包含", X(25), y + Y(15.5), F(13), HT.muted, { weight: "700" });
-  const goods = [["scrap", "废料"], ["components", "组件"], ["data", "数据"], ["supply", "特殊物资"]];
+  text(c, "可回收资源", X(25), y + Y(15.5), F(13), HT.muted, { weight: "700" });
+  const goods = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]];
   goods.forEach(([icon, label], i) => {
-    const gx = X(25) + i * X(94.5);
+    const gx = X(48) + i * X(126);
     fill(c, "#DED6C5", gx, y + Y(34), X(44), X(44), X(4));
     paintUiIcon(c, icon, gx, y + Y(34), X(44), X(44));
     text(c, label, gx + X(22), y + Y(90), F(10), HT.ink, { align: "center" });
@@ -1750,7 +1748,7 @@ function gameStorage(host) {
 }
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 30;
-const SAVE_VERSION = 2;
+const SAVE_VERSION = 3;
 const MAX_SETTLED_RUN_IDS = 256; // Bounded by the development save service's 32 KiB payload.
 
 const CAR_DEFS = Object.freeze([
@@ -1885,7 +1883,9 @@ const RESEARCH_COST_BASE = {
 };
 function researchCostFor(id, toLevel) {
   const L = Math.max(1, Math.min(MAX_RESEARCH_LEVEL, Math.floor(toLevel)));
-  const scrap = L <= 10 ? RESEARCH_COST_BASE.scrap[L - 1] : 185 + 7 * (L - 10);
+  // Train levels now share the scrap budget. Keep research's specialist
+  // material costs while reserving roughly half the two-week scrap for train.
+  const scrap = Math.ceil((L <= 10 ? RESEARCH_COST_BASE.scrap[L - 1] : 185 + 7 * (L - 10)) / 2);
   const data = L <= 10 ? RESEARCH_COST_BASE.data[L - 1] : 36 + Math.ceil(1.75 * (L - 10));
   const components = L <= 10 ? RESEARCH_COST_BASE.components[L - 1] : 5 + Math.ceil(0.4 * (L - 10));
   const attack = trackById(id)?.kind === "attack";
@@ -1901,10 +1901,23 @@ function copyResources(value = {}) { return { scrap: fix3(value.scrap), componen
 const floorResources = value => ({ scrap: Math.floor(value.scrap), components: Math.floor(value.components), data: Math.floor(value.data) });
 
 // ---------------------------------------------------------------------------
-// Train level, XP curve and functional car slots (需求 §5-§6).
+// Manual train purchase and functional car slots.
 // ---------------------------------------------------------------------------
 
-function xpToNext(level) { return 150 + 200 * (Math.max(1, Math.min(MAX_TRAIN_LEVEL, level)) - 1); }
+const legacyXpToNext = level => 150 + 200 * (Math.max(1, Math.min(MAX_TRAIN_LEVEL, level)) - 1);
+function trainUpgradeCost(level) {
+  const n = Math.max(1, Math.min(MAX_TRAIN_LEVEL - 1, Math.floor(Number(level) || 1)));
+  return Math.round(50 + 20 * n + 1.3 * n * n);
+}
+function buyTrainUpgrade(meta) {
+  const next = normalizeMeta(meta);
+  if (next.train.level >= MAX_TRAIN_LEVEL) return { meta: next, purchased: false, maxed: true };
+  const cost = trainUpgradeCost(next.train.level);
+  if (next.resources.scrap < cost) return { meta: next, purchased: false, cost, short: Math.ceil(cost - next.resources.scrap) };
+  next.resources.scrap = fix3(next.resources.scrap - cost);
+  next.train.level++;
+  return { meta: next, purchased: true, cost };
+}
 function talentPoints(meta) { return 2 * Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(meta?.train?.level) || 1))); }
 function carSlots(meta) { const level = Math.max(1, Math.floor(Number(meta?.train?.level) || 1)); return level >= 18 ? 4 : level >= 8 ? 3 : 2; }
 function trainSlots(meta) { return carSlots(meta) + 1; }
@@ -1954,7 +1967,7 @@ function nodeBlockReason(meta, talents, nodeId) {
     return `需要本分支已投入 ${node.prereq.branchPoints} 点`;
   }
   if (node.spec && !talents.specs[node.branch] && (talents.nodes[node.id] || 0) >= node.levels) return "已满级";
-  if (spentPoints(talents) + node.cost > talentPoints(meta)) return "天赋点不足";
+  if (spentPoints(talents) + node.cost > talentPoints(meta)) return "改装点不足";
   if (branchSpent(talents, node.branch) + node.cost > TALENT_BRANCHES.find(branch => branch.id === node.branch).cap) return "超出分支上限";
   return null;
 }
@@ -2112,7 +2125,7 @@ function emptyMeta() {
   return {
     version: SAVE_VERSION,
     resources: { scrap: 0, components: 0, data: 0 },
-    train: { level: 1, xp: 0, totalXp: 0 },
+    train: { level: 1 },
     talents: emptyTalents(),
     presets: [emptyPreset("方案 A"), emptyPreset("方案 B"), emptyPreset("方案 C")],
     freeRefits: 3,
@@ -2139,15 +2152,13 @@ function migrateFromV1(src) {
   const old = src && typeof src === "object" ? src : {};
   const level = Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(old.train?.level) || 1)));
   meta.train.level = level;
-  // In-level XP maps by progress ratio between the two curves (§24.2).
+  // Preserve the old in-level progress as equivalent scrap.
   const oldXpToNext = 70 + (level - 1) * 35;
   const oldXp = Math.max(0, Math.floor(Number(old.train?.xp) || 0));
-  meta.train.xp = Math.min(xpToNext(level) - 1, Math.floor((oldXp / oldXpToNext) * xpToNext(level)));
-  meta.train.totalXp = 0;
-  for (let L = 1; L < level; L++) meta.train.totalXp += xpToNext(L);
-  meta.train.totalXp += meta.train.xp;
-
   meta.resources = copyResources({ ...old.resources });
+  // Preserve the earned fraction of the next level as wallet scrap. No XP
+  // field or partial purchase survives the migration.
+  if (level < MAX_TRAIN_LEVEL) meta.resources.scrap += Math.floor(Math.min(1, oldXp / oldXpToNext) * trainUpgradeCost(level));
 
   // Old research fully refunded in data (§24.3); the seven new tracks start at Lv0.
   let refundData = 0;
@@ -2200,10 +2211,15 @@ function normalizeMeta(value) {
   const result = { ...base, ...src };
   result.version = SAVE_VERSION;
   result.resources = copyResources(src.resources || base.resources);
+  // One-time v2 conversion: retain bought levels, exchange unspent progress
+  // for scrap. Once saved as v3, normalization never credits it again.
+  if (Number(src.version) === 2 && src.train?.xp > 0 && src.train?.level < MAX_TRAIN_LEVEL) {
+    const level = Math.max(1, Math.floor(Number(src.train.level) || 1));
+    const fraction = Math.min(1, Number(src.train.xp) / legacyXpToNext(level));
+    result.resources.scrap = fix3(result.resources.scrap + Math.floor(fraction * trainUpgradeCost(level)));
+  }
   result.train = {
     level: Math.max(1, Math.min(MAX_TRAIN_LEVEL, Math.floor(Number(src.train?.level) || 1))),
-    xp: Math.max(0, Math.min(xpToNext(Math.max(1, Math.floor(Number(src.train?.level) || 1))) - 1, Math.floor(Number(src.train?.xp) || 0))),
-    totalXp: Math.max(0, fix3(src.train?.totalXp) || 0),
   };
   result.talents = normalizeTalents(src.talents);
   // Illegal saved allocations (e.g. externally edited) fall back to a legal
@@ -2398,34 +2414,14 @@ function bankRisk(run) {
   run.stationsBanked += 1;
   return run;
 }
-function applyTrainXp(meta, amount) {
-  const next = normalizeMeta(meta);
-  const gain = Math.max(0, Math.floor(Number(amount) || 0));
-  next.train.xp += gain; next.train.totalXp = fix3((next.train.totalXp || 0) + gain);
-  while (next.train.level < MAX_TRAIN_LEVEL && next.train.xp >= xpToNext(next.train.level)) { next.train.xp -= xpToNext(next.train.level); next.train.level++; }
-  if (next.train.level >= MAX_TRAIN_LEVEL) next.train.xp = Math.min(next.train.xp, xpToNext(MAX_TRAIN_LEVEL) - 1);
-  return next;
-}
 // Accepts the account meta or a plain owned-id array; combat passes the
 // departure snapshot's copy (修订方案 §4/需求 §20.1).
 function rollBlueprint(metaOrOwned, regionId, random = Math.random) { const region = regionById(regionId), owned = new Set(Array.isArray(metaOrOwned) ? metaOrOwned : metaOrOwned?.blueprints || []), options = region.blueprintPool.filter(id => !owned.has(id) && blueprintById(id) && !blueprintById(id).retired); if (!options.length) return null; return options[Math.floor(random() * options.length)]; }
 
-// XP per expedition (需求 §5.3): 40 per completed segment, +40 for the clear;
-// a failed run keeps completed segments and converts current-segment progress
-// into at most 39 XP.
-function expeditionXp(run, outcome, options = {}) {
-  if (outcome === "won") return (run.stationsBanked + 1) * 40 + 40;
-  if (outcome === "lost") {
-    const progress = Math.max(0, Math.min(1, Number(options.segmentProgress) || 0));
-    return run.stationsBanked * 40 + Math.min(39, Math.floor(40 * progress));
-  }
-  return run.stationsBanked * 40;
-}
-
 function settleRun(meta, run, outcome, options = {}) {
   let next = normalizeMeta(meta);
   if (!run) return { meta: next, gained: copyResources(), blueprints: [] };
-  if ((run.id && next.settledRunIds.includes(run.id)) || (Number.isSafeInteger(run.startExpeditions) && next.totals.expeditions > run.startExpeditions)) return { meta: next, gained: copyResources(), blueprints: [], trainXp: 0, alreadySettled: true };
+  if ((run.id && next.settledRunIds.includes(run.id)) || (Number.isSafeInteger(run.startExpeditions) && next.totals.expeditions > run.startExpeditions)) return { meta: next, gained: copyResources(), blueprints: [], alreadySettled: true };
   const gained = copyResources(run.banked);
   const blueprints = [...run.bankedBlueprints];
   if (outcome === "won" || outcome === "extracted") {
@@ -2454,10 +2450,8 @@ function settleRun(meta, run, outcome, options = {}) {
     regionState.clears++; if (regionState.clears >= 2) regionState.repaired = true;
     for (const id of regionById(regionId).next) if (next.regions[id]) next.regions[id].unlocked = true;
   }
-  const xp = expeditionXp(run, outcome, options);
-  next = applyTrainXp(next, xp);
   if (run.id) next.settledRunIds = [...next.settledRunIds, run.id].slice(-MAX_SETTLED_RUN_IDS);
-  return { meta: next, gained, blueprints: uniqueBlueprints, trainXp: xp };
+  return { meta: next, gained, blueprints: uniqueBlueprints };
 }
 
 const api = {
@@ -2471,8 +2465,8 @@ const api = {
   buildStats, buildChangeRows, researchMultiplier, researchTiers, researchCostFor, researchEffectText,
   refitCost, refitIsPaid, applyTalents, savePreset, loadPreset, renamePreset, emptyPreset,
   regionById, blueprintById, hasBlueprint, planFor, setRegion, setLoadout,
-  createRun, awardRisk, addBlueprintRisk, bankRisk, expeditionXp,
-  researchCost, buyResearch, xpToNext, applyTrainXp, rollBlueprint, settleRun, copyResources, floorResources, fix3,
+  createRun, awardRisk, addBlueprintRisk, bankRisk,
+  researchCost, buyResearch, trainUpgradeCost, buyTrainUpgrade, rollBlueprint, settleRun, copyResources, floorResources, fix3,
 };
 if (typeof module !== "undefined" && globalThis.__bundledExports) globalThis.__bundledExports = api;
 if (typeof window !== "undefined") window.EndlessRailsLongterm = api;
@@ -2688,7 +2682,7 @@ function spawnEnemy(delay=0) {
 function settleLongterm(outcome){
   if(state.metaSettled)return state.metaSettlement;
   const segmentProgress=state.routeDistanceTotal>0?1-Math.max(0,Math.min(1,state.routeDistance/state.routeDistanceTotal)):0;
-  // Persist the whole resource/XP/record-of-settlement update before marking
+  // Persist the whole resource/record-of-settlement update before marking
   // this run complete. A failed write leaves it retryable in the current tab.
   const settlementSource=metaStorage?longterm.loadMeta(metaStorage):state.metaProfile;
   const settlement=longterm.settleRun(settlementSource,state.longtermRun,outcome,{segmentProgress,kills:state.kills,elapsed:state.routeElapsed});
@@ -4566,7 +4560,7 @@ function drawResultScreen(u, state, host, registerRegion) {
   text(c, host.resultBuild || "构筑：—", X(21), y + Y(12), F(14), T.slateBlue); y += Y(39);
   const gained = data.settlement?.gained;
   if (gained) {
-    const metaLines = [`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${data.settlement?.trainXp || 0}`];
+    const metaLines = [`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data}`];
     const bps = data.settlement?.blueprints || [];
     if (bps.length) metaLines.push("新蓝图：" + bps.map(id => host.blueprintNames?.[id] || id).join(" / "));
     box(c, T.card, X(21), y, X(363), Y(30) + Y(25.2) * metaLines.length, X(5));
@@ -4806,12 +4800,12 @@ const host = {
   resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
   pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
   meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
-  trainSlots: 4, carSlots: 2, trainLength: 4, xpToNext: 1, talentPoints: 0,
+  trainSlots: 4, carSlots: 2, trainLength: 4, trainUpgradeCost: null, talentPoints: 0,
   talent: { branch: "hull", draft: null, loadout: null, notice: "", confirmSave: null },
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.5",
+  version: "v0.10.2",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
@@ -4885,7 +4879,7 @@ function refreshHostData() {
   host.trainLength = plan.trainLength;
   host.trainSlots = longterm.trainSlots(profile);
   host.carSlots = longterm.carSlots(profile);
-  host.xpToNext = longterm.xpToNext(profile.train.level);
+  host.trainUpgradeCost = profile.train.level < longterm.MAX_TRAIN_LEVEL ? longterm.trainUpgradeCost(profile.train.level) : null;
   host.talentPoints = longterm.talentPoints(profile);
   if (!host.talent.draft) draftFromProfile();
   host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
@@ -5147,6 +5141,13 @@ function applyAction(action) {
   } else if (action.talentReset) {
     draftFromProfile();
     host.talent.notice = "";
+  } else if (action.trainUpgrade) {
+    const result = longterm.buyTrainUpgrade(state.metaProfile);
+    if (result.purchased) {
+      state.metaProfile = result.meta;
+      longterm.saveMeta(metaStorage, state.metaProfile);
+      host.talent.notice = `列车升至 Lv.${result.meta.train.level} · 改装点 +2`;
+    }
   } else if (action.talentApply) {
     const result = longterm.applyTalents(state.metaProfile, host.talent.draft, { loadout: host.talent.loadout || state.metaProfile.loadout });
     if (result.applied) {

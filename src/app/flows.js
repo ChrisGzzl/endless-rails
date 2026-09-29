@@ -27,7 +27,7 @@ function renderResultDom(data){
   renderDamageSummary();
   ui.resultBuild.textContent="构筑："+Object.keys(state.modules).filter(id=>level(id)>0).map(id=>(experiencePool.find(u=>u.id===id)||upgradePool.find(u=>u.id===id))?.name||id).join(" / ")+" / 核心："+Object.keys(state.coreStacks).filter(id=>state.coreStacks[id]>0).join(" · ");
   const gained=settlement?.gained||{scrap:0,components:0,data:0},bps=settlement?.blueprints||[];
-  if(ui.resultMeta)ui.resultMeta.textContent=`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data} · 列车 XP +${settlement?.trainXp||0}`+(bps.length?" · 新蓝图："+bps.map(id=>longterm.blueprintById(id)?.name||id).join(" / "):"");
+  if(ui.resultMeta)ui.resultMeta.textContent=`长期带回：废料 ${gained.scrap} · 技术组件 ${gained.components} · 研究数据 ${gained.data}`+(bps.length?" · 新蓝图："+bps.map(id=>longterm.blueprintById(id)?.name||id).join(" / "):"");
   ui.resultRecord.textContent="最佳："+state.record.bestStations+" 站 · "+state.record.bestCombo+" 连杀";
 }
 
