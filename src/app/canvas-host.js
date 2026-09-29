@@ -35,7 +35,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.1.3",
+  version: "v0.10.1.4",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };

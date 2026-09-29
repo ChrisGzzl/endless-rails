@@ -19,6 +19,8 @@ const profile = () => {
 {
   const saved = storage(); meta.saveMeta(saved, profile());
   const { elements: e } = createGame({ storage: saved });
+  assert.match(e.homeLoadout.innerHTML, /<b>编组 5 节 · 伤害×1.00<\/b><small>耐久×1.00 · 维修×1.00 · 调整 →<\/small>/);
+  assert.match(e.homeLoadout['aria-label'], /伤害×1.00，耐久×1.00 · 维修×1.00/);
   e.homeTabTrain.events.click();
   const storageCar = () => e.metaCarList.children.find(button => button.innerHTML.includes('仓储车厢'));
   const repairCar = () => e.metaCarList.children.find(button => button.innerHTML.includes('维修车厢'));

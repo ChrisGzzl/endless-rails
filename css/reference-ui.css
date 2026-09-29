@@ -52,9 +52,9 @@ body { background:#a5a394; }
 .mission-launch .mission-loadout { display:flex; align-items:center; gap:9px; width:100%; min-height:51px; margin:12px 0 8px; padding:6px 9px; border:1px solid #cfc4ad; border-radius:5px; background:#f3ebda; color:var(--ink); text-align:left; }
 .mission-loadout::before { content:none; }
 .mission-loadout > .ui-icon { width:31px; height:31px; padding-right:0; }
-.loadout-copy { display:block; flex:none; padding-left:9px; border-left:1px solid #c5baa3; }
-.loadout-copy b { display:block; font-size:13px; font-weight:850; }
-.loadout-copy small { display:block; margin-top:2px; font-size:10px; font-weight:500; color:var(--muted); }
+.loadout-copy { display:block; flex:1 1 auto; min-width:0; padding-left:9px; border-left:1px solid #c5baa3; }
+.loadout-copy b { display:block; font-size:13px; font-weight:850; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.loadout-copy small { display:block; margin-top:2px; font-size:10px; font-weight:500; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .loadout-cars { display:flex; align-items:center; justify-content:flex-end; gap:1px; margin-left:auto; min-width:0; }
 .loadout-cars .ui-icon { width:27px; height:27px; }
 .loadout-cars small { color:var(--muted); font-size:9px; }
@@ -206,7 +206,7 @@ body { background:#a5a394; }
  .home-wallet b { font-size:10px; } .home-hub .home-wallet .ui-icon { width:16px; height:16px; }
  .home-hub .home-regions .meta-region b { font-size:10px; }
  .home-regions .meta-region small { font-size:9px; }
- .loadout-cars .ui-icon { width:21px; height:23px; } .loadout-copy { padding-left:6px; }
+ .loadout-cars { display:none; } .loadout-copy { padding-left:6px; }
  .loadout-copy b { font-size:12px; } .loadout-copy small { font-size:9px; }
  .home-hub .meta-research-row { grid-template-columns:40px minmax(0,1fr) 52px; gap:7px; }
  .home-hub .meta-research-row button { min-width:52px; }

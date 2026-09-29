@@ -301,9 +301,9 @@ import { metaStorage } from "./game.js";
     const trainLength=metaApi.planFor(meta).trainLength;
     // 出发页摘要 (需求 §22.3)：编组 + 研究增益一行，编辑入口跳列车/研究页。
     const S = metaApi.buildStats(meta);
-    const summary = `研究：伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp/100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
-    $("homeLoadout").innerHTML=icon('train')+`<span class="loadout-copy"><b>编组 ${trainLength} 节 · ${summary}</b><small>前往列车调整 · 研究入口在研究页 →</small></span><span class="loadout-cars" aria-hidden="true">${Array.from({length:Math.min(4,trainLength)},()=>icon('train')).join('')}${trainLength>4?'<small>+'+(trainLength-4)+'</small>':''}</span><span class="loadout-arrow" aria-hidden="true">›</span>`;
-    $("homeLoadout").setAttribute('aria-label',`编组 ${trainLength} 节，前往列车调整`);
+    const damage = `伤害×${S.droneDamageMul.toFixed(2)}`, support = `耐久×${(S.maxHp/100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
+    $("homeLoadout").innerHTML=icon('train')+`<span class="loadout-copy"><b>编组 ${trainLength} 节 · ${damage}</b><small>${support} · 调整 →</small></span><span class="loadout-cars" aria-hidden="true">${Array.from({length:Math.min(4,trainLength)},()=>icon('train')).join('')}${trainLength>4?'<small>+'+(trainLength-4)+'</small>':''}</span><span class="loadout-arrow" aria-hidden="true">›</span>`;
+    $("homeLoadout").setAttribute('aria-label',`编组 ${trainLength} 节，${damage}，${support}，前往列车调整`);
     meta = metaApi.normalizeMeta(meta);
     if (!draft) draftFromMeta();
     const nextXp = metaApi.xpToNext(meta.train.level);

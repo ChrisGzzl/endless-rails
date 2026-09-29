@@ -218,8 +218,9 @@ function drawBattleTab(u, host, registerRegion) {
   c.strokeStyle = HT.rail; c.lineWidth = X(1); rr(c, lx, ly, lw, lh, X(5)); c.stroke();
   paintUiIcon(c, "train", lx + X(9), ly + Y(10), X(31), X(31));
   c.strokeStyle = HT.lineSoft; c.beginPath(); c.moveTo(lx + X(52), ly + Y(7)); c.lineTo(lx + X(52), ly + lh - Y(7)); c.stroke();
-  text(c, `编组 ${host.trainLength} 节 · ${host.departureSummary || "研究：未投资"}`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
-  text(c, "前往列车调整 →", lx + X(61), ly + Y(37), F(10), HT.muted, { weight: "500" });
+  const departureParts = (host.departureSummary || "研究：未投资").split(" · ");
+  text(c, `编组 ${host.trainLength} 节 · ${departureParts[0]}`, lx + X(61), ly + Y(19), F(13), HT.ink, { weight: "850" });
+  text(c, `${departureParts.slice(1).join(" · ") || "前往列车调整"} · 调整 →`, lx + X(61), ly + Y(37), F(10), HT.muted, { weight: "500" });
   const carCount = Math.min(4, host.trainLength);
   let cx = lx + lw - X(9) - X(14);
   for (let i = 0; i < carCount; i++) {

@@ -4,7 +4,7 @@
   "short_name": "荒原轨道",
   "description": "编组远征列车，指挥无人机蜂群，在不断扩大的尸潮中重新打通末日铁路。每段行驶 60 秒。",
   "lang": "zh-CN",
-  "start_url": "./?source=homescreen&v=v0.10.1.3",
+  "start_url": "./?source=homescreen&v=v0.10.1.4",
   "scope": "./",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone"],
