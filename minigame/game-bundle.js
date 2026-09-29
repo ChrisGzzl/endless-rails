@@ -568,7 +568,7 @@ function drawTrainTab(u, host, registerRegion) {
   pageHeading(u, "TRAIN WORKSHOP", "我的列车", "升级列车获得改装点，选择车厢决定远征方式。");
   // The fixed header already holds all three resources; the card shows the asset.
   let y = Y(177.8);
-  fill(c, "#1C424C", X(14), y, X(382), Y(198), X(6));
+  fill(c, "#1C424C", X(14), y, X(382), Y(190), X(6));
   paintUiIcon(c, "trainNav", X(285), y + Y(13), X(90), Y(70));
   text(c, "远征列车", X(26), y + Y(18), F(10), "#B8D3D2", { weight: "700" });
   text(c, `列车 Lv.${host.meta.train.level}`, X(26), y + Y(42), F(22), "#FFF7E8", { weight: "850" });
@@ -576,17 +576,17 @@ function drawTrainTab(u, host, registerRegion) {
   const summary = host.talentSummary;
   text(c, `改装点 ${host.appliedPoints} / ${host.talentPoints} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(64), F(10), "#E2C789");
   text(c, `无人机伤害 ×${host.trainStats.fire.toFixed(2)}   列车耐久 ×${host.trainStats.hull.toFixed(2)}`, X(26), y + Y(82), Math.max(11, F(11)), "#E2E9E0", { weight:"700" });
-  fill(c, affordable ? "#EFBF69" : "#81999B", X(26), y + Y(101), X(358), Y(62), X(4));
-  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1}`, X(205), y + Y(130), Math.max(12, F(13)), affordable ? "#25383B" : "#F2F0E4", { align: "center", weight: "800" });
-  if (affordable) registerRegion({ x: X(26), y: y + Y(101), w: X(358), h: Y(62), action: { trainUpgrade: true } });
+  fill(c, affordable ? "#EFBF69" : "#81999B", X(26), y + Y(99), X(358), Y(54), X(4));
+  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1}`, X(205), y + Y(126), Math.max(12, F(13)), affordable ? "#25383B" : "#F2F0E4", { align: "center", weight: "800" });
+  if (affordable) registerRegion({ x: X(26), y: y + Y(99), w: X(358), h: Y(54), action: { trainUpgrade: true } });
   const hint = host.trainUpgradeCost === null ? "当前等级上限" : "每级 +2 改装点 · 废料 ";
-  text(c, hint, X(26), y + Y(177), Math.max(11, F(11)), "#D0DCD4");
+  text(c, hint, X(26), y + Y(170), Math.max(11, F(11)), "#D0DCD4");
   if (host.trainUpgradeCost !== null) {
     const font = Math.max(11, F(11)), costX = X(26) + measure(c, hint, font);
-    text(c, String(host.trainUpgradeCost), costX, y + Y(177), Math.max(12, F(12)), affordable ? "#D0DCD4" : "#FF9E94", { weight:"800" });
-    if (!affordable) text(c, `（差 ${Math.ceil(host.trainUpgradeCost - host.meta.resources.scrap)}）`, costX + measure(c, String(host.trainUpgradeCost), Math.max(12, F(12)), "800"), y + Y(177), font, "#D0DCD4");
+    text(c, String(host.trainUpgradeCost), costX, y + Y(170), Math.max(12, F(12)), affordable ? "#D0DCD4" : "#FF9E94", { weight:"800" });
+    if (!affordable) text(c, `（差 ${Math.ceil(host.trainUpgradeCost - host.meta.resources.scrap)}）`, costX + measure(c, String(host.trainUpgradeCost), Math.max(12, F(12)), "800"), y + Y(170), font, "#D0DCD4");
   }
-  y += Y(209);
+  y += Y(201);
   y = sectionHead(u, y, "当前编组", `${Math.max(0, host.meta.loadout.length - 1)} / ${host.carSlots} 功能车厢`);
   const appliedCars = host.meta.loadout.filter(id => id !== "hangar");
   appliedCars.forEach((id, i) => {
@@ -727,7 +727,7 @@ function drawResearchTab(u, host, registerRegion) {
   for (const [groupId, groupLabel] of groups) {
     y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
     for (const row of host.researchRows.filter(row => row.group === groupId)) {
-      const h = Y(123);
+      const h = Y(128);
       fill(c, HT.card, X(14), y, X(382), h, X(5));
       c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
       const colors = groupId === "drone" ? ["#003b78", "#057cc7"] : ["#5c3a12", "#b9822c"];
@@ -739,20 +739,26 @@ function drawResearchTab(u, host, registerRegion) {
       text(c, row.name, X(77), y + Y(16), Math.max(12, F(14)), HT.ink, { weight: "800" });
       text(c, `Lv.${row.level}/${row.max}`, X(382), y + Y(16), Math.max(11, F(11)), "#586B6C", { align:"right", weight:"700" });
       text(c, row.focus, X(77), y + Y(39), Math.max(11, F(11)), "#586B6C");
-      text(c, `当前 ${row.effect}${row.maxed ? "" : ` → 升级 ${row.nextEffect}`}`, X(26), y + Y(75), Math.max(11, F(12)), "#2F6B5E", { weight: "800" });
+      text(c, "当前", X(26), y + Y(73), Math.max(11, F(11)), HT.muted, { weight: "700" });
+      text(c, row.effect, X(57), y + Y(73), Math.max(12, F(13)), "#326B60", { weight: "800" });
+      if (!row.maxed) {
+        text(c, "→", X(129), y + Y(73), Math.max(11, F(11)), "#9B8A62");
+        text(c, "升级后", X(148), y + Y(73), Math.max(11, F(11)), HT.muted, { weight: "700" });
+        text(c, row.nextEffect, X(202), y + Y(73), Math.max(12, F(13)), "#196E5A", { weight: "800" });
+      }
       if (!row.maxed) {
         const bits = [["scrap", "废料"], [groupId === "drone" ? "data" : "components", groupId === "drone" ? "数据" : "组件"]];
         if (row.cost.attack && row.cost.components > 0) bits.push(["components", "组件"]);
         if (!row.cost.attack && row.cost.data > 0) bits.push(["data", "数据"]);
         const font = Math.max(10.5, F(11));
         bits.forEach(([key, label], i) => {
-          const x = X([26, 120, 214][i]), cy = y + Y(101);
+          const x = X([26, 120, 214][i]), cy = y + Y(105);
           text(c, label, x, cy, font, "#68551F", { weight:"700" });
           text(c, String(row.cost[key]), x + measure(c, label, font, "700") + X(3), cy, font, row.shortKeys.includes(key) ? "#AD302A" : "#68551F", { weight:"800" });
         });
       }
       // The action remains a large target; only affordable upgrades receive a hitbox.
-      const bxx = X(296), byy = y + Y(67), bw = X(92), bh = Y(48);
+      const bxx = X(296), byy = y + Y(70), bw = X(92), bh = Y(48);
       if (row.maxed) {
         fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
@@ -760,7 +766,7 @@ function drawResearchTab(u, host, registerRegion) {
       } else {
         fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = row.affordable ? "#C18E35" : "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
-        text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
+        text(c, row.affordable ? "升级" : "资源不足", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#68716C", { align: "center", weight: "800" });
         if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
       }
       y += h + Y(8);
@@ -771,7 +777,7 @@ function drawResearchTab(u, host, registerRegion) {
   c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), Y(58), X(5)); c.stroke();
   text(c, "研究规则说明", X(25), y + Y(14), F(11), HT.ink, { weight: "750" });
   text(c, "Lv1-10 基础 / Lv11-20 进阶 / Lv21-30 长期，单级收益分段递减。", X(25), y + Y(30), F(9.5), HT.muted);
-  text(c, "无等待与限额，数据足够即可升级；装甲材料按乘法叠算。", X(25), y + Y(44), F(9.5), HT.muted);
+  text(c, "无等待与限额，资源足够即可升级；装甲材料按乘法叠算。", X(25), y + Y(44), F(9.5), HT.muted);
   y += Y(58) + Y(12);
   // Bond color guide.
   fill(c, "#F1E8D7", X(14), y, X(382), Y(173.6), X(4));
@@ -4818,7 +4824,7 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.3.2",
+  version: "v0.10.3.3",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };

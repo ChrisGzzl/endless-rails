@@ -102,7 +102,9 @@ const profile = () => {
   assert.match(row.innerHTML, /research-cost/);
   assert.match(row.innerHTML, /research-cost__item is-short[^\n]*废料 <b>13<\/b>/);
   assert.match(row.innerHTML, /research-cost__item is-short[^\n]*数据 <b>3<\/b>/);
-  assert.match(row.innerHTML, /当前 \+0\.0%[^<]*<span aria-hidden="true">→<\/span> 升级 \+1\.5%/);
+  assert.match(row.innerHTML, /research-effect__current"><small>当前<\/small><b>\+0\.0%<\/b>/);
+  assert.match(row.innerHTML, /research-effect__next"><small>升级后<\/small><b>\+1\.5%<\/b>/);
+  assert.match(row.innerHTML, /资源不足<\/button>/);
   assert.match(row.innerHTML, /data-research="fireControl"[^>]*disabled/);
 }
 
