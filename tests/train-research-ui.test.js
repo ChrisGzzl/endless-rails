@@ -1,7 +1,20 @@
 'use strict';
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const meta = require('../src/meta/longterm');
 const createGame = require('./test-harness.cjs');
+
+// The entry query alone does not invalidate cached transitive ES modules.
+for (const [page, modules] of [
+  ['index.html', ['src/meta/longterm.js', 'src/app/meta-ui.js']],
+  ['canvas.html', ['src/meta/longterm.js', 'src/app/canvas-host.js', 'src/view/canvas-home.js']],
+]) {
+  const html = fs.readFileSync(path.join(__dirname, '..', page), 'utf8');
+  const imports = JSON.parse(html.match(/<script type="importmap">([^<]+)<\/script>/)[1]).imports;
+  const version = html.match(/<script type="module" src="[^"]+\?v=(v[^"]+)"/)[1];
+  for (const module of modules) assert.equal(imports[`./${module}`], `./${module}?v=${version}`, `${page} must bypass stale ${module}`);
+}
 
 const storage = () => {
   const data = new Map();

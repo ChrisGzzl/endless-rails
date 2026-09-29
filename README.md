@@ -23,7 +23,9 @@
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.10.1.4`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.10.1.5`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+
+GitHub Pages 会缓存 ESM 子模块；发版时把本次修改的运行时模块加入入口 HTML 的 import map，并随 `?v=` 升版，详见 `AGENTS.md`。上线后用 `qa.html` 的 320×568 与 390×844 临时存档检查布局。
 
 ## 本地运行
 

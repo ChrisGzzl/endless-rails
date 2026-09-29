@@ -508,3 +508,13 @@
 **验证：** 修复前 GitHub Pages 实测：320×568 溢出量 54px、固定摘要高 146px；研究页在 465px 视口七项图标互异、按钮 44×60px、无横向溢出；列车草稿点数预览与重置正常。修复后 `node --test tests/*.test.js` 10 个文件和 `node --test services/player-data/test/*.test.cjs` 12 项通过，29 模块小游戏 bundle 重建与冒烟通过。补充 Web 出发摘要两行内容和完整辅助名称断言。
 
 **遗留：** 云浏览器无法访问本地静态服务器（`ERR_BLOCKED_BY_CLIENT`）；修复后的 320×568 视觉与溢出量需等 GitHub Pages 更新后再用线上回归台复测。实机性能和微信开发者工具仍未测。
+
+### 19. [修复] GitHub Pages 子模块缓存与线上复测入口（2026-09-29）
+
+**前因：** #18 的 v0.10.1.4 由 Pages Action 成功部署（`f2075ea`），但线上 `qa.html` 的 iframe 已是 v0.10.1.4，`meta-ui.js` 仍按未带版本的 ESM 子模块 URL 运行旧版，出发摘要继续显示旧文字。入口 `src/main.js?v=...` 的版本参数不会传递给其静态 import，单靠入口升版不能保证浏览器立即取得新模块。
+
+**内容：** Web 与 Canvas 入口加入 import map，将本轮相关运行时模块（`longterm.js`、`meta-ui.js`、`canvas-host.js`、`canvas-home.js`）映射到 `v0.10.1.5` URL，消除这些模块的旧缓存命中；版本同步到三入口、PWA、Canvas 版本与 README，重建小游戏 bundle。根目录 `AGENTS.md` 补记发版时更新子模块映射、上线后以 `qa.html` 复测的规则，并在 README 中说明。
+
+**验证：** 新增入口映射与模块入口版本一致的回归断言；根目录 10 个测试文件与存档服务 12 项再次通过，小游戏 bundle 冒烟通过。#18 的线上旧模块现象和 Pages Action 成功状态已核对。
+
+**遗留：** v0.10.1.5 部署后的 320×568 布局量测仍需在 GitHub Pages 更新后完成；未做真实手机或微信开发者工具测试。
