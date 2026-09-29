@@ -241,15 +241,6 @@ import { metaStorage } from "./game.js";
   }
 
   // -- research page -----------------------------------------------------------
-  const RESEARCH_COPY = {
-    fireControl: "提高北辰与所有无人机的伤害。",
-    cycleControl: "缩短无人机普通攻击的基础间隔。",
-    rangeCalibration: "扩大无人机索敌与攻击射程（不扩大爆炸/燃烧范围）。",
-    hullEngineering: "提高列车最大耐久。",
-    armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
-    repairEngineering: "提高所有到站维修与应急储备的维修量。",
-    trainFireControl: "提高列车自身近防炮的伤害。",
-  };
   function renderResearch() {
     researchList.innerHTML = "";
     for (const group of [["drone", "无人机战斗", "主材料：研究数据"], ["train", "列车工程", "主材料：技术组件"]]) {
@@ -264,20 +255,19 @@ import { metaStorage } from "./game.js";
         const effect = metaApi.researchEffectText(track.id, level);
         const nextEffect = metaApi.researchEffectText(track.id, Math.min(metaApi.MAX_RESEARCH_LEVEL, level + 1));
         const row = document.createElement("div"); row.className = `meta-research-row meta-research-row--${group[0]}`;
-        let costLine = "已达当前上限", missing = [];
+        let costLine = "", missing = [];
         if (!maxed) {
-          const parts = [`${icon("scrap")}废料 ${cost.scrap}`, `${icon(cost.attack ? "data" : "components")}${cost.attack ? "数据" : "组件"} ${cost.attack ? cost.data : cost.components}`];
-          if (cost.attack && cost.components > 0) parts.push(`${icon("components")}组件 ${cost.components}`);
-          if (!cost.attack && cost.data > 0) parts.push(`${icon("data")}数据 ${cost.data}`);
-          costLine = parts.join(" ");
+          const parts = [["scrap", "废料"], [cost.attack ? "data" : "components", cost.attack ? "数据" : "组件"]];
+          if (cost.attack && cost.components > 0) parts.push(["components", "组件"]);
+          if (!cost.attack && cost.data > 0) parts.push(["data", "数据"]);
+          costLine = parts.map(([key, name]) => `<span class="research-cost__item${meta.resources[key] < cost[key] ? " is-short" : ""}">${icon(key)}${name} <b>${cost[key]}</b></span>`).join("");
           missing = [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => meta.resources[key] < cost[key]).map(([key, name]) => `${name}还差 ${Math.ceil(cost[key] - meta.resources[key])}`);
         }
         row.innerHTML = `<span class="research-icon" data-weapon="${track.id}">${icon(metaApi.RESEARCH_ICONS[track.id])}</span>
-          <span class="research-copy"><b>${track.name}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL} · ${track.scope}</small>
-          <small>${RESEARCH_COPY[track.id]}</small>
-          <span class="research-progress" role="progressbar" aria-label="${track.name}研究进度" aria-valuemin="0" aria-valuemax="${metaApi.MAX_RESEARCH_LEVEL}" aria-valuenow="${level}"><i style="width:${100 * level / metaApi.MAX_RESEARCH_LEVEL}%"></i></span>
-          <small class="research-effect">累计 ${effect.total}${maxed ? "" : ` → 下一级 ${nextEffect.total}`}</small>
-          <small class="research-cost">${costLine}</small>${missing.length ? `<small class="research-short">${missing.join(" · ")}</small>` : ""}</span>
+          <span class="research-copy"><span class="research-copy__heading"><b>${track.name}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}</small></span>
+          <small class="research-scope">${track.focus}</small>
+          <span class="research-effect">当前 ${effect.total}${maxed ? "" : ` <span aria-hidden="true">→</span> 升级 ${nextEffect.total}`}</span>
+          ${maxed ? "" : `<span class="research-cost">${costLine}</span>`}</span>
           <button type="button" data-research="${track.id}" aria-label="${maxed ? track.name + "已满级" : missing.length ? `升级${track.name}，${missing.join("，")}` : `升级${track.name}`}" ${maxed || missing.length ? "disabled" : ""}>${maxed ? "已满级" : "升级"}</button>`;
         if (!maxed) row.querySelector("button").addEventListener("click", () => {
           const result = metaApi.buyResearch(meta, track.id);
@@ -316,16 +306,18 @@ import { metaStorage } from "./game.js";
     const upgradeCost = meta.train.level < metaApi.MAX_TRAIN_LEVEL ? metaApi.trainUpgradeCost(meta.train.level) : null;
     trainText.textContent = `列车 Lv.${meta.train.level}`;
     const upgradeButton = $("metaTrainUpgradeButton");
-    upgradeButton.textContent = upgradeCost === null ? "列车已满级" : `升级至 Lv.${meta.train.level + 1} · ${upgradeCost} 废料`;
+    upgradeButton.textContent = upgradeCost === null ? "列车已满级" : `升级至 Lv.${meta.train.level + 1}`;
     upgradeButton.disabled = upgradeCost === null || meta.resources.scrap < upgradeCost;
     upgradeButton.setAttribute("aria-label", upgradeCost === null ? "列车已满级" : `升级列车需要 ${upgradeCost} 废料，当前 ${Math.floor(meta.resources.scrap)} 废料`);
-    $("trainUpgradeHint").textContent = upgradeCost === null ? "列车已达当前等级上限" : `每升 1 级获得 2 改装点 · 当前废料 ${Math.floor(meta.resources.scrap)}${meta.resources.scrap < upgradeCost ? ` · 还差 ${Math.ceil(upgradeCost - meta.resources.scrap)}` : ""}`;
+    $("trainUpgradeHint").innerHTML = upgradeCost === null ? "已达等级上限" : meta.resources.scrap < upgradeCost
+      ? `每级 +2 改装点 · 废料 <b class="resource-short">${upgradeCost}</b>（差 ${Math.ceil(upgradeCost - meta.resources.scrap)}）`
+      : `每级 +2 改装点 · 废料 ${upgradeCost}`;
     const fire = S.droneDamageMul, hull = S.maxHp / 100;
-    $("trainPowerLabel").textContent = `火力 ×${fire.toFixed(2)} · 耐久 ×${hull.toFixed(2)}`;
-    $("trainPowerFill").style.width = `${Math.min(100, 24 + Math.max(fire, hull) * 22)}%`;
+    $("trainFirepower").textContent = `无人机伤害 ×${fire.toFixed(2)}`;
+    $("trainDurability").textContent = `列车耐久 ×${hull.toFixed(2)}`;
     const points = metaApi.talentPoints(meta) - metaApi.spentPoints(draft);
     const pointsEl = $("metaTalentPoints");
-    pointsEl.textContent = `可用改装点 ${metaApi.talentPoints(meta) - metaApi.spentPoints(meta.talents)} / ${metaApi.talentPoints(meta)} · 免费重构 ${meta.freeRefits} 次`;
+    pointsEl.textContent = `可用改装点 ${metaApi.talentPoints(meta) - metaApi.spentPoints(meta.talents)}`;
     pointsEl.classList.toggle("bad", points < 0);
     const carNames = cars => cars.filter(id => id !== "hangar").map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ") || "未选功能车厢";
     const slots = metaApi.carSlots(meta);

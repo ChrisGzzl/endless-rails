@@ -129,13 +129,13 @@ const SPEC_NODE = Object.freeze({ hull: "H5", pointDefense: "N4", repair: "R4", 
 // ---------------------------------------------------------------------------
 
 const RESEARCH_TRACKS = Object.freeze([
-  { id: "fireControl", group: "drone", name: "火控算法", kind: "attack", scope: "北辰及所有无人机伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
-  { id: "cycleControl", group: "drone", name: "循环控制", kind: "attack", scope: "无人机普通攻击基础间隔", tiers: [[.008, -1], [.004, -1], [.002, -1]], unit: "-" },
-  { id: "rangeCalibration", group: "drone", name: "射程校准", kind: "attack", scope: "无人机索敌 / 攻击射程", tiers: [[.01, 1], [.003, 1], [.002, 1]], unit: "+" },
-  { id: "hullEngineering", group: "train", name: "车体工程", kind: "train", scope: "列车最大耐久", tiers: [[.02, 1], [.01, 1], [.005, 1]], unit: "+" },
-  { id: "armorMaterials", group: "train", name: "装甲材料", kind: "train", scope: "列车受到的直接攻击伤害（乘法叠算）", tiers: [[.01, 0], [.005, 0], [.0025, 0]], unit: "×", multiplicative: true },
-  { id: "repairEngineering", group: "train", name: "维修工程", kind: "train", scope: "基础到站、维修车、应急储备维修量", tiers: [[.025, 1], [.0125, 1], [.0075, 1]], unit: "+" },
-  { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+  { id: "fireControl", group: "drone", name: "火控算法", kind: "attack", focus: "无人机伤害", scope: "北辰及所有无人机伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+  { id: "cycleControl", group: "drone", name: "循环控制", kind: "attack", focus: "无人机普攻间隔", scope: "无人机普通攻击基础间隔", tiers: [[.008, -1], [.004, -1], [.002, -1]], unit: "-" },
+  { id: "rangeCalibration", group: "drone", name: "射程校准", kind: "attack", focus: "索敌与攻击射程", scope: "无人机索敌 / 攻击射程", tiers: [[.01, 1], [.003, 1], [.002, 1]], unit: "+" },
+  { id: "hullEngineering", group: "train", name: "车体工程", kind: "train", focus: "列车最大耐久", scope: "列车最大耐久", tiers: [[.02, 1], [.01, 1], [.005, 1]], unit: "+" },
+  { id: "armorMaterials", group: "train", name: "装甲材料", kind: "train", focus: "列车直接伤害减免", scope: "列车受到的直接攻击伤害（乘法叠算）", tiers: [[.01, 0], [.005, 0], [.0025, 0]], unit: "×", multiplicative: true },
+  { id: "repairEngineering", group: "train", name: "维修工程", kind: "train", focus: "到站与应急维修", scope: "基础到站、维修车、应急储备维修量", tiers: [[.025, 1], [.0125, 1], [.0075, 1]], unit: "+" },
+  { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", focus: "列车近防伤害", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
 ]);
 const RESEARCH_IDS = Object.freeze(RESEARCH_TRACKS.map(track => track.id));
 const RESEARCH_ICONS = Object.freeze({ fireControl: "rapid", cycleControl: "pulse", rangeCalibration: "radar", hullEngineering: "armor", armorMaterials: "shield", repairEngineering: "repair", trainFireControl: "pointDefense" });

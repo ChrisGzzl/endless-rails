@@ -4,24 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#132833">
-  <link rel="manifest" href="manifest.webmanifest?v=v0.10.3">
+  <link rel="manifest" href="manifest.webmanifest?v=v0.10.3.1">
   <link rel="apple-touch-icon" href="assets/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="css/styles.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/ui-wasteland.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/home.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/ui-refresh.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/battle-ui.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/edge-ui.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/sand-ui.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/icon-ui.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/reference-ui.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/talents.css?v=v0.10.3">
-  <link rel="stylesheet" href="css/mobile-icons.css?v=v0.10.3">
-  <script type="importmap">{"imports":{"./src/meta/longterm.js":"./src/meta/longterm.js?v=v0.10.3","./src/app/meta-ui.js":"./src/app/meta-ui.js?v=v0.10.3","./src/app/flows.js":"./src/app/flows.js?v=v0.10.3","./src/app/gm.js":"./src/app/gm.js?v=v0.10.3"}}</script>
+  <link rel="stylesheet" href="css/styles.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/ui-wasteland.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/home.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/ui-refresh.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/battle-ui.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/edge-ui.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/sand-ui.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/icon-ui.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/reference-ui.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/talents.css?v=v0.10.3.1">
+  <link rel="stylesheet" href="css/mobile-icons.css?v=v0.10.3.1">
+  <script type="importmap">{"imports":{"./src/meta/longterm.js":"./src/meta/longterm.js?v=v0.10.3.1","./src/app/meta-ui.js":"./src/app/meta-ui.js?v=v0.10.3.1","./src/app/flows.js":"./src/app/flows.js?v=v0.10.3.1","./src/app/gm.js":"./src/app/gm.js?v=v0.10.3.1"}}</script>
 </head>
 <body>
   <main id="app">
@@ -76,7 +76,7 @@
       </section>
       <section class="home-pane home-scroll meta-scroll" id="metaScreen" role="tabpanel" aria-labelledby="homeTabTrain" hidden>
         <header class="home-page-heading"><p class="eyebrow">TRAIN WORKSHOP</p><h2>我的列车</h2><p>升级列车获得改装点，选择车厢决定远征方式。</p></header>
-        <section class="train-showcase" aria-label="当前列车"><div class="train-showcase__art" aria-hidden="true"><span class="train-showcase__route">ENDLESS RAILS / 01</span></div><div class="train-showcase__body"><div><small>远征列车</small><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaTalentPoints" class="talent-points">改装点 2 / 2</p></div><div class="train-showcase__meter" aria-hidden="true"><span id="trainPowerLabel">火力 1.00 · 耐久 1.00</span><div><i id="trainPowerFill"></i></div></div><button id="metaTrainUpgradeButton" type="button">升级列车</button><p class="train-showcase__hint" id="trainUpgradeHint"></p></div></section>
+        <section class="train-showcase" aria-label="当前列车"><div class="train-showcase__art" aria-hidden="true"><span class="train-showcase__route">ENDLESS RAILS / 01</span></div><div class="train-showcase__body"><div><small>远征列车</small><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaTalentPoints" class="talent-points">可用改装点 2</p></div><div class="train-showcase__stats"><span id="trainFirepower">无人机伤害 ×1.00</span><span id="trainDurability">列车耐久 ×1.00</span></div><button id="metaTrainUpgradeButton" type="button">升级列车</button><p class="train-showcase__hint" id="trainUpgradeHint"></p></div></section>
         <section class="train-build-preview" aria-label="已应用编组"><div class="meta-section__head"><b>当前编组</b><span id="trainBuildCount">0 / 0 车厢</span></div><div class="train-build-preview__cars" id="trainBuildCars"></div><button class="train-workshop-entry" id="trainWorkshopOpen" type="button" aria-expanded="false" aria-controls="trainWorkshop">打开改装台 <span aria-hidden="true">›</span></button></section>
         <section class="train-workshop" id="trainWorkshop" aria-label="列车改装台" hidden><div class="train-workshop__head"><div><small>WORKSHOP / 改装台</small><h3>车厢与天赋</h3><p>选择车厢、分配改装点，最后应用草稿。</p></div><button id="trainWorkshopClose" type="button" aria-label="收起改装台">收起</button></div>
         <div class="talent-presets" id="talentPresetBar" role="group" aria-label="改装方案槽"></div>
@@ -88,7 +88,7 @@
         <button class="home-secondary" id="metaStartButton" type="button">编组完成 · 前往出发 →</button>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="homeResearch" role="tabpanel" aria-labelledby="homeTabResearch" hidden>
-        <header class="home-page-heading"><p class="eyebrow">RESEARCH LABORATORY</p><h2>永久研究</h2><p>火控强化无人机，工程提升列车生存。进度永久保留。</p></header><div class="research-intro"><span class="research-intro__mark" aria-hidden="true">✦</span><div><b>选择研究方向</b><small>每项独立升级 · 顶部资源栏显示当前库存</small></div></div><div class="meta-research" id="metaResearchList"></div><details class="research-guide"><summary>研究规则说明</summary><div id="researchDetails"></div></details><details class="research-extra"><summary>查看编组配色与蓝图收藏</summary><section class="bond-guide" aria-label="无人机编组配色"><h3>编组配色</h3><p><i class="bond-dot bond-dot--purple"></i>紫 · 电弧 + 跳弹：北辰额外发射放电跳弹</p><p><i class="bond-dot bond-dot--blue"></i>蓝 · 机枪 + 磁轨：北辰使用穿透激光</p><p><i class="bond-dot bond-dot--red"></i>红 · 燃烧 + 导弹：北辰发射追踪燃烧弹</p><p><i class="bond-dot bond-dot--cyan"></i>青 · 旋刃 + 霰弹：同色编组</p><small>前三组在两架无人机都达到 Lv.5 后激活。青色当前仅作为编组配色，不改变技能规则。</small></section><section class="home-blueprints"><div class="meta-section__head"><b>已回收蓝图</b><span>收藏记录</span></div><div id="metaBlueprintList" class="meta-blueprints"></div></section></details>
+        <header class="home-page-heading"><p class="eyebrow">RESEARCH LABORATORY</p><h2>永久研究</h2><p>资源足够即可升级；增益永久保留。</p></header><div class="meta-research" id="metaResearchList"></div><details class="research-guide"><summary>研究规则说明</summary><div id="researchDetails"></div></details><details class="research-extra"><summary>查看编组配色与蓝图收藏</summary><section class="bond-guide" aria-label="无人机编组配色"><h3>编组配色</h3><p><i class="bond-dot bond-dot--purple"></i>紫 · 电弧 + 跳弹：北辰额外发射放电跳弹</p><p><i class="bond-dot bond-dot--blue"></i>蓝 · 机枪 + 磁轨：北辰使用穿透激光</p><p><i class="bond-dot bond-dot--red"></i>红 · 燃烧 + 导弹：北辰发射追踪燃烧弹</p><p><i class="bond-dot bond-dot--cyan"></i>青 · 旋刃 + 霰弹：同色编组</p><small>前三组在两架无人机都达到 Lv.5 后激活。青色当前仅作为编组配色，不改变技能规则。</small></section><section class="home-blueprints"><div class="meta-section__head"><b>已回收蓝图</b><span>收藏记录</span></div><div id="metaBlueprintList" class="meta-blueprints"></div></section></details>
       </section>
       <section class="home-pane home-scroll meta-scroll" id="homeShop" role="tabpanel" aria-labelledby="homeTabShop" hidden>
         <header class="home-page-heading"><p class="eyebrow">SUPPLY DEPOT</p><h2>荒原补给站</h2><p>远征之外的补给与支援。</p></header><div class="shop-coming"><i class="ui-icon ui-icon--supply" aria-hidden="true"></i><h3>补给线路尚未开通</h3><p>补给商店将在后续版本开放。<br>现在可通过远征回收废料、组件与研究数据。</p></div><section class="supply-preview"><h3>可回收资源</h3><div><span><i class="ui-icon ui-icon--scrap" aria-hidden="true"></i>废料</span><span><i class="ui-icon ui-icon--components" aria-hidden="true"></i>组件</span><span><i class="ui-icon ui-icon--data" aria-hidden="true"></i>数据</span></div></section><button class="home-secondary" id="shopToBattle" type="button">前往出发获取资源 →</button>
@@ -96,7 +96,7 @@
       <section class="home-pane home-scroll meta-scroll" id="homeSettings" role="tabpanel" aria-labelledby="startSettingsButton" hidden>
         <header class="home-page-heading"><p class="eyebrow">TERMINAL PREFERENCES</p><h2>设置</h2><p>让每一次护送都保持舒适。</p></header>
         <div class="sound-options"><div class="sound-option"><div><h3 id="homeMusicLabel">背景音乐</h3><p>低音量氛围配乐</p></div><button id="homeMusicToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="homeMusicLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div><div class="sound-option"><div><h3 id="homeSfxLabel">游戏音效</h3><p>武器与关键提示</p></div><button id="homeSfxToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="homeSfxLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div></div>
-        <p class="sound-note" id="homeSoundNote">声音偏好自动保存</p><div class="home-settings-actions"><button id="startFullscreenButton" class="home-secondary" type="button">全屏游玩 <span aria-hidden="true">⛶</span></button><button id="startInstallButton" class="home-secondary" type="button">添加到主屏幕 <span aria-hidden="true">＋</span></button><button id="cloudButton" class="home-secondary" type="button" hidden>测试存档</button></div><p class="home-about">荒原轨道 · 无人机守卫<br><span class="version-label">v0.10.3</span></p>
+        <p class="sound-note" id="homeSoundNote">声音偏好自动保存</p><div class="home-settings-actions"><button id="startFullscreenButton" class="home-secondary" type="button">全屏游玩 <span aria-hidden="true">⛶</span></button><button id="startInstallButton" class="home-secondary" type="button">添加到主屏幕 <span aria-hidden="true">＋</span></button><button id="cloudButton" class="home-secondary" type="button" hidden>测试存档</button></div><p class="home-about">荒原轨道 · 无人机守卫<br><span class="version-label">v0.10.3.1</span></p>
       </section>
     </div>
     <nav class="home-tabs" role="tablist" aria-label="基地导航"><button id="homeTabShop" type="button" role="tab" aria-controls="homeShop" aria-selected="false" tabindex="-1" data-home-tab="shop"><i class="ui-icon ui-icon--shop" aria-hidden="true"></i><span>商店</span></button><button id="homeTabTrain" type="button" role="tab" aria-controls="metaScreen" aria-selected="false" tabindex="-1" data-home-tab="train"><i class="ui-icon ui-icon--trainNav" aria-hidden="true"></i><span>列车</span></button><button id="homeTabBattle" type="button" role="tab" aria-controls="homeBattle" aria-selected="true" tabindex="0" data-home-tab="battle"><i class="ui-icon ui-icon--battle" aria-hidden="true"></i><span>出发</span></button><button id="homeTabResearch" type="button" role="tab" aria-controls="homeResearch" aria-selected="false" tabindex="-1" data-home-tab="research"><i class="ui-icon ui-icon--research" aria-hidden="true"></i><span>研究</span></button><button id="startSettingsButton" type="button" role="tab" aria-controls="homeSettings" aria-selected="false" tabindex="-1" data-home-tab="settings"><i class="ui-icon ui-icon--settings" aria-hidden="true"></i><span>设置</span></button></nav>
@@ -182,6 +182,6 @@
       <button class="primary-button" id="cloudClose" type="button">返回游戏</button>
     </div>
   </section>
-  <script type="module" src="src/main.js?v=v0.10.3"></script>
+  <script type="module" src="src/main.js?v=v0.10.3.1"></script>
 </body>
 </html>

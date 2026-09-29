@@ -568,18 +568,25 @@ function drawTrainTab(u, host, registerRegion) {
   pageHeading(u, "TRAIN WORKSHOP", "我的列车", "升级列车获得改装点，选择车厢决定远征方式。");
   // The fixed header already holds all three resources; the card shows the asset.
   let y = Y(177.8);
-  fill(c, "#1C424C", X(14), y, X(382), Y(160), X(6));
+  fill(c, "#1C424C", X(14), y, X(382), Y(198), X(6));
   paintUiIcon(c, "trainNav", X(285), y + Y(13), X(90), Y(70));
   text(c, "远征列车", X(26), y + Y(18), F(10), "#B8D3D2", { weight: "700" });
   text(c, `列车 Lv.${host.meta.train.level}`, X(26), y + Y(42), F(22), "#FFF7E8", { weight: "850" });
   const affordable = host.trainUpgradeCost !== null && host.meta.resources.scrap >= host.trainUpgradeCost;
   const summary = host.talentSummary;
   text(c, `改装点 ${host.appliedPoints} / ${host.talentPoints} · 功能车厢 ${host.carSlots} 槽`, X(26), y + Y(64), F(10), "#E2C789");
-  fill(c, affordable ? "#EFBF69" : "#81999B", X(26), y + Y(84), X(358), Y(44), X(4));
-  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1} · ${host.trainUpgradeCost} 废料`, X(205), y + Y(106), F(13), affordable ? "#25383B" : "#F2F0E4", { align: "center", weight: "800" });
-  if (affordable) registerRegion({ x: X(26), y: y + Y(84), w: X(358), h: Y(44), action: { trainUpgrade: true } });
-  text(c, host.trainUpgradeCost === null ? "当前等级上限" : affordable ? "每级获得 2 改装点" : `废料还差 ${Math.ceil(host.trainUpgradeCost - host.meta.resources.scrap)}`, X(26), y + Y(145), F(10), "#D0DCD4");
-  y += Y(171);
+  text(c, `无人机伤害 ×${host.trainStats.fire.toFixed(2)}   列车耐久 ×${host.trainStats.hull.toFixed(2)}`, X(26), y + Y(82), Math.max(11, F(11)), "#E2E9E0", { weight:"700" });
+  fill(c, affordable ? "#EFBF69" : "#81999B", X(26), y + Y(101), X(358), Y(62), X(4));
+  text(c, host.trainUpgradeCost === null ? "列车已满级" : `升级至 Lv.${host.meta.train.level + 1}`, X(205), y + Y(130), Math.max(12, F(13)), affordable ? "#25383B" : "#F2F0E4", { align: "center", weight: "800" });
+  if (affordable) registerRegion({ x: X(26), y: y + Y(101), w: X(358), h: Y(62), action: { trainUpgrade: true } });
+  const hint = host.trainUpgradeCost === null ? "当前等级上限" : "每级 +2 改装点 · 废料 ";
+  text(c, hint, X(26), y + Y(177), Math.max(11, F(11)), "#D0DCD4");
+  if (host.trainUpgradeCost !== null) {
+    const font = Math.max(11, F(11)), costX = X(26) + measure(c, hint, font);
+    text(c, String(host.trainUpgradeCost), costX, y + Y(177), Math.max(12, F(12)), affordable ? "#D0DCD4" : "#FF9E94", { weight:"800" });
+    if (!affordable) text(c, `（差 ${Math.ceil(host.trainUpgradeCost - host.meta.resources.scrap)}）`, costX + measure(c, String(host.trainUpgradeCost), Math.max(12, F(12)), "800"), y + Y(177), font, "#D0DCD4");
+  }
+  y += Y(209);
   y = sectionHead(u, y, "当前编组", `${Math.max(0, host.meta.loadout.length - 1)} / ${host.carSlots} 功能车厢`);
   const appliedCars = host.meta.loadout.filter(id => id !== "hangar");
   appliedCars.forEach((id, i) => {
@@ -714,18 +721,13 @@ function drawTrainTab(u, host, registerRegion) {
 
 function drawResearchTab(u, host, registerRegion) {
   const { c, X, Y, F } = u;
-  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "火控强化无人机，工程提升列车生存。");
+  pageHeading(u, "RESEARCH LABORATORY", "永久研究", "资源足够即可升级；增益永久保留。");
   let y = Y(177.8);
-  fill(c, "#1C424C", X(14), y, X(382), Y(55), X(5));
-  text(c, "✦", X(35), y + Y(27), F(22), "#F3CC72", { align:"center" });
-  text(c, "选择研究方向", X(62), y + Y(18), F(13), "#F3F0DC", { weight:"800" });
-  text(c, "每项独立升级 · 顶部显示当前资源", X(62), y + Y(38), F(10), "#C8D8D1");
-  y += Y(68);
   const groups = [["drone", "无人机战斗 · 主材料研究数据"], ["train", "列车工程 · 主材料技术组件"]];
   for (const [groupId, groupLabel] of groups) {
     y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
     for (const row of host.researchRows.filter(row => row.group === groupId)) {
-      const h = Y(84);
+      const h = Y(137);
       fill(c, HT.card, X(14), y, X(382), h, X(5));
       c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
       const colors = groupId === "drone" ? ["#003b78", "#057cc7"] : ["#5c3a12", "#b9822c"];
@@ -734,21 +736,23 @@ function drawResearchTab(u, host, registerRegion) {
       rr(c, X(22), y + Y(10), X(46), Y(46), X(4)); c.clip();
       paintUiIcon(c, row.icon, X(23.5), y + Y(12), X(43), X(43));
       c.restore();
-      text(c, row.name, X(77), y + Y(11), F(13), HT.ink, { weight: "700" });
-      text(c, `Lv.${row.level}/${row.max} · ${row.scope}`, X(77), y + Y(26), F(9), "#586B6C", { weight: "700" });
-      text(c, row.desc, X(77), y + Y(39), F(9.5), "#586B6C");
-      text(c, `累计 ${row.effect}${row.maxed ? "" : ` → 下一级 ${row.nextEffect}`}`, X(77), y + Y(53), F(10), "#2F6B5E", { weight: "700" });
-      fill(c, "#D1D6C9", X(77), y + Y(58), X(110), Y(3), X(2));
-      fill(c, groupId === "drone" ? "#4A91AD" : "#BD9255", X(77), y + Y(58), X(110 * row.level / row.max), Y(3), X(2));
+      text(c, row.name, X(77), y + Y(16), Math.max(12, F(14)), HT.ink, { weight: "800" });
+      text(c, `Lv.${row.level}/${row.max}`, X(315), y + Y(16), Math.max(11, F(11)), "#586B6C", { align:"right", weight:"700" });
+      text(c, row.focus, X(77), y + Y(39), Math.max(11, F(11)), "#586B6C");
+      text(c, `当前 ${row.effect}${row.maxed ? "" : ` → 升级 ${row.nextEffect}`}`, X(77), y + Y(62), Math.max(11, F(12)), "#2F6B5E", { weight: "800" });
       if (!row.maxed) {
-        const costBits = [`废料 ${row.cost.scrap}`, groupId === "drone" ? `数据 ${row.cost.data}` : `组件 ${row.cost.components}`];
-        if (row.cost.attack && row.cost.components > 0) costBits.push(`组件 ${row.cost.components}`);
-        if (!row.cost.attack && row.cost.data > 0) costBits.push(`数据 ${row.cost.data}`);
-        text(c, costBits.join(" · "), X(77), y + Y(67), F(9), "#8A6B1F", { weight: "700" });
-        if (row.missing.length) text(c, row.missing.join(" · "), X(77), y + Y(79), F(9), "#A4372D", { weight: "700" });
+        const bits = [["scrap", "废料"], [groupId === "drone" ? "data" : "components", groupId === "drone" ? "数据" : "组件"]];
+        if (row.cost.attack && row.cost.components > 0) bits.push(["components", "组件"]);
+        if (!row.cost.attack && row.cost.data > 0) bits.push(["data", "数据"]);
+        const font = Math.max(10.5, F(11));
+        bits.forEach(([key, label], i) => {
+          const x = i % 2 ? X(179) : X(77), cy = y + Y(i < 2 ? 87 : 110);
+          text(c, label, x, cy, font, "#68551F", { weight:"700" });
+          text(c, String(row.cost[key]), x + measure(c, label, font, "700") + X(3), cy, font, row.shortKeys.includes(key) ? "#AD302A" : "#68551F", { weight:"800" });
+        });
       }
-      // Upgrade chip: golden when affordable, parchment when maxed or short.
-      const bxx = X(340), byy = y + Y(24), bw = X(48), bh = Y(40);
+      // The action remains a large target; only affordable upgrades receive a hitbox.
+      const bxx = X(296), byy = y + Y(70), bw = X(92), bh = Y(62);
       if (row.maxed) {
         fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
@@ -757,9 +761,9 @@ function drawResearchTab(u, host, registerRegion) {
         fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
         text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
-        registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
+        if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
       }
-      y += h + Y(row.missing?.length ? 17 : 7);
+      y += h + Y(8);
     }
   }
   // Rules note.
@@ -1869,13 +1873,13 @@ const SPEC_NODE = Object.freeze({ hull: "H5", pointDefense: "N4", repair: "R4", 
 // ---------------------------------------------------------------------------
 
 const RESEARCH_TRACKS = Object.freeze([
-  { id: "fireControl", group: "drone", name: "火控算法", kind: "attack", scope: "北辰及所有无人机伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
-  { id: "cycleControl", group: "drone", name: "循环控制", kind: "attack", scope: "无人机普通攻击基础间隔", tiers: [[.008, -1], [.004, -1], [.002, -1]], unit: "-" },
-  { id: "rangeCalibration", group: "drone", name: "射程校准", kind: "attack", scope: "无人机索敌 / 攻击射程", tiers: [[.01, 1], [.003, 1], [.002, 1]], unit: "+" },
-  { id: "hullEngineering", group: "train", name: "车体工程", kind: "train", scope: "列车最大耐久", tiers: [[.02, 1], [.01, 1], [.005, 1]], unit: "+" },
-  { id: "armorMaterials", group: "train", name: "装甲材料", kind: "train", scope: "列车受到的直接攻击伤害（乘法叠算）", tiers: [[.01, 0], [.005, 0], [.0025, 0]], unit: "×", multiplicative: true },
-  { id: "repairEngineering", group: "train", name: "维修工程", kind: "train", scope: "基础到站、维修车、应急储备维修量", tiers: [[.025, 1], [.0125, 1], [.0075, 1]], unit: "+" },
-  { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+  { id: "fireControl", group: "drone", name: "火控算法", kind: "attack", focus: "无人机伤害", scope: "北辰及所有无人机伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
+  { id: "cycleControl", group: "drone", name: "循环控制", kind: "attack", focus: "无人机普攻间隔", scope: "无人机普通攻击基础间隔", tiers: [[.008, -1], [.004, -1], [.002, -1]], unit: "-" },
+  { id: "rangeCalibration", group: "drone", name: "射程校准", kind: "attack", focus: "索敌与攻击射程", scope: "无人机索敌 / 攻击射程", tiers: [[.01, 1], [.003, 1], [.002, 1]], unit: "+" },
+  { id: "hullEngineering", group: "train", name: "车体工程", kind: "train", focus: "列车最大耐久", scope: "列车最大耐久", tiers: [[.02, 1], [.01, 1], [.005, 1]], unit: "+" },
+  { id: "armorMaterials", group: "train", name: "装甲材料", kind: "train", focus: "列车直接伤害减免", scope: "列车受到的直接攻击伤害（乘法叠算）", tiers: [[.01, 0], [.005, 0], [.0025, 0]], unit: "×", multiplicative: true },
+  { id: "repairEngineering", group: "train", name: "维修工程", kind: "train", focus: "到站与应急维修", scope: "基础到站、维修车、应急储备维修量", tiers: [[.025, 1], [.0125, 1], [.0075, 1]], unit: "+" },
+  { id: "trainFireControl", group: "train", name: "列车火控", kind: "train", focus: "列车近防伤害", scope: "列车自身近防伤害", tiers: [[.015, 1], [.008, 1], [.005, 1]], unit: "+" },
 ]);
 const RESEARCH_IDS = Object.freeze(RESEARCH_TRACKS.map(track => track.id));
 const RESEARCH_ICONS = Object.freeze({ fireControl: "rapid", cycleControl: "pulse", rangeCalibration: "radar", hullEngineering: "armor", armorMaterials: "shield", repairEngineering: "repair", trainFireControl: "pointDefense" });
@@ -4814,24 +4818,13 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.3",
+  version: "v0.10.3.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
 let regions = [];
 
 // -- host data assembly -------------------------------------------------------
-
-// Same display copy the DOM research page shows (meta-ui.js RESEARCH_COPY).
-const RESEARCH_COPY = {
-  fireControl: "提高北辰与所有无人机的伤害。",
-  cycleControl: "缩短无人机普通攻击的基础间隔。",
-  rangeCalibration: "扩大无人机索敌与攻击射程（不扩大爆炸/燃烧范围）。",
-  hullEngineering: "提高列车最大耐久。",
-  armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
-  repairEngineering: "提高所有到站维修与应急储备的维修量。",
-  trainFireControl: "提高列车自身近防炮的伤害。",
-};
 
 function regionStatus(meta, regionId) {
   const region = longterm.regionById(regionId);
@@ -4936,10 +4929,10 @@ function refreshHostData() {
     const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
     const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, scope: track.scope,
+      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, focus: track.focus, scope: track.scope,
       level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
       cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
-      desc: RESEARCH_COPY[track.id] || "",
+      shortKeys: maxed ? [] : ["scrap", "components", "data"].filter(key => profile.resources[key] < costData[key]),
       missing: maxed ? [] : [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => profile.resources[key] < costData[key]).map(([key, name]) => `${name}还差 ${Math.ceil(costData[key] - profile.resources[key])}`),
       affordable: !maxed && profile.resources.scrap >= costData.scrap
         && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
@@ -4959,6 +4952,7 @@ function refreshHostData() {
   {
     const S = longterm.buildStats(profile);
     host.departureSummary = `伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp / 100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
+    host.trainStats = { fire: S.droneDamageMul, hull: S.maxHp / 100 };
   }
   host.blueprintText = (profile.blueprints || []).length
     ? (profile.blueprints || []).map(id => { const bp = longterm.blueprintById(id); return bp ? bp.name + "：" + bp.description : id; }).join("\n")

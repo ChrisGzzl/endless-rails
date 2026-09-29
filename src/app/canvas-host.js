@@ -35,24 +35,13 @@ const host = {
   presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
   regionMeta: null, regionTags: {}, blueprintText: "",
   audio: { music: true, sfx: true },
-  version: "v0.10.3",
+  version: "v0.10.3.1",
 };
 const viewport = { w: 390, h: 680 };
 const stick = { pointerId: null, center: null, radius: 36 };
 let regions = [];
 
 // -- host data assembly -------------------------------------------------------
-
-// Same display copy the DOM research page shows (meta-ui.js RESEARCH_COPY).
-const RESEARCH_COPY = {
-  fireControl: "提高北辰与所有无人机的伤害。",
-  cycleControl: "缩短无人机普通攻击的基础间隔。",
-  rangeCalibration: "扩大无人机索敌与攻击射程（不扩大爆炸/燃烧范围）。",
-  hullEngineering: "提高列车最大耐久。",
-  armorMaterials: "按乘法降低列车受到的直接攻击伤害。",
-  repairEngineering: "提高所有到站维修与应急储备的维修量。",
-  trainFireControl: "提高列车自身近防炮的伤害。",
-};
 
 function regionStatus(meta, regionId) {
   const region = longterm.regionById(regionId);
@@ -157,10 +146,10 @@ function refreshHostData() {
     const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
     const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
     return {
-      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, scope: track.scope,
+      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, focus: track.focus, scope: track.scope,
       level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
       cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
-      desc: RESEARCH_COPY[track.id] || "",
+      shortKeys: maxed ? [] : ["scrap", "components", "data"].filter(key => profile.resources[key] < costData[key]),
       missing: maxed ? [] : [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => profile.resources[key] < costData[key]).map(([key, name]) => `${name}还差 ${Math.ceil(costData[key] - profile.resources[key])}`),
       affordable: !maxed && profile.resources.scrap >= costData.scrap
         && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
@@ -180,6 +169,7 @@ function refreshHostData() {
   {
     const S = longterm.buildStats(profile);
     host.departureSummary = `伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp / 100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
+    host.trainStats = { fire: S.droneDamageMul, hull: S.maxHp / 100 };
   }
   host.blueprintText = (profile.blueprints || []).length
     ? (profile.blueprints || []).map(id => { const bp = longterm.blueprintById(id); return bp ? bp.name + "：" + bp.description : id; }).join("\n")

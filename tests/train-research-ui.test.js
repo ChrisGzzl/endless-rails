@@ -37,14 +37,17 @@ const profile = () => {
   const { elements: e } = createGame({ storage: saved });
   e.homeTabTrain.events.click();
   assert.equal(e.metaTrainUpgradeButton.disabled, true);
-  assert.match(e.metaTrainUpgradeButton.textContent, /71 废料/);
+  assert.match(e.metaTrainUpgradeButton.textContent, /升级至 Lv\.2/);
+  assert.match(e.trainUpgradeHint.innerHTML, /resource-short">71<\/b>（差 1）/);
   starting.resources.scrap = 100; meta.saveMeta(saved, starting);
   const game = createGame({ storage: saved });
   game.elements.homeTabTrain.events.click();
   game.elements.metaTrainUpgradeButton.events.click();
   assert.equal(meta.loadMeta(saved).train.level, 2);
   assert.equal(meta.loadMeta(saved).resources.scrap, 29);
-  assert.match(game.elements.metaTalentPoints.textContent, /可用改装点 4 \/ 4/);
+  assert.match(game.elements.metaTalentPoints.textContent, /可用改装点 4/);
+  assert.match(game.elements.trainFirepower.textContent, /无人机伤害 ×1\.00/);
+  assert.match(game.elements.trainDurability.textContent, /列车耐久 ×1\.00/);
   const canvasSave = storage(); starting.resources.scrap = 100; meta.saveMeta(canvasSave, starting);
   const canvas = createGame({ storage: canvasSave, entry: 'canvas.html' });
   const host = canvas.run('window.EndlessRailsCanvasHost');
@@ -53,6 +56,21 @@ const profile = () => {
   host.handleRegionAction({ trainUpgrade: true });
   assert.equal(meta.loadMeta(canvasSave).train.level, 2);
   assert.equal(meta.loadMeta(canvasSave).resources.scrap, 29);
+  assert.equal(host.host.trainStats.fire, 1);
+}
+
+// Cost numbers turn red only for resources actually short; enough stock enables purchase.
+{
+  const saved = storage(), starting = meta.emptyMeta();
+  starting.resources.scrap = 30; starting.resources.data = 3;
+  meta.saveMeta(saved, starting);
+  const { elements: e } = createGame({ storage: saved });
+  e.homeTabResearch.events.click();
+  const row = e.metaResearchList.children.find(child => child.innerHTML?.includes('火控算法'));
+  assert.doesNotMatch(row.innerHTML, /research-cost__item is-short/);
+  assert.equal(row.querySelector('button').disabled, false);
+  row.querySelector('button').events.click();
+  assert.equal(meta.loadMeta(saved).research.fireControl, 1);
 }
 
 // Full slots require an explicit removal, and the resulting lineup stays a draft.
@@ -80,11 +98,11 @@ const profile = () => {
   e.talentApply.events.click();
   assert.deepEqual(meta.loadMeta(saved).loadout, ['hangar', 'pointDefense', 'radar', 'storage']);
   const row = e.metaResearchList.children.find(child => child.innerHTML?.includes('火控算法'));
-  assert.match(row.innerHTML, /research-progress[^>]*role="progressbar"/);
+  assert.doesNotMatch(row.innerHTML, /research-progress|role="progressbar"/);
   assert.match(row.innerHTML, /research-cost/);
-  assert.match(row.innerHTML, /废料 13/);
-  assert.match(row.innerHTML, /数据 3/);
-  assert.match(row.innerHTML, /废料还差/);
+  assert.match(row.innerHTML, /research-cost__item is-short[^\n]*废料 <b>13<\/b>/);
+  assert.match(row.innerHTML, /research-cost__item is-short[^\n]*数据 <b>3<\/b>/);
+  assert.match(row.innerHTML, /当前 \+0\.0%[^<]*<span aria-hidden="true">→<\/span> 升级 \+1\.5%/);
   assert.match(row.innerHTML, /data-research="fireControl"[^>]*disabled/);
 }
 
@@ -148,6 +166,8 @@ const profile = () => {
   h.handleRegionAction({ homeTab: 'research' });
   assert.equal(new Set(h.host.researchRows.map(row => row.icon)).size, 7);
   assert.ok(h.host.researchRows.every(row => row.missing.some(x => x.includes('还差'))));
+  assert.ok(h.host.researchRows.every(row => row.shortKeys.length > 0));
+  assert.ok(!h.regions.some(r => r.action?.research), 'insufficient Canvas research has no active hitbox');
   game.sandbox.prompt = () => '车间方案';
   h.handleRegionAction({ presetRename: 0 });
   assert.equal(meta.loadMeta(saved).presets[0].name, '车间方案');

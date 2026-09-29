@@ -181,10 +181,7 @@
 
 /* 研究页分组标题与行 */
 .talent-research-head { margin: 6px 0; }
-.meta-research-row .research-effect { color: #2f6b5e; font-weight: 700; }
-.home-hub .meta-research-row .research-cost { color: #805f1e; font-size: 12px; font-weight: 750; line-height: 1.5; margin-top: 5px; }
 .home-hub .meta-research-row .research-cost .ui-icon { display: inline-block; vertical-align: middle; width: 17px; height: 17px; }
-.home-hub .meta-research-row .research-short { color: #9d372d; font-size: 12px; font-weight: 800; }
 #metaLoadoutSummary { white-space: pre-line; line-height: 1.6; }
 
 @media (max-width: 400px) {
@@ -213,14 +210,13 @@
 .train-showcase__body { display:grid; grid-template-columns:minmax(0,1fr) minmax(105px,35%); gap:8px 12px; padding:14px; color:#f8f4e9; }
 .train-showcase__body small { color:#b8d3d2; font-size:10px; }
 .train-showcase__body h3 { margin:2px 0; color:#fff7e8; font-size:21px; line-height:1.15; }
-.train-showcase .talent-points { color:#e2c789; font-size:11px; margin:4px 0 0; }
-.train-showcase__meter { display:flex; justify-content:center; flex-direction:column; gap:7px; min-width:0; }
-.train-showcase__meter span { font-size:10px; line-height:1.4; color:#e2e9e0; }
-.train-showcase__meter > div { height:5px; border-radius:4px; background:#7fa4a255; overflow:hidden; }
-.train-showcase__meter i { display:block; height:100%; border-radius:4px; background:#edc368; }
+.train-showcase .talent-points { color:#e2c789; font-size:12px; margin:4px 0 0; }
+.train-showcase__stats { display:flex; justify-content:center; flex-direction:column; gap:5px; min-width:0; }
+.train-showcase__stats span { color:#e2e9e0; font-size:12px; line-height:1.35; font-weight:700; }
 .home-hub .train-showcase #metaTrainUpgradeButton { grid-column:1/-1; min-height:48px; border:1px solid #ffe4a0; border-radius:5px; background:linear-gradient(#f5d57e,#dda84f); color:#253a3d; font-size:14px; font-weight:850; }
 .home-hub .train-showcase #metaTrainUpgradeButton:disabled { background:#809899; border-color:#a8baba; color:#ebf0eb; opacity:.8; }
-.train-showcase__hint { grid-column:1/-1; margin:0; font-size:10px; line-height:1.4; color:#c9d6d1; }
+.train-showcase__hint { grid-column:1/-1; margin:0; font-size:12px; line-height:1.4; color:#c9d6d1; }
+.train-showcase__hint .resource-short { color:#ff9e94; font-size:13px; }
 .train-build-preview { margin:16px 0 10px; padding:12px; border:1px solid #d2c5ad; border-radius:8px; background:#f8f0df; }
 .train-build-preview .meta-section__head { margin:0 0 10px; }
 .train-build-preview__cars { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
@@ -247,19 +243,21 @@
 .train-workshop .talent-summary__foot button { grid-row:auto; min-height:44px; }
 .train-workshop #talentReset { grid-column:1; }.train-workshop #talentApply { grid-column:2; }
 
-/* Research cards expose effect, progress and cost without a table layout. */
-.research-intro { display:flex; align-items:center; gap:12px; padding:14px; margin:0 0 18px; border-radius:7px; background:#1c424c; color:#f3f0dc; }
-.research-intro__mark { display:grid; place-items:center; width:42px; height:42px; flex:none; border:1px solid #dbbb74; border-radius:6px; color:#f3cc72; font-size:25px; }
-.research-intro b,.research-intro small { display:block; }.research-intro b { font-size:14px; }.research-intro small { margin-top:4px; color:#c8d8d1; font-size:10px; line-height:1.4; }
+/* Research cards prioritize the next attribute gain and the exact cost. */
 .home-hub .meta-research-row { position:relative; grid-template-columns:48px minmax(0,1fr); align-items:start; gap:9px; padding:12px; border:1px solid #d4c6ac; background:#f9f1e1; }
 .home-hub .meta-research-row--drone { border-left:3px solid #4a91ad; }.home-hub .meta-research-row--train { border-left:3px solid #bd9255; }
 .home-hub .meta-research-row .research-icon { grid-row:1; }
 .home-hub .meta-research-row .research-copy { min-width:0; }
-.home-hub .meta-research-row .research-level { color:#5b7680; font-size:10px; }
-.research-progress { display:block; height:5px; overflow:hidden; margin:8px 0; border-radius:4px; background:#d1d6c9; }
-.research-progress i { display:block; height:100%; border-radius:4px; background:#4a91ad; }
-.meta-research-row--train .research-progress i { background:#bd9255; }
-.home-hub .meta-research-row button { grid-column:2; width:100%; min-width:0; min-height:40px; }
+.home-hub .meta-research-row .research-copy__heading { display:flex; align-items:baseline; flex-wrap:wrap; gap:2px 8px; }
+.home-hub .meta-research-row .research-copy__heading b { font-size:15px; }
+.home-hub .meta-research-row .research-level { color:#5b7680; font-size:12px; font-weight:700; }
+.home-hub .meta-research-row .research-scope { margin-top:4px; font-size:12px; line-height:1.4; }
+.home-hub .meta-research-row .research-effect { display:block; margin-top:7px; font-size:13px; color:#24695b; font-weight:800; }
+.home-hub .meta-research-row .research-cost { display:flex; flex-wrap:wrap; gap:3px 10px; margin-top:8px; font-size:12px; color:#68551f; }
+.home-hub .meta-research-row .research-cost__item { display:inline-flex; align-items:center; gap:2px; white-space:nowrap; }
+.home-hub .meta-research-row .research-cost__item b { color:inherit; font-size:13px; }
+.home-hub .meta-research-row .research-cost__item.is-short b { color:#ad302a; }
+.home-hub .meta-research-row button { grid-column:2; justify-self:end; width:92px; min-width:0; min-height:44px; font-size:13px; }
 .research-extra { margin-top:12px; padding:10px 12px; border:1px solid #d3c7af; border-radius:5px; background:#f8efde; color:#24454b; font-size:12px; }
 .research-extra > summary { min-height:30px; cursor:pointer; font-weight:750; }
 .research-extra .bond-guide,.research-extra .home-blueprints { margin:10px 0; }
