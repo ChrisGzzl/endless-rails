@@ -445,7 +445,7 @@ function drawResearchTab(u, host, registerRegion) {
   for (const [groupId, groupLabel] of groups) {
     y = sectionHead(u, y, groupLabel.split(" · ")[0], groupLabel.split(" · ")[1]);
     for (const row of host.researchRows.filter(row => row.group === groupId)) {
-      const h = Y(137);
+      const h = Y(123);
       fill(c, HT.card, X(14), y, X(382), h, X(5));
       c.strokeStyle = HT.line; c.lineWidth = X(1); rr(c, X(14), y, X(382), h, X(5)); c.stroke();
       const colors = groupId === "drone" ? ["#003b78", "#057cc7"] : ["#5c3a12", "#b9822c"];
@@ -455,29 +455,29 @@ function drawResearchTab(u, host, registerRegion) {
       paintUiIcon(c, row.icon, X(23.5), y + Y(12), X(43), X(43));
       c.restore();
       text(c, row.name, X(77), y + Y(16), Math.max(12, F(14)), HT.ink, { weight: "800" });
-      text(c, `Lv.${row.level}/${row.max}`, X(315), y + Y(16), Math.max(11, F(11)), "#586B6C", { align:"right", weight:"700" });
+      text(c, `Lv.${row.level}/${row.max}`, X(382), y + Y(16), Math.max(11, F(11)), "#586B6C", { align:"right", weight:"700" });
       text(c, row.focus, X(77), y + Y(39), Math.max(11, F(11)), "#586B6C");
-      text(c, `当前 ${row.effect}${row.maxed ? "" : ` → 升级 ${row.nextEffect}`}`, X(77), y + Y(62), Math.max(11, F(12)), "#2F6B5E", { weight: "800" });
+      text(c, `当前 ${row.effect}${row.maxed ? "" : ` → 升级 ${row.nextEffect}`}`, X(26), y + Y(75), Math.max(11, F(12)), "#2F6B5E", { weight: "800" });
       if (!row.maxed) {
         const bits = [["scrap", "废料"], [groupId === "drone" ? "data" : "components", groupId === "drone" ? "数据" : "组件"]];
         if (row.cost.attack && row.cost.components > 0) bits.push(["components", "组件"]);
         if (!row.cost.attack && row.cost.data > 0) bits.push(["data", "数据"]);
         const font = Math.max(10.5, F(11));
         bits.forEach(([key, label], i) => {
-          const x = i % 2 ? X(179) : X(77), cy = y + Y(i < 2 ? 87 : 110);
+          const x = X([26, 120, 214][i]), cy = y + Y(101);
           text(c, label, x, cy, font, "#68551F", { weight:"700" });
           text(c, String(row.cost[key]), x + measure(c, label, font, "700") + X(3), cy, font, row.shortKeys.includes(key) ? "#AD302A" : "#68551F", { weight:"800" });
         });
       }
       // The action remains a large target; only affordable upgrades receive a hitbox.
-      const bxx = X(296), byy = y + Y(70), bw = X(92), bh = Y(62);
+      const bxx = X(296), byy = y + Y(67), bw = X(92), bh = Y(48);
       if (row.maxed) {
         fill(c, "#E8DBC0", bxx, byy, bw, bh, X(4));
         c.strokeStyle = "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
         text(c, "已满", bxx + bw / 2, byy + bh / 2, F(11), "#68716C", { align: "center", weight: "800" });
       } else {
         fill(c, row.affordable ? grad(c, 0, byy, 0, byy + bh, [[0, "#F8D277"], [1, "#E5B350"]]) : "#E8DBC0", bxx, byy, bw, bh, X(4));
-        c.strokeStyle = "#C18E35"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
+        c.strokeStyle = row.affordable ? "#C18E35" : "#CBBD9F"; c.lineWidth = X(1); rr(c, bxx, byy, bw, bh, X(4)); c.stroke();
         text(c, "升级", bxx + bw / 2, byy + bh / 2, F(11), row.affordable ? "#263B3E" : "#A29878", { align: "center", weight: "800" });
         if (row.affordable) registerRegion({ x: bxx, y: byy, w: bw, h: bh, action: { research: row.id } });
       }

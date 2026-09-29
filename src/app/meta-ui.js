@@ -265,8 +265,8 @@ import { metaStorage } from "./game.js";
         }
         row.innerHTML = `<span class="research-icon" data-weapon="${track.id}">${icon(metaApi.RESEARCH_ICONS[track.id])}</span>
           <span class="research-copy"><span class="research-copy__heading"><b>${track.name}</b><small class="research-level">Lv.${level}/${metaApi.MAX_RESEARCH_LEVEL}</small></span>
-          <small class="research-scope">${track.focus}</small>
-          <span class="research-effect">当前 ${effect.total}${maxed ? "" : ` <span aria-hidden="true">→</span> 升级 ${nextEffect.total}`}</span>
+          <small class="research-scope">${track.focus}</small></span>
+          <span class="research-stats"><span class="research-effect">当前 ${effect.total}${maxed ? "" : ` <span aria-hidden="true">→</span> 升级 ${nextEffect.total}`}</span>
           ${maxed ? "" : `<span class="research-cost">${costLine}</span>`}</span>
           <button type="button" data-research="${track.id}" aria-label="${maxed ? track.name + "已满级" : missing.length ? `升级${track.name}，${missing.join("，")}` : `升级${track.name}`}" ${maxed || missing.length ? "disabled" : ""}>${maxed ? "已满级" : "升级"}</button>`;
         if (!maxed) row.querySelector("button").addEventListener("click", () => {
