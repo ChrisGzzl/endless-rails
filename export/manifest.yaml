@@ -6,4 +6,4 @@ domain: game-dev
 spec: 零依赖静态 PWA 游戏（荒原轨道 · Endless Rails）；项目结构与运行方式见 README.md，版制与评审记录见 docs/
 files:
   - path: worklog.md
-    sha256: bc99844ce47e67e44a722897dfddea9894d8dc0c9fcbcf6782d7529fd70bab89
+    sha256: ee877610b6884d7c0691a710bd6fe1281e398ccffb2d5c962332bcd5811b4b8e
