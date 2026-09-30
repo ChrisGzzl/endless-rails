@@ -268,7 +268,7 @@ const homeScreen = (() => {
         R.extraOpen ? [
           E({ ...S.bondGuide, ref: base + "/3/1" },
             E({ ...S.bondGuide_h3, ref: base + "/3/1/0" }, "编组配色"),
-            [["Purple", "紫 · 电弧 + 跳弹：北辰额外发射放电跳弹"], ["Blue", "蓝 · 机枪 + 磁轨：北辰使用穿透激光"], ["Red", "红 · 燃烧 + 导弹：北辰发射追踪燃烧弹"], ["Cyan", "青 · 旋刃 + 霰弹：同色编组"]].map(([c, text], i) =>
+            [["Purple", "紫 · 电弧 + 电球：北辰额外发射电球攻击"], ["Blue", "蓝 · 机枪 + 磁轨：北辰使用穿透激光"], ["Red", "红 · 燃烧 + 导弹：北辰发射追踪燃烧弹"], ["Cyan", "青 · 旋刃 + 霰弹：同色编组"]].map(([c, text], i) =>
               E({ ...S.bondGuide_p, ref: `${base}/3/1/${i + 1}` }, E({ ...S["bondDot_bondDot_" + c], ref: `${base}/3/1/${i + 1}/0` }), text)),
             E({ ...S.bondGuide_small, ref: base + "/3/1/5" }, "前三组在两架无人机都达到 Lv.5 后激活。青色当前仅作为编组配色，不改变技能规则。")),
           E({ ...S.homeBlueprints, ref: base + "/3/2" },

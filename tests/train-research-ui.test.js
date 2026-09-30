@@ -25,6 +25,7 @@ const createGame = require('./test-harness.cjs');
     assert.equal(imports[rel], `${rel}?v=${version}`, `index.html must bypass stale ${rel}`);
   }
   assert.match(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'), new RegExp(version.replace(/\./g, '\\.')), 'the manifest carries the release version');
+  assert.match(html, new RegExp('sw\\.js\\?v=' + version.replace(/\./g, '\\.')), 'the service worker registration carries the release version');
 }
 
 const storage = () => {

@@ -34,7 +34,7 @@ import { homeCtl } from "./ui-home.js";
 import { runCtl } from "./ui-run.js";
 import { dialogCtl } from "./ui-dialogs.js";
 
-const GAME_VERSION = "v0.11.0.1";
+const GAME_VERSION = "v0.11.1.0";
 const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
 const canvasHost = (() => {

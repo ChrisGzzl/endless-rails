@@ -17,6 +17,7 @@ import "../core/run-record.js";
 import "../meta/longterm.js";
 import { canvas, W, H, resizeSurface } from "../view/surface.js";
 import { draw, setRegionGround } from "../view/render.js";
+import { ensureCombatArt } from "../view/atlas.js";
 import { WORLD_SPEED, cameraView, updateCamera, advanceWorld, carPosition, droneBounds } from "../sim/world.js";
 import { showToast, updateParticles } from "../sim/fx.js";
 import { spawnWave, spawnEnemy } from "../sim/spawn.js";
@@ -67,6 +68,7 @@ function beginRun(plan) {
   state.metaProfile = longterm.loadMeta(metaStorage);
   state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
+  ensureCombatArt();
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
   state.metaSettlement = null; state.metaSettled = false; state.settlementRetryAt = 0; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
   // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).

@@ -26,7 +26,7 @@ const DRONE_TYPES = Object.freeze([
   {id:"gun", module:"rapid", name:"雨燕", weapon:"机枪", color:"#45bfff", icon:"ϟ"},
   {id:"missile", module:"missile", name:"天隼", weapon:"导弹", color:"#ff6e63", icon:"➤"},
   {id:"incendiary", module:"incendiary", name:"烛龙", weapon:"燃烧", color:"#ff6e63", icon:"♨"},
-  {id:"ricochet", module:"ricochet", name:"回响", weapon:"跳弹", color:"#b68aff", icon:"◉"},
+  {id:"ricochet", module:"ricochet", name:"回响", weapon:"电球", color:"#b68aff", icon:"◉"},
   {id:"blades", module:"blades", name:"弦月", weapon:"旋刃", color:"#42dfdf", icon:"✺"},
   {id:"chain", module:"chain", name:"惊蛰", weapon:"电弧", color:"#b68aff", icon:"∿"},
   {id:"scatter", module:"scatter", name:"繁星", weapon:"霰弹", color:"#42dfdf", icon:"✣"},
@@ -47,7 +47,7 @@ function droneLevel(modules={},id){
 const BOND_RULES=Object.freeze([
   {id:"red",name:"红色灼杀",pair:["missile","incendiary"],description:"北辰额外发射追踪燃烧弹，爆炸后留下火区"},
   {id:"blue",name:"蓝色穿透",pair:["gun","piercing"],description:"北辰普攻替换为蓝色直线穿透激光"},
-  {id:"purple",name:"紫色共振",pair:["chain","ricochet"],description:"北辰额外发射紫色跳弹，弹体向附近敌人放电"},
+  {id:"purple",name:"紫色共振",pair:["chain","ricochet"],description:"北辰额外发射紫色电球，弹体向附近敌人放电"},
 ]);
 function bondProfile(id,level){
   const rule=BOND_RULES.find(b=>b.id===id);if(!rule)throw new Error("Unknown bond: "+id);
