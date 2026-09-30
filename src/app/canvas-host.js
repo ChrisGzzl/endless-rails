@@ -1,635 +1,523 @@
 "use strict";
-// Canvas-only host: boots the DOM-free engine against a single canvas with no
-// document at all. The web page uses game.js + DOM overlays instead; this host
-// is what the canvas smoke page (canvas.html) and the mini-game adapter run.
-// The adapter installs its canvas on globalThis.__endlessRailsCanvas before
-// this module evaluates, and mirrors touch events into the pointer handlers
-// exposed on window.EndlessRailsCanvasHost.
+// Canvas host: the whole game - battlefield, HUD, expedition base, flow
+// screens, pause terminal and dialogs - is drawn on one canvas. The page (or
+// the mini-game adapter) hands its canvas over on globalThis.
+// __endlessRailsCanvas before this module evaluates; nothing else of the
+// document is touched. Interface layout and paint come from the canvas UI kit
+// (src/view/ui) with the screens in src/view/screens; the controllers
+// (ui-home / ui-run / ui-dialogs) own interface state and call the DOM-free
+// engine exactly like the former DOM panels did.
 //
-// UI geometry note: the engine's surface keeps the battlefield's logical
-// coordinate system (the 390-wide frame the simulation is tuned for, scaled
-// by resizeBattlefield), while the HUD and flow screens draw in viewport CSS
-// pixels - the same responsive frame the DOM version lays out in. drawOverlay
-// scales the context so both share one physical canvas.
+// Frame pipeline: the battlefield renders into its own offscreen surface at
+// the engine's logical resolution (the same bitmap size the DOM canvas had)
+// and is composited into the arena box. During live combat with no overlay
+// the interface is cached in two device-resolution layers (below / above the
+// battlefield) that are only repainted when the interface changes, so a
+// combat frame costs three drawImage calls on top of the simulation.
 
-import { setSurface, ctx, canvas } from "../view/surface.js";
-import { gameArt, setRegionGround } from "../view/atlas.js";
-import { drawHome } from "../view/canvas-home.js";
-import { state, presentation, beginRun, frameStep, pulse, level, longterm, runRecord, metaStorage, control, effects, gameAudio, upgradePool, experiencePool } from "./engine.js";
-import { drawHud, drawCardListScreen, drawLevelUpScreen, drawStationScreen, drawResultScreen, drawPauseScreen, tickFx, setToast, setCombo, setStickVisual, overlayBackdrop, resetOverlayBackdrop } from "../view/canvas-ui.js";
-import { chooseContract, prepareContractChoice, chooseUpgrade, chooseBreakthrough, selectStationUpgrade, rerollStation, departStation, settleFinish, prepareLevelUp, damageSummary } from "./flow-logic.js";
-import { beginRoute } from "../sim/run.js";
-import { upgradeBrief, scopeLabel } from "../sim/station.js";
-import { inspectFleet, inspectRows, tabNote, pauseSummaryText } from "./telemetry.js";
+import { setSurface } from "../view/surface.js";
+import { draw } from "../view/render.js";
+import { artState, retryArt, onArtChange } from "../view/atlas.js";
+import { state, presentation, frameStep, resizeBattlefield, pulse, gameAudio, update, beginRun, beginRoute, syncSwarm, cameraView, longterm, runRecord, metaStorage } from "./engine.js";
+import { gamePlatform } from "./platform.js";
+import { uiKit } from "../view/ui/kit.js";
+import { uiLayout } from "../view/ui/layout.js";
+import { uiText } from "../view/ui/text.js";
+import { uiPaint } from "../view/ui/paint.js";
+import { uiSheet } from "../view/screens/sheet.js";
+import { homeScreen } from "../view/screens/home.js";
+import { battleScreen } from "../view/screens/battle.js";
+import { flowScreens } from "../view/screens/flows.js";
+import { pauseScreen } from "../view/screens/pause.js";
+import { dialogScreens } from "../view/screens/dialogs.js";
+import { homeCtl } from "./ui-home.js";
+import { runCtl } from "./ui-run.js";
+import { dialogCtl } from "./ui-dialogs.js";
 
-const SCREEN_MODES = ["contractChoice", "routeChoice", "levelup", "station", "result"];
-const host = {
-  page: "battle",
-  scroll: 0, contentHeight: 0, viewportHeight: 800, trainWorkshopOpen: false,
-  levelPicks: null, breakthrough: null, stationData: null, resultData: null,
-  resultBuild: "", resultDamage: null, routeCards: null, resultScroll: 0, resultContentHeight: 0,
-  pause: { unitIndex: 1, tab: "weapon", page: 0 }, pauseFleet: [], pauseRows: [], pauseNote: "", pauseSummary: "",
-  meta: null, carDefs: [], unlockedCars: [], loadoutCars: [], researchRows: [], blueprintNames: {},
-  trainSlots: 4, carSlots: 2, trainLength: 4, trainUpgradeCost: null, talentPoints: 0,
-  talent: { branch: "hull", draft: null, loadout: null, notice: "", confirmSave: null },
-  presetRows: [], branchRows: [], nodeRows: [], specRows: [], talentSummary: null,
-  regionMeta: null, regionTags: {}, blueprintText: "",
-  audio: { music: true, sfx: true },
-  version: "v0.10.3.3",
-};
-const viewport = { w: 390, h: 680 };
-const stick = { pointerId: null, center: null, radius: 36 };
-let regions = [];
+const GAME_VERSION = "v0.11.0.1";
+const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
-// -- host data assembly -------------------------------------------------------
+const canvasHost = (() => {
+  const G = globalThis;
+  const screenCanvas = G.__endlessRailsCanvas || gamePlatform.pageCanvas();
+  if (!screenCanvas) throw new Error("canvas-host: no canvas was provided on globalThis.__endlessRailsCanvas");
+  const screen = screenCanvas.getContext("2d");
+  // The battlefield surface every renderer draws into (logical px, min side 390).
+  const battlefield = gamePlatform.createCanvas(390, 680) || screenCanvas;
+  setSurface(battlefield, battlefield.width, battlefield.height);
+  const E = uiKit.uiEl;
+  uiLayout.registerStyles(uiSheet);
+  uiText.setMeasureContext(screen);
+  uiKit.setImageFactory(() => gamePlatform.createImage());
 
-function regionStatus(meta, regionId) {
-  const region = longterm.regionById(regionId);
-  if (!region) return { status: "已侦察", tag: "已侦察" };
-  const st = meta.regions[regionId];
-  const unlocked = !!st?.unlocked;
-  const status = !unlocked ? "未知" : st.repaired ? "已修复" : st.clears > 0 ? "已完成" : "已侦察";
-  return { status, tag: unlocked ? status : "未解锁" };
-}
+  // -- environment ------------------------------------------------------------------------------
 
-// Talent draft lives on the host exactly like the DOM page keeps one in
-// meta-ui.js: edits are free previews, the single apply call commits. The
-// reset derives from state.metaProfile (updated by applyTalents itself) -
-// host.meta may still hold the previous frame's copy at action time.
-function draftFromProfile() {
-  const nodes = { ...(state.metaProfile?.talents?.nodes || {}) }, specs = { ...(state.metaProfile?.talents?.specs || {}) };
-  host.talent.draft = { nodes, specs };
-  host.talent.loadout = null;
-  host.talent.confirmSave = null;
-}
-function draftDirty() {
-  const current = host.meta?.talents;
-  if (!current || !host.talent.draft) return false;
-  for (const node of (longterm.TALENT_NODES || []))
-    if ((host.talent.draft.nodes[node.id] || 0) !== (current.nodes[node.id] || 0)) return true;
-  for (const key in host.talent.draft.specs) if (host.talent.draft.specs[key] !== current.specs[key]) return true;
-  const cars = host.talent.loadout, saved = host.meta.loadout || [];
-  return !!cars && (cars.length !== saved.length || cars.some((id, i) => id !== saved[i]));
-}
-function withdrawNode(nodeId) {
-  const draft = host.talent.draft;
-  draft.nodes[nodeId] = Math.max(0, (draft.nodes[nodeId] || 0) - 1);
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const node of longterm.TALENT_NODES) {
-      if (!(draft.nodes[node.id] > 0) || !node.prereq?.id) continue;
-      if ((draft.nodes[node.prereq.id] || 0) < node.prereq.level) { draft.nodes[node.id] = 0; changed = true; }
+  let keyboardMode = false;
+  const view = { w: 390, h: 844, dpr: 1 };
+  function frameVars(vw, vh, fine, immersive) {
+    let fw = "min(100vw, 480px)", fh = "100dvh";
+    if (vw >= 600) { fh = "min(960px, calc(100dvh - 40px))"; fw = "min(480px, calc((100dvh - 40px) * .52))"; }
+    if (vh <= 450 && vw >= 600) { fw = "min(100vw, 780px)"; fh = "100dvh"; }
+    if (vw < 600 || !fine) { fw = "100vw"; fh = "100dvh"; }
+    if (immersive) { fh = "100dvh"; fw = vw >= 800 && fine ? "min(640px,100vw)" : "100vw"; }
+    return { "--frame-width": fw, "--frame-height": fh };
+  }
+  function updateEnv() {
+    const vp = gamePlatform.viewport();
+    view.w = vp.w; view.h = vp.h; view.dpr = vp.dpr;
+    const pw = Math.max(1, Math.round(vp.w * vp.dpr)), ph = Math.max(1, Math.round(vp.h * vp.dpr));
+    if (screenCanvas.width !== pw) screenCanvas.width = pw;
+    if (screenCanvas.height !== ph) screenCanvas.height = ph;
+    if (screenCanvas.style) { screenCanvas.style.width = vp.w + "px"; screenCanvas.style.height = vp.h + "px"; }
+    const fine = gamePlatform.pointerFine(), disp = dialogCtl.display();
+    uiKit.setEnv({
+      vw: vp.w, vh: vp.h, dpr: vp.dpr, fine, hover: gamePlatform.hoverCapable(), reducedMotion: gamePlatform.reducedMotion(),
+      standalone: disp.standalone, fullscreen: disp.full, immersive: disp.immersive,
+      classicScrollbars: gamePlatform.classicScrollbars(),
+      safe: vp.safe || { top: 0, right: 0, bottom: 0, left: 0 },
+      vars: frameVars(vp.w, vp.h, fine, disp.immersive),
+    });
+    fullRedraw = true;
+  }
+
+  // -- layers ------------------------------------------------------------------------------------
+
+  // Stacking of the former page: the app frame, then overlays by z-index and
+  // document order (start / station / contract / event / level-up / result at
+  // 20, pause 40, display help 60, settings 75, test save 95, GM 100).
+  function layerRoot(key, node, modal) {
+    return E({ key: "layer-" + key, position: "absolute", left: 0, top: 0, width: view.w, height: view.h, modal: !!modal }, node);
+  }
+  function appLayer(part, paint) {
+    const m = runCtl.battleModel(paint, dialogCtl.display());
+    return E({ key: "layer-app" + (part === "over" ? "Over" : ""), position: "absolute", left: 0, top: 0, width: view.w, height: view.h, display: "flex", alignItems: "center", justifyContent: "center" },
+      battleScreen.build(m, part));
+  }
+  function overlayLayers() {
+    const out = [];
+    const flows = runCtl.flowModels();
+    if (homeCtl.isOpen) out.push(["start", homeScreen.build(homeCtl.model()), false]);
+    if (flows.station) out.push(["station", flowScreens.station(flows.station), true]);
+    if (flows.contract) out.push(["contract", flowScreens.contract(flows.contract), true]);
+    if (flows.route) out.push(["event", flowScreens.route(flows.route), true]);
+    if (flows.levelUp) out.push(["levelUp", flowScreens.levelUp(flows.levelUp), true]);
+    if (flows.result) out.push(["result", flowScreens.result(flows.result), true]);
+    if (runCtl.pauseVisible) { const pm = runCtl.pauseModel(); if (pm) out.push(["pause", pauseScreen.build(pm), true]); }
+    if (dialogCtl.helpOpen) out.push(["displayHelp", dialogScreens.displayHelp(dialogCtl.helpModel()), true]);
+    if (dialogCtl.settingsOpen) out.push(["settings", dialogScreens.settings(dialogCtl.settingsModel()), true]);
+    if (dialogCtl.cloudOpen) out.push(["cloud", dialogScreens.cloud(dialogCtl.cloudModel()), true]);
+    if (dialogCtl.gmOpen) out.push(["gm", dialogScreens.gm(dialogCtl.gmModel()), true]);
+    // Former page rules: an open pause terminal hides the other selection
+    // screens, and the settings sheet hides the pause terminal (visibility).
+    const SELECTION = new Set(["station", "contract", "event", "levelUp", "cloud"]);
+    const pauseShown = runCtl.pauseVisible && !!runCtl.pauseModel();
+    const visible = out.filter(([key]) => !(pauseShown && SELECTION.has(key)) && !(key === "pause" && dialogCtl.settingsOpen));
+    const layers = visible.map(([key, node, modal]) => layerRoot(key, node, modal));
+    if (runCtl.selectOpen) {
+      const anchor = uiKit.find("inspectSelect");
+      if (anchor) layers.push(layerRoot("select", pauseScreen.optionList({ ...runCtl.pauseModel(), on: runCtl.pauseActions }, { x: anchor.absX, y: anchor.absY, w: anchor.w, h: anchor.h }, view.w, view.h), true));
     }
-    for (const branchId of Object.keys(longterm.SPEC_NODE))
-      if (draft.specs[branchId] && !(draft.nodes[longterm.SPEC_NODE[branchId]] > 0)) draft.specs[branchId] = null;
+    return layers;
   }
-}
-function raiseNode(nodeId) {
-  const node = longterm.NODE_BY_ID[nodeId], draft = host.talent.draft;
-  if (!node || (draft.nodes[nodeId] || 0) >= node.levels || longterm.nodeBlockReason(host.meta, draft, nodeId)) return;
-  draft.nodes[nodeId] = (draft.nodes[nodeId] || 0) + 1;
-}
 
-function refreshHostData() {
-  const profile = state.metaProfile;
-  host.meta = profile;
-  const plan = longterm.planFor(profile);
-  host.trainLength = plan.trainLength;
-  host.trainSlots = longterm.trainSlots(profile);
-  host.carSlots = longterm.carSlots(profile);
-  host.trainUpgradeCost = profile.train.level < longterm.MAX_TRAIN_LEVEL ? longterm.trainUpgradeCost(profile.train.level) : null;
-  host.talentPoints = longterm.talentPoints(profile);
-  host.appliedPoints = host.talentPoints - longterm.spentPoints(profile.talents);
-  if (!host.talent.draft) draftFromProfile();
-  host.carDefs = (longterm.CAR_DEFS || []).filter(car => !car.fixed).map(car => ({ id: car.id, name: car.name, icon: car.icon, description: car.description, fixed: car.fixed }));
-  host.unlockedCars = longterm.unlockedCars(host.talent.loadout ? { ...profile, talents: host.talent.draft } : profile);
-  host.loadoutCars = (host.talent.loadout || profile.loadout || []).map(id => longterm.CAR_DEFS?.find(c => c.id === id)?.name || id);
-  // Talent panel data for the canvas painter.
-  host.branchRows = (longterm.TALENT_BRANCHES || []).map(branch => ({
-    id: branch.id, name: branch.name, cap: branch.cap,
-    spent: longterm.branchSpent(host.talent.draft, branch.id),
-    equipped: !branch.car || (host.talent.loadout || profile.loadout || []).includes(branch.car),
-    active: host.talent.branch === branch.id,
-  }));
-  host.nodeRows = (longterm.TALENT_NODES || []).filter(node => node.branch === host.talent.branch).map(node => ({
-    id: node.id, name: node.name, cost: node.cost, levels: node.levels,
-    level: host.talent.draft.nodes[node.id] || 0,
-    block: longterm.nodeBlockReason(profile, host.talent.draft, node.id),
-    effect: host.talent.draft.nodes[node.id] > 0 ? node.effect(host.talent.draft.nodes[node.id]) : node.effect(1),
-  }));
-  host.specRows = (longterm.SPEC_OPTIONS?.[host.talent.branch] || []).map(option => ({
-    branch: host.talent.branch, id: option.id, name: option.name, desc: option.desc,
-    owned: (host.talent.draft.nodes[longterm.SPEC_NODE[host.talent.branch]] || 0) > 0,
-    active: host.talent.draft.specs[host.talent.branch] === option.id,
-  }));
-  host.presetRows = (profile.presets || []).map((preset, index) => ({
-    index, name: preset.name, spent: longterm.spentPoints(preset.talents), cars: Math.max(0, preset.loadout.length - 1),
-  }));
-  const dirty = draftDirty();
-  const problems = dirty ? longterm.talentProblems(profile, host.talent.draft) : [];
-  const paid = dirty && longterm.refitIsPaid(profile.talents, host.talent.draft);
-  const cost = longterm.refitCost(profile);
-  const currentStats = longterm.buildStats(profile);
-  const nextStats = dirty ? longterm.buildStats({ ...profile, talents: host.talent.draft, loadout: host.talent.loadout || profile.loadout }) : currentStats;
-  const changes = longterm.buildChangeRows(currentStats, nextStats);
-  host.talentSummary = {
-    points: longterm.talentPoints(profile) - longterm.spentPoints(host.talent.draft),
-    dirty, problems,
-    costText: !paid ? "仅追加新点 · 免费" : profile.freeRefits > 0 ? `消耗 1 次免费重构（剩 ${profile.freeRefits} 次）` : `改装费 ${cost} 废料${profile.resources.scrap < cost ? ` · 还差 ${Math.ceil(cost - profile.resources.scrap)}` : ""}`,
-    canApply: dirty && !problems.length,
-    rows: changes.length ? changes : [dirty ? "仅调整编组或未装备分支；当前属性无变化" : "当前属性无改动"],
-  };
-  host.researchRows = (longterm.RESEARCH_TRACKS || []).map(track => {
-    const costData = longterm.researchCost(profile, track.id);
-    const maxed = !costData;
-    const effect = longterm.researchEffectText(track.id, profile.research[track.id] || 0);
-    const next = longterm.researchEffectText(track.id, Math.min(longterm.MAX_RESEARCH_LEVEL, (profile.research[track.id] || 0) + 1));
-    return {
-      id: track.id, icon: longterm.RESEARCH_ICONS[track.id], group: track.group, name: track.name, focus: track.focus, scope: track.scope,
-      level: profile.research[track.id] || 0, max: longterm.MAX_RESEARCH_LEVEL, maxed,
-      cost: costData, effect: effect.total, nextEffect: maxed ? "" : next.total,
-      shortKeys: maxed ? [] : ["scrap", "components", "data"].filter(key => profile.resources[key] < costData[key]),
-      missing: maxed ? [] : [["scrap", "废料"], ["components", "组件"], ["data", "数据"]].filter(([key]) => profile.resources[key] < costData[key]).map(([key, name]) => `${name}还差 ${Math.ceil(costData[key] - profile.resources[key])}`),
-      affordable: !maxed && profile.resources.scrap >= costData.scrap
-        && profile.resources.data >= costData.data && profile.resources.components >= costData.components,
-    };
-  });
-  const selectedRegion = profile.selectedRegion || "wasteland";
-  const regionInfo = longterm.regionById(selectedRegion);
-  host.regionMeta = regionInfo ? { ...regionInfo, ...regionStatus(profile, selectedRegion) } : null;
-  host.regionTags = {};
-  for (const region of (longterm.REGIONS || [])) host.regionTags[region.id] = regionStatus(profile, region.id).tag;
-  host.blueprintNames = {};
-  for (const id of profile.blueprints || []) {
-    const bp = longterm.blueprintById(id);
-    if (bp) host.blueprintNames[id] = bp.name;
-  }
-  // 出发页摘要 (需求 §22.3)，与 DOM 版 meta-ui.js 同一口径。
-  {
-    const S = longterm.buildStats(profile);
-    host.departureSummary = `伤害×${S.droneDamageMul.toFixed(2)} · 耐久×${(S.maxHp / 100).toFixed(2)} · 维修×${S.repairMul.toFixed(2)}`;
-    host.trainStats = { fire: S.droneDamageMul, hull: S.maxHp / 100 };
-  }
-  host.blueprintText = (profile.blueprints || []).length
-    ? (profile.blueprints || []).map(id => { const bp = longterm.blueprintById(id); return bp ? bp.name + "：" + bp.description : id; }).join("\n")
-    : "暂无蓝图 · 击破精英或区域 Boss 后回收，到站锁定。";
-  if (gameAudio?.getPreferences) host.audio = gameAudio.getPreferences();
-}
+  // -- paint hooks -------------------------------------------------------------------------------
 
-function refreshPauseData() {
-  host.pauseFleet = inspectFleet().map(d => ({ ...d }));
-  if (host.pause.unitIndex >= host.pauseFleet.length) host.pause.unitIndex = Math.min(1, Math.max(0, host.pauseFleet.length - 1));
-  const unit = host.pauseFleet[host.pause.unitIndex] || host.pauseFleet[0];
-  host.pauseRows = unit ? inspectRows(unit, host.pause.tab) : [];
-  host.pauseNote = unit ? tabNote(host.pause.tab, unit) : "";
-  host.pauseSummary = pauseSummaryText();
-}
-
-// -- presentation hooks -------------------------------------------------------
-
-presentation.updateHud = () => {};
-presentation.resetJoystick = resetStick;
-presentation.toast = setToast;
-presentation.combo = setCombo;
-presentation.showBoss = () => {};
-presentation.hideBoss = () => {};
-presentation.hideLevelUp = () => {};
-presentation.renderLevelUp = picks => {
-  // Picks carry the pool entry; add the display fields the DOM cards show.
-  host.levelPicks = picks.map(u => ({
-    ...u, brief: upgradeBrief[u.id], level: level(u.id) + (u.id === "rapid" ? 2 : 1),
-    scope: scopeLabel(effects.weaponOwnership(u.id)),
-  }));
-  host.breakthrough = null;
-};
-presentation.renderStation = data => {
-  // Picks carry the pool entry; add the display level the DOM cards show.
-  host.stationData = data ? { ...data, picks: (data.picks || []).map(u => ({ ...u, level: level(u.id) })) } : data;
-};
-presentation.renderResult = data => {
-  host.resultData = data;
-  host.resultScroll = 0;
-  host.resultDamage = damageSummary();
-  const names = Object.keys(state.modules).filter(id => level(id) > 0)
-    .map(id => experiencePool.find(x => x.id === id)?.name || upgradePool.find(x => x.id === id)?.name || id);
-  const cores = Object.keys(state.coreStacks).filter(id => state.coreStacks[id] > 0);
-  host.resultBuild = "构筑：" + (names.join(" / ") || "—") + " / 核心：" + (cores.join(" · ") || "");
-};
-presentation.runReset = () => {
-  host.levelPicks = null; host.breakthrough = null; host.stationData = null; host.resultData = null; host.routeCards = null; host.page = "battle";
-  const prepared = prepareContractChoice();
-  if (state.mode === "routeChoice") host.routeCards = prepared;
-};
-
-// -- flow actions -------------------------------------------------------------
-
-function startRun(plan) { beginRun(plan); }
-function backToMenu() {
-  state.mode = "menu";
-  state.metaProfile = longterm.loadMeta(metaStorage);
-  state.record = runRecord.loadRecord(metaStorage);
-  host.levelPicks = null; host.breakthrough = null; host.stationData = null; host.resultData = null; host.routeCards = null; host.page = "battle"; host.scroll = 0;
-  host.talent.draft = null; host.talent.notice = "";
-  refreshHostData();
-  drawOverlay();
-}
-function extractRun() {
-  if (state.mode !== "station") return;
-  const data = settleFinish("extracted");
-  if (data) presentation.renderResult(data);
-  drawOverlay();
-}
-function togglePause() {
-  if (!["combat", "docking", "station", "levelup"].includes(state.mode)) return;
-  state.paused = !state.paused;
-  if (state.paused) refreshPauseData();
-  resetStick();
-  drawOverlay();
-}
-function pauseForHidden() {
-  if (!state.paused && ["combat", "docking"].includes(state.mode)) togglePause();
-  resetStick();
-}
-
-function applyAction(action) {
-  if (action === "start") { startRun(); return; }
-  if (action === "pause") { togglePause(); return; }
-  if (action === "pulse") { pulse(); return; }
-  if (action === "menu") { backToMenu(); return; }
-  if (action === "claim") {
-    if (state.mode === "combat" && !state.paused && state.pendingLevelUps > 0) {
-      const picks = prepareLevelUp();
-      if (picks) presentation.renderLevelUp(picks);
-    }
-    return;
+  const scratch = new Map();
+  function scratchCanvas(name, w, h) {
+    let c = scratch.get(name);
+    if (!c) { c = gamePlatform.createCanvas(w, h); scratch.set(name, c); }
+    if (!c) return null;
+    if (c.width < w) c.width = w;
+    if (c.height < h) c.height = h;
+    return c;
   }
-  if (action === "reroll") {
-    const picks = rerollStation();
-    if (picks && host.stationData) host.stationData = { ...host.stationData, picks };
-    return;
-  }
-  if (action === "extract") { extractRun(); return; }
-  if (action === "depart") {
-    const cards = departStation();
-    if (cards) { host.stationData = null; host.routeCards = cards; }
-    return;
-  }
-  if (action === "pausePrevUnit") {
-    host.pause.unitIndex = (host.pause.unitIndex - 1 + host.pauseFleet.length) % host.pauseFleet.length;
-    host.pause.page = 0; refreshPauseData(); return;
-  }
-  if (action === "pauseNextUnit") {
-    host.pause.unitIndex = (host.pause.unitIndex + 1) % Math.max(1, host.pauseFleet.length);
-    host.pause.page = 0; refreshPauseData(); return;
-  }
-  if (action === "pausePrevPage") { host.pause.page = Math.max(0, host.pause.page - 1); return; }
-  if (action === "pauseNextPage") { host.pause.page += 1; return; }
-  if (typeof action !== "object" || !action) return;
-  if (action.contract) {
-    const cards = chooseContract(action.contract);
-    host.routeCards = state.mode === "routeChoice" ? cards : null;
-  } else if (action.route) {
-    host.routeCards = null;
-    beginRoute(action.route);
-  } else if (action.upgrade) {
-    const result = chooseUpgrade(action.upgrade);
-    if (result.breakthrough) { host.breakthrough = { weapon: result.weapon, options: result.breakthrough }; }
-    else { host.levelPicks = null; }
-  } else if (action.breakthrough) {
-    const picks = chooseBreakthrough(host.breakthrough.weapon, action.breakthrough);
-    host.breakthrough = null;
-    host.levelPicks = picks || null;
-  } else if (action.stationUpgrade) {
-    selectStationUpgrade(action.stationUpgrade);
-  } else if (action.homeTab) {
-    if (host.page !== action.homeTab) {
-      if (host.page === "train" && draftDirty()) { host.talent.notice = "请先应用或重置草稿，再切换页面"; return; }
-      host.page = action.homeTab; host.scroll = 0;
-      if (host.page !== "train") host.trainWorkshopOpen = false;
-    }
-  } else if (action.selectRegion) {
-    const next = longterm.setRegion(state.metaProfile, action.selectRegion);
-    if (next) {
-      state.metaProfile = next; longterm.saveMeta(metaStorage, state.metaProfile);
-      setRegionGround(action.selectRegion);
-    }
-  } else if (action.toggleCar) {
-    // Every lineup edit stays in the draft until apply.
-    const base = (host.talent.loadout || state.metaProfile.loadout).filter(id => id !== "hangar");
-    let cars;
-    if (base.includes(action.toggleCar)) cars = base.filter(id => id !== action.toggleCar);
-    else {
-      cars = [...base];
-      if (cars.length >= longterm.carSlots(state.metaProfile)) { host.talent.notice = "编组已满：先移除一节已选车厢"; return; }
-      cars.push(action.toggleCar);
-    }
-    host.talent.loadout = ["hangar", ...cars]; host.talent.notice = "编组草稿待应用";
-  } else if (action.talentBranch) {
-    host.talent.branch = action.talentBranch;
-  } else if (action.talentPlus) {
-    raiseNode(action.talentPlus);
-  } else if (action.talentMinus) {
-    withdrawNode(action.talentMinus);
-  } else if (action.talentSpec) {
-    const [branchId, optionId] = action.talentSpec;
-    host.talent.draft.specs[branchId] = host.talent.draft.specs[branchId] === optionId ? null : optionId;
-  } else if (action.trainWorkshopToggle) {
-    host.trainWorkshopOpen = !host.trainWorkshopOpen;
-    host.scroll = 0;
-  } else if (action.presetLoad !== undefined) {
-    const result = longterm.loadPreset(state.metaProfile, action.presetLoad);
-    host.talent.draft = { nodes: { ...result.talents.nodes }, specs: { ...result.talents.specs } };
-    host.talent.loadout = [...result.loadout];
-    host.talent.confirmSave = null;
-    host.talent.notice = result.problems.length ? `方案不可用：${result.problems[0]}` : "已载入方案到草稿";
-  } else if (action.presetRename !== undefined) {
-    const index = action.presetRename, previous = state.metaProfile.presets[index]?.name || `方案 ${"ABC"[index]}`;
-    const commit = name => {
-      if (!name?.trim()) return;
-      state.metaProfile = longterm.renamePreset(state.metaProfile, index, name.trim());
-      longterm.saveMeta(metaStorage, state.metaProfile);
-      host.talent.notice = `方案已改名为 ${state.metaProfile.presets[index].name}`;
-      drawOverlay();
-    };
-    if (typeof wx !== "undefined" && wx.showModal) {
-      wx.showModal({ title: "重命名方案", editable: true, placeholderText: previous, content: previous, success: result => { if (result.confirm) commit(result.content); } });
-    } else if (typeof globalThis.prompt === "function") commit(globalThis.prompt("方案名称", previous));
-    else host.talent.notice = "当前环境暂不支持输入方案名称";
-  } else if (action.presetSave !== undefined) {
-    const index = action.presetSave;
-    if (host.talent.confirmSave === index) {
-      state.metaProfile = longterm.savePreset(state.metaProfile, index, host.talent.draft, host.talent.loadout || state.metaProfile.loadout);
-      longterm.saveMeta(metaStorage, state.metaProfile);
-      host.talent.notice = "草稿已存入方案"; host.talent.confirmSave = null;
-    } else { host.talent.confirmSave = index; host.talent.notice = `再点保存，覆盖方案 ${"ABC"[index]}`; }
-  } else if (action.talentReset) {
-    draftFromProfile();
-    host.talent.notice = "";
-  } else if (action.trainUpgrade) {
-    const result = longterm.buyTrainUpgrade(state.metaProfile);
-    if (result.purchased) {
-      state.metaProfile = result.meta;
-      longterm.saveMeta(metaStorage, state.metaProfile);
-      host.talent.notice = `列车升至 Lv.${result.meta.train.level} · 改装点 +2`;
-    }
-  } else if (action.talentApply) {
-    const result = longterm.applyTalents(state.metaProfile, host.talent.draft, { loadout: host.talent.loadout || state.metaProfile.loadout });
-    if (result.applied) {
-      state.metaProfile = result.meta;
-      longterm.saveMeta(metaStorage, state.metaProfile);
-      draftFromProfile();
-      host.talent.notice = result.charged ? `已支付改装费 ${result.charged} 废料` : result.paid ? `已消耗 1 次免费重构（剩 ${result.freeRefits} 次）` : "";
+  let filterSupported = null;
+  // backdrop-filter: blur(Npx) - blur what is already painted under the box.
+  function backdrop(ctx, n, x, y, w, h, r) {
+    const match = /blur\(\s*([\d.]+)px\s*\)/.exec(n.cs.backdropFilter || "");
+    if (!match) return;
+    const t = ctx.getTransform ? ctx.getTransform() : { a: view.dpr, d: view.dpr, e: 0, f: 0 };
+    const blur = parseFloat(match[1]) * t.a;
+    const cw = ctx.canvas.width, ch = ctx.canvas.height;
+    const x0 = Math.floor(t.a * x + t.e), y0 = Math.floor(t.d * y + t.f), x1 = Math.ceil(t.a * (x + w) + t.e), y1 = Math.ceil(t.d * (y + h) + t.f);
+    const M = Math.ceil(blur * 3);
+    const sx0 = Math.max(0, x0 - M), sy0 = Math.max(0, y0 - M), sx1 = Math.min(cw, x1 + M), sy1 = Math.min(ch, y1 + M);
+    if (sx1 <= sx0 || sy1 <= sy0) return;
+    const bw = x1 - x0 + 2 * M, bh = y1 - y0 + 2 * M;
+    const sc = scratchCanvas("backdrop", bw, bh), sctx = sc && sc.getContext("2d");
+    if (!sctx) return;
+    sctx.setTransform(1, 0, 0, 1, 0, 0);
+    sctx.clearRect(0, 0, sc.width, sc.height);
+    const ox = sx0 - (x0 - M), oy = sy0 - (y0 - M), sw = sx1 - sx0, sh = sy1 - sy0;
+    sctx.drawImage(ctx.canvas, sx0, sy0, sw, sh, ox, oy, sw, sh);
+    // Edge pixels are repeated outward so the blur does not fade at the canvas border.
+    if (ox > 0) sctx.drawImage(sc, ox, oy, 1, sh, 0, oy, ox, sh);
+    if (oy > 0) sctx.drawImage(sc, 0, oy, bw, 1, 0, 0, bw, oy);
+    const right = bw - (ox + sw), bottom = bh - (oy + sh);
+    if (right > 0) sctx.drawImage(sc, ox + sw - 1, 0, 1, bh, ox + sw, 0, right, bh);
+    if (bottom > 0) sctx.drawImage(sc, 0, oy + sh - 1, bw, 1, 0, oy + sh, bw, bottom);
+    ctx.save();
+    uiPaint.rrPath(ctx, x, y, w, h, r);
+    ctx.clip();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (filterSupported === null) filterSupported = typeof ctx.filter === "string";
+    if (filterSupported) {
+      ctx.filter = `blur(${blur}px)`;
+      ctx.drawImage(sc, 0, 0, bw, bh, x0 - M, y0 - M, bw, bh);
+      ctx.filter = "none";
     } else {
-      host.talent.notice = result.problems.join("；");
+      // No canvas filters (older WebKit, mini-game runtimes): box-blur by resampling.
+      const k = Math.max(2, Math.round(blur / 2)), tw = Math.max(1, Math.round(bw / k)), th = Math.max(1, Math.round(bh / k));
+      const small = scratchCanvas("backdropSmall", tw, th), smctx = small.getContext("2d");
+      smctx.clearRect(0, 0, small.width, small.height);
+      smctx.imageSmoothingEnabled = true;
+      smctx.drawImage(sc, 0, 0, bw, bh, 0, 0, tw, th);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(small, 0, 0, tw, th, x0 - M, y0 - M, bw, bh);
     }
-  } else if (action.research) {
-    const result = longterm.buyResearch(state.metaProfile, action.research);
-    if (result?.purchased) { state.metaProfile = result.meta; longterm.saveMeta(metaStorage, state.metaProfile); }
-    else if (result?.short?.length) host.researchNotice = result.short.join(" · ");
-  } else if (action.audioToggle) {
-    gameAudio?.setPreference?.(action.audioToggle, !host.audio[action.audioToggle]);
-    host.audio = gameAudio?.getPreferences?.() || host.audio;
-  } else if (action.pauseTab) {
-    host.pause.tab = action.pauseTab; host.pause.page = 0; refreshPauseData();
+    ctx.restore();
   }
-}
-
-function handleRegionAction(action) {
-  applyAction(action);
-  // Regions are rebuilt synchronously so back-to-back taps never read a
-  // stale screen from the previous frame.
-  drawOverlay();
-}
-
-// -- pointer input ------------------------------------------------------------
-
-const regionAt = (x, y) => regions.find(r => !r.disabled && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
-
-// Tap-vs-drag tracking for the scrollable overlays (home panes, result sheet):
-// a press that moves past the threshold scrolls the page instead of firing
-// the region under the finger, exactly like touch scrolling on the DOM page.
-const tap = { active: false, moved: false, x: 0, y: 0, scrollBase: 0 };
-const TAP_SLOP = 8;
-
-function scrollableNow() {
-  if (state.mode === "menu") return { key: "home", max: Math.max(0, (host.contentHeight || 800) - host.viewportHeight) };
-  if (state.mode === "result") return { key: "result", max: Math.max(0, (host.resultContentHeight || 800) - viewport.h) };
-  return null;
-}
-
-function pointerDown(event) {
-  const x = event.clientX, y = event.clientY;
-  if (state.mode === "combat" && !state.paused) {
-    // HUD buttons sit at fixed screen positions; they win over the joystick.
-    const hit = regionAt(x, y);
-    if (hit) { handleRegionAction(hit.action); return; }
-  }
-  if ((state.paused || state.mode === "menu" || SCREEN_MODES.includes(state.mode)) && state.mode !== "docking") {
-    const scroller = scrollableNow();
-    tap.active = true; tap.moved = false; tap.x = x; tap.y = y;
-    tap.region = regionAt(x, y);
-    tap.scrollBase = scroller ? (scroller.key === "home" ? host.scroll : host.resultScroll) : 0;
-    return;
-  }
-  if (state.mode !== "combat" || state.paused || stick.pointerId !== null) return;
-  if (event.pointerType === "mouse" && event.button !== 0) return;
-  stick.pointerId = event.pointerId;
-  stick.center = { x, y };
-  stick.radius = 36;
-  stickMove(event);
-}
-function pointerMove(event) {
-  if (tap.active) {
-    const scroller = scrollableNow();
-    const dx = event.clientX - tap.x, dy = event.clientY - tap.y;
-    if (!tap.moved && Math.hypot(dx, dy) > TAP_SLOP) tap.moved = true;
-    if (tap.moved && scroller) {
-      const next = Math.max(0, Math.min(scroller.max, tap.scrollBase - dy));
-      if (scroller.key === "home") host.scroll = next; else host.resultScroll = next;
-      event.preventDefault?.();
+  // Classic desktop scrollbar (Chromium style): track, arrow buttons and a
+  // rounded thumb; scrollbar-color when the element sets one, otherwise the
+  // light (base screens) or dark (color-scheme: dark overlays) palette.
+  function scrollbar(ctx, n, x, y, w, h) {
+    const sb = n._sb, clientH = h - n.bt - n.bb;
+    if (!sb || clientH <= 0) return;
+    let light = false;
+    for (let p = n; p; p = p.parent) if (p.key === "startScreen") { light = true; break; }
+    let thumb = light ? "#c1c1c1" : "#9f9f9f", track = light ? "#f1f1f1" : "#2c2c2c", arrow = light ? "#505050" : "#9f9f9f";
+    const colors = String(n.cs.scrollbarColor || "auto");
+    if (colors !== "auto") { const parts = colors.match(/(rgba?\([^)]*\)|#[0-9a-fA-F]+|[a-z]+)/g) || []; thumb = arrow = parts[0] || thumb; track = parts[1] || "transparent"; }
+    const tx = x + w - n.br - sb, ty = y + n.bt;
+    ctx.save();
+    if (track !== "transparent") { ctx.fillStyle = track; ctx.fillRect(tx, ty, sb, clientH); }
+    const tw = sb >= 15 ? 9 : 6, tri = sb >= 15 ? 4.5 : 3, mid = tx + sb / 2;
+    ctx.fillStyle = arrow;
+    ctx.beginPath(); ctx.moveTo(mid, ty + sb / 2 - tri / 2); ctx.lineTo(mid + tri, ty + sb / 2 + tri / 2); ctx.lineTo(mid - tri, ty + sb / 2 + tri / 2); ctx.fill();
+    const by = ty + clientH - sb;
+    ctx.beginPath(); ctx.moveTo(mid, by + sb / 2 + tri / 2); ctx.lineTo(mid + tri, by + sb / 2 - tri / 2); ctx.lineTo(mid - tri, by + sb / 2 - tri / 2); ctx.fill();
+    const gap = (sb - tw) / 2, trackTop = ty + sb + gap, trackLen = clientH - 2 * sb - 2 * gap;
+    if (trackLen > 8 && n.scrollMax > 0) {
+      const len = Math.max(tw * 2, trackLen * clientH / n.scrollH), pos = trackTop + (trackLen - len) * ((n.scrollY || 0) / n.scrollMax);
+      ctx.fillStyle = thumb;
+      { const c = { x: tw / 2, y: tw / 2 }; uiPaint.rrPath(ctx, tx + gap, pos, tw, len, [c, c, c, c]); }
+      ctx.fill();
     }
-    return;
+    ctx.restore();
   }
-  if (stick.pointerId === null) return;
-  stickMove(event);
-}
-function pointerUp(event) {
-  if (tap.active) {
-    if (!tap.moved && tap.region) handleRegionAction(tap.region.action);
-    tap.active = false; tap.region = null;
-    return;
-  }
-  if (event.pointerId === stick.pointerId) resetStick();
-}
-function stickMove(event) {
-  if (event.pointerId !== stick.pointerId) return;
-  if (state.mode !== "combat" || state.paused) { resetStick(); return; }
-  event.preventDefault?.();
-  const vector = control.joystickVector({ x: event.clientX, y: event.clientY }, stick.center, stick.radius);
-  state.moveInput = { x: vector.x, y: vector.y };
-  setStickVisual({ visible: true, cx: stick.center.x, cy: stick.center.y, dx: vector.x * stick.radius, dy: vector.y * stick.radius, radius: stick.radius });
-  if (vector.strength) setToast("");
-}
-function resetStick() {
-  stick.pointerId = null;
-  stick.center = null;
-  state.moveInput = { x: 0, y: 0 };
-  setStickVisual({ visible: false });
-}
-
-// Keyboard movement for desktop canvas testing; the mini-game adapter is touch-first.
-function attachKeyboard(hostWindow) {
-  if (typeof hostWindow?.addEventListener !== "function") return;
-  const keys = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], KeyW: [0, -1], KeyS: [0, 1], KeyA: [-1, 0], KeyD: [1, 0] };
-  const held = new Set();
-  const apply = () => {
-    if (stick.pointerId !== null) return;
-    let x = 0, y = 0;
-    for (const key of held) { x += keys[key][0]; y += keys[key][1]; }
-    const vector = control.joystickVector({ x, y }, { x: 0, y: 0 }, 1, 0);
-    if (state.mode === "combat" && !state.paused) state.moveInput = { x: vector.x, y: vector.y };
+  const hooks = {
+    measureContext: screen,
+    backdrop, scrollbar,
+    makeScratch: (w, h) => scratchCanvas("mask", w, h),
+    makeLayer: (depth, w, h) => scratchCanvas("group" + depth, w, h),
   };
-  hostWindow.addEventListener("keydown", event => { if (keys[event.code]) { held.add(event.code); apply(); } });
-  hostWindow.addEventListener("keyup", event => { if (keys[event.code]) { held.delete(event.code); apply(); } });
-  hostWindow.addEventListener("blur", pauseForHidden);
-}
 
-// -- frame loop ---------------------------------------------------------------
+  // -- battlefield compositing ----------------------------------------------------------------------
 
-function frame(now) {
-  const fxDt = lastFrame ? Math.min(.1, (now - lastFrame) / 1000) : 0;
-  lastFrame = now;
-  try {
-    tickFx(fxDt);
+  let arenaBox = null, lastResize = "";
+  function paintBattlefield(ctx, box) {
+    arenaBox = { x: box.x, y: box.y, w: box.w, h: box.h };
+    if (battlefield !== screenCanvas) ctx.drawImage(battlefield, box.x, box.y, box.w, box.h);
+  }
+  function recordBattlefield(ctx, box) { arenaBox = { x: box.x, y: box.y, w: box.w, h: box.h }; }
+  function syncBattlefieldSize() {
+    if (!arenaBox) return;
+    const key = Math.round(arenaBox.w * 100) + "x" + Math.round(arenaBox.h * 100);
+    if (key === lastResize) return;
+    lastResize = key;
+    resizeBattlefield({ width: arenaBox.w, height: arenaBox.h });
+  }
+
+  // -- frame ---------------------------------------------------------------------------------------------
+
+  let fullRedraw = true, cachedSplit = false, afterRender = [];
+  let under = null, over = null;
+  const liveBattle = () => ["combat", "docking"].includes(state.mode) && !state.paused;
+  function clearScreen(ctx, fill) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (fill) { ctx.fillStyle = PAGE_BACKGROUND; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height); }
+    else ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+  function renderInterface() {
+    const dirty = uiKit.consumeChanged() || uiKit.isAnimating() || fullRedraw;
+    const live = liveBattle();
+    const overlays = overlayLayers();
+    const split = live && !overlays.length;
+    if (split) {
+      const W = screenCanvas.width, H = screenCanvas.height;
+      if (dirty || !cachedSplit) {
+        under = under || gamePlatform.createCanvas(W, H); over = over || gamePlatform.createCanvas(W, H);
+        if (!under || !over) return renderFull(overlays);
+        if (under.width !== W || under.height !== H) { under.width = W; under.height = H; }
+        if (over.width !== W || over.height !== H) { over.width = W; over.height = H; }
+        const uctx = under.getContext("2d"), octx = over.getContext("2d");
+        clearScreen(uctx, true);
+        uiKit.render(uctx, [appLayer("under", recordBattlefield)], hooks);
+        clearScreen(octx, false);
+        uiKit.render(octx, [appLayer("over", null)], hooks);
+        cachedSplit = true; fullRedraw = false; stats.splitRenders = (stats.splitRenders || 0) + 1;
+      }
+      screen.setTransform(1, 0, 0, 1, 0, 0);
+      screen.drawImage(under, 0, 0);
+      if (arenaBox && battlefield !== screenCanvas) {
+        const d = view.dpr;
+        screen.drawImage(battlefield, arenaBox.x * d, arenaBox.y * d, arenaBox.w * d, arenaBox.h * d);
+      }
+      screen.drawImage(over, 0, 0);
+    } else if (dirty || live || cachedSplit) {
+      renderFull(overlays);
+    }
+    syncBattlefieldSize();
+    if (afterRender.length) { const list = afterRender; afterRender = []; for (const fn of list) fn(); }
+  }
+  function renderFull(overlays) {
+    cachedSplit = false; fullRedraw = false; stats.fullRenders = (stats.fullRenders || 0) + 1;
+    clearScreen(screen, true);
+    uiKit.render(screen, [appLayer("full", paintBattlefield), ...overlays], hooks);
+  }
+  const stats = { frames: 0, sim: 0, ui: 0 };
+  function frame(now) {
+    const t0 = G.performance ? G.performance.now() : 0;
     frameStep(now);
-    drawOverlay();
-  } catch (error) {
-    // A bad frame must never kill the loop silently: report, keep cycling.
-    console.error("frame error", error);
-    if (typeof window !== "undefined" && window.__errs) window.__errs.push("frame: " + (error?.message || error));
+    const t1 = G.performance ? G.performance.now() : 0;
+    renderInterface();
+    const t2 = G.performance ? G.performance.now() : 0;
+    stats.frames++; stats.sim += ((t1 - t0) - stats.sim) * 0.05; stats.ui += ((t2 - t1) - stats.ui) * 0.05;
+    requestFrame();
   }
-  requestAnimationFrame(frame);
-}
-let lastFrame = 0;
-
-function drawOverlay() {
-  const c = ctx;
-  if (!c) return;
-  regions = [];
-  // HUD/screens draw in viewport CSS pixels: scale from canvas pixels.
-  const sx = canvas.width / viewport.w, sy = canvas.height / viewport.h;
-  if (state.mode === "menu") {
-    refreshHostData();
-    c.save();
-    c.scale(sx, sy);
-    drawHome({ c, vw: viewport.w, vh: viewport.h, X: x => x * sx0(), Y: y => y * sy0(), F: f => f * Math.min(sx0(), sy0()) }, host, region => regions.push(region));
-    c.restore();
-    return;
+  function requestFrame() {
+    const raf = G.requestAnimationFrame || (fn => setTimeout(() => fn(Date.now()), 16));
+    raf(frame);
   }
-  drawHud({ c, vw: viewport.w, vh: viewport.h, X: x => x * sx0(), Y: y => y * sy0(), F: f => f * Math.min(sx0(), sy0()) }, state, region => regions.push(region));
-  c.save();
-  c.scale(sx, sy);
-  const u = { c, vw: viewport.w, vh: viewport.h, X: x => x * sx0(), Y: y => y * sy0(), F: f => f * Math.min(sx0(), sy0()) };
-  // Flow sheets sit on a blurred battlefield like the DOM's backdrop-filter;
-  // the level-up sheet only replays the pristine frame (DOM has no blur there).
-  const backdropKey = state.mode + ":" + (state.paused ? 1 : 0);
-  if (state.paused) {
-    overlayBackdrop(u, backdropKey, true);
-    drawPauseScreen(u, state, host, region => regions.push(region));
-  } else if (state.mode === "contractChoice") {
-    overlayBackdrop(u, backdropKey, true);
-    drawCardListScreen(u, state, {
-      eyebrow: "远征指挥部 / 契约授权", title: "签订远征契约", copy: "更高风险，换取更高回报。", footer: "选择一份契约 · 本次远征生效",
-      cards: (state.contractChoices || []).map((contract, i) => ({
-        iconId: contract.id, counter: String(i + 1).padStart(2, "0"),
-        title: contract.name, sub: contract.description, action: { contract },
-      })),
-    }, region => regions.push(region));
-  } else if (state.mode === "routeChoice") {
-    overlayBackdrop(u, backdropKey, true);
-    drawCardListScreen(u, state, {
-      eyebrow: "轨道导航 / 路线规划", title: "选择前方路线", copy: "路线会改变地面、敌群和掉落。", footer: "选择一条路线 · 即刻发车",
-      cards: (host.routeCards || []).map(({ event, intel }) => ({
-        iconId: event.id, title: event.name, sub: event.description + intel, action: { route: event },
-      })),
-    }, region => regions.push(region));
-  } else if (state.mode === "levelup") {
-    overlayBackdrop(u, backdropKey, false);
-    drawLevelUpScreen(u, state, host, region => regions.push(region));
-  } else if (state.mode === "station") {
-    overlayBackdrop(u, backdropKey, true);
-    drawStationScreen(u, state, host, region => regions.push(region));
-  } else if (state.mode === "result") {
-    drawResultScreen(u, state, host, region => regions.push(region));
-  } else {
-    // Live combat keeps painting fresh frames: the next overlay must
-    // re-capture the battlefield instead of replaying a stale snapshot.
-    resetOverlayBackdrop();
-  }
-  c.restore();
-}
-function sx0() { return viewport.w / 420; }
-function sy0() { return viewport.h / 800; }
 
-// -- boot -----------------------------------------------------------------------
+  // -- input -------------------------------------------------------------------------------------------------
 
-function applyViewportSize() {
-  if (typeof window === "undefined" || !window.innerWidth) return;
-  viewport.w = window.innerWidth;
-  viewport.h = window.innerHeight;
-}
-
-function startCanvasGame(canvasEl, { width, height } = {}) {
-  applyViewportSize();
-  setSurface(canvasEl, width || viewport.w, height || viewport.h);
-  if (typeof window !== "undefined") {
-    window.__errs = window.__errs || [];
-    window.EndlessRailsCanvasHost = api;
-    if (typeof canvasEl.addEventListener === "function") {
-      canvasEl.addEventListener("pointerdown", pointerDown);
-      canvasEl.addEventListener("pointermove", pointerMove);
-      canvasEl.addEventListener("pointerup", pointerUp);
-      canvasEl.addEventListener("pointercancel", pointerUp);
-    }
-    attachKeyboard(window);
-    if (typeof window.addEventListener === "function") {
-      window.addEventListener("resize", () => {
-        applyViewportSize();
-        canvasEl.width = viewport.w; canvasEl.height = viewport.h;
-      });
+  const toPoint = ev => {
+    let x = ev.clientX, y = ev.clientY;
+    const rect = screenCanvas.getBoundingClientRect ? screenCanvas.getBoundingClientRect() : null;
+    if (rect && ev.relative !== true) { x -= rect.left || 0; y -= rect.top || 0; }
+    return { id: ev.pointerId ?? 0, x, y, pointerType: ev.pointerType || "touch", button: ev.button || 0, fine: ev.pointerType === "mouse" || ev.pointerType === "pen", cancel: false };
+  };
+  const captured = new Set();
+  function pointerDown(ev) {
+    gameAudio?.unlock();
+    keyboardMode = false;
+    if (ev.pointerType === "mouse" && ev.button !== 0) return;
+    const press = uiKit.pointerDown(toPoint(ev));
+    if (press) {
+      ev.preventDefault?.();
+      try { screenCanvas.setPointerCapture?.(ev.pointerId); captured.add(ev.pointerId); } catch {}
     }
   }
-  refreshHostData();
-  presentation.updateHud();
-  drawOverlay();
-  if (typeof requestAnimationFrame === "function") requestAnimationFrame(frame);
-  return api;
-}
+  function pointerMove(ev) {
+    const p = toPoint(ev);
+    const pressing = uiKit.pointerMove(p);
+    if (pressing) ev.preventDefault?.();
+    if (p.fine) updateCursor(p);
+  }
+  function pointerUp(ev, cancel = false) {
+    const p = toPoint(ev); p.cancel = cancel;
+    uiKit.pointerUp(p);
+    if (captured.has(ev.pointerId)) { captured.delete(ev.pointerId); try { screenCanvas.releasePointerCapture?.(ev.pointerId); } catch {} }
+    if (p.fine) updateCursor(p);
+  }
+  function releasePointer(id) {
+    uiKit.cancelPress(id);
+    if (captured.has(id)) { captured.delete(id); try { screenCanvas.releasePointerCapture?.(id); } catch {} }
+  }
+  function updateCursor(p) {
+    const path = uiKit.hitPath(p.x, p.y);
+    const c = path[0]?.cs?.cursor;
+    gamePlatform.setCursor(screenCanvas, !c || c === "auto" ? "default" : c);
+  }
+  function wheel(ev) {
+    const scale = ev.deltaMode === 1 ? 16 : ev.deltaMode === 2 ? view.h : 1;
+    const p = toPoint(ev);
+    if (uiKit.wheel({ x: p.x, y: p.y, dy: ev.deltaY * scale })) ev.preventDefault?.();
+  }
+  const HOME_TABS = [["shop", "homeTabShop"], ["train", "homeTabTrain"], ["battle", "homeTabBattle"], ["research", "homeTabResearch"], ["settings", "startSettingsButton"]];
+  function focusInside(layer) {
+    let n = uiKit.find(uiKit.focusedKey());
+    for (; n; n = n.parent) if (n.key === "layer-" + layer || n.key === layer) return true;
+    return false;
+  }
+  function activate(e) { return (e.code === "Tab" || e.code === "Enter" || e.code === "NumpadEnter" || e.code === "Space") && uiKit.keyDown(e); }
+  function keyDown(e) {
+    keyboardMode = true;
+    if (!e.repeat) gameAudio?.unlock();
+    const done = () => { e.preventDefault?.(); return true; };
+    if (runCtl.selectOpen) {
+      if (e.code === "Escape" || e.code === "Enter" || e.code === "Space" || e.code === "Tab") { runCtl.pauseActions.closeSelect(); return done(); }
+      if (runCtl.selectKey(e)) return done();
+      return done();
+    }
+    if (dialogCtl.settingsOpen) {
+      if (dialogCtl.settingsKey(e)) return done();
+      if (activate(e)) return done();
+      return false;
+    }
+    if (dialogCtl.gmOpen && focusInside("gmPanel")) {
+      if (e.code === "Escape") { dialogCtl.closeGM(); return done(); }
+      if (activate(e)) return done();
+      return false;
+    }
+    if (dialogCtl.helpOpen && focusInside("displayHelp") && dialogCtl.helpKey(e)) return done();
+    if (e.code === "Tab") { uiKit.keyDown(e); return done(); }
+    if (e.code === "Space" && !state.paused && !dialogCtl.settingsOpen) { done(); pulse(); return true; }
+    if ((e.code === "KeyP" || e.code === "Escape") && !e.repeat) { done(); runCtl.togglePause({ keyboard: true }); return true; }
+    const focused = uiKit.focusedKey();
+    if (focused === "inspectSelect" && runCtl.selectKey(e)) return done();
+    const tabIndex = HOME_TABS.findIndex(([, key]) => key === focused);
+    if (tabIndex >= 0 && homeCtl.isOpen) {
+      let next;
+      if (e.code === "ArrowRight") next = (tabIndex + 1) % HOME_TABS.length;
+      if (e.code === "ArrowLeft") next = (tabIndex + HOME_TABS.length - 1) % HOME_TABS.length;
+      if (e.code === "Home") next = 0;
+      if (e.code === "End") next = HOME_TABS.length - 1;
+      if (next !== undefined) { homeCtl.selectTab(HOME_TABS[next][0]); if (homeCtl.getTab() === HOME_TABS[next][0]) uiKit.focus(HOME_TABS[next][1], true); return done(); }
+    }
+    if (runCtl.keyDownSteer(e)) return done();
+    if (activate(e)) return done();
+    return false;
+  }
+  function keyUp(e) { if (runCtl.keyUpSteer(e)) e.preventDefault?.(); }
 
-const api = {
-  startRun,
-  backToMenu,
-  extractRun,
-  togglePause,
-  pauseForHidden,
-  pointerDown,
-  pointerMove,
-  pointerUp,
-  handleRegionAction,
-  get state() { return state; },
-  get regions() { return regions; },
-  get host() { return host; },
-};
+  // Tap feedback: buttons click like the page did (not switches, cards or the pulse).
+  uiKit.setTapHook(target => {
+    if (target.tapSound === false || target.role === "switch" || target.disabled) return;
+    gameAudio?.play("ui");
+  });
 
-export { startCanvasGame };
+  // -- controller wiring ---------------------------------------------------------------------------------------
 
-// Mini-game adapter contract: it installs its canvas here before requiring
-// this module, so the game boots without any document or DOM whatsoever.
-// The browser smoke page sets it on globalThis; the test sandbox sets it on
-// the window object - accept either.
-const adapterCanvas = (typeof globalThis !== "undefined" && globalThis.__endlessRailsCanvas) ||
-  (typeof window !== "undefined" && window.__endlessRailsCanvas);
-if (adapterCanvas) {
-  startCanvasGame(adapterCanvas);
-}
+  const hub = {
+    invalidate: () => uiKit.invalidate(),
+    focus: (key, visible) => uiKit.focus(key, visible === undefined ? keyboardMode : !!visible),
+    blur: () => uiKit.blur(),
+    focusedKey: () => uiKit.focusedKey(),
+    focusInside,
+    keyboardMode: () => keyboardMode,
+    viewport: () => ({ w: view.w, h: view.h }),
+    resetScroll: key => uiKit.resetScroll(key),
+    releasePointer,
+    openHome: () => homeCtl.open(),
+    closeHome: () => { homeCtl.isOpen = false; uiKit.invalidate(); },
+    displayChanged: () => { updateEnv(); },
+    measurePause,
+    home: { refresh: () => homeCtl.refresh() },
+    run: runCtl,
+    dialogs: {
+      settingsOpen: () => dialogCtl.settingsOpen, gmOpen: () => dialogCtl.gmOpen, displayHelpOpen: () => dialogCtl.helpOpen,
+      closeGM: () => dialogCtl.closeGM(), toggleGM: () => dialogCtl.toggleGM(), resetGM: () => dialogCtl.resetGM(),
+      display: () => dialogCtl.display(), toggleFullscreen: () => dialogCtl.toggleFullscreen(), installGame: () => dialogCtl.installGame(),
+      openSettings: e => dialogCtl.openSettings(e),
+    },
+  };
+  // Lays out one pause page off-screen and reports the data bay's client
+  // height and the stats list's content height (the DOM scrollHeight check).
+  function measurePause(model) {
+    const d = dialogCtl.display();
+    const tree = layerRoot("pauseProbe", pauseScreen.build({ ...model, fullscreen: d.pause, installHidden: d.installHidden, on: runCtl.pauseActions }), false);
+    uiLayout.layoutRoot(tree, uiKit.env);
+    const find = (n, key) => { if (n.key === key) return n; for (const k of n.kids || []) { const f = find(k, key); if (f) return f; } return null; };
+    const vp = find(tree, "inspectViewport"), stats = find(tree, "inspectStats");
+    if (!vp || !stats) return { viewportH: 0, statsH: 0 };
+    let bottom = stats.h - stats.bb;
+    for (const k of stats.kids || []) if (k.cs && k.cs.display !== "none") bottom = Math.max(bottom, k.y + k.h + (+k.mb || 0) + (+stats.pb || 0));
+    return { viewportH: vp.h - vp.bt - vp.bb, statsH: bottom - stats.bt };
+  }
+  homeCtl.attach({
+    invalidate: () => uiKit.invalidate(),
+    resetScroll: key => uiKit.resetScroll(key),
+    scrollIntoView: (container, target) => uiKit.scrollIntoView(container, target),
+    afterRender: fn => { afterRender.push(fn); uiKit.invalidate(); },
+    startRun: plan => beginRun(plan),
+    cloudBlocksStart: () => dialogCtl.cloud.enabled && !dialogCtl.cloud.canStart(),
+    openCloud: () => dialogCtl.cloud.open(),
+    openCloudFromButton: () => dialogCtl.cloud.openFromButton(),
+    art: () => artState(),
+    retryArt: () => retryArt(),
+    settingsModel: () => {
+      const s = dialogCtl.soundState(), d = dialogCtl.display();
+      return { music: s.music, sfx: s.sfx, disabled: s.disabled, note: s.note, fullscreen: d.start, installHidden: d.installHidden, cloudVisible: dialogCtl.cloud.enabled, version: GAME_VERSION };
+    },
+    refreshSound: () => uiKit.invalidate(),
+    toggleSound: key => dialogCtl.toggleSound(key),
+    toggleFullscreen: () => dialogCtl.toggleFullscreen(),
+    installGame: () => dialogCtl.installGame(),
+  });
+  runCtl.attach(hub);
+  dialogCtl.attach(hub);
+  onArtChange(() => uiKit.invalidate());
+
+  // -- page events (browser) -------------------------------------------------------------------------------------
+
+  const win = gamePlatform.win, doc = gamePlatform.doc;
+  if (screenCanvas.addEventListener) {
+    screenCanvas.addEventListener("pointerdown", pointerDown);
+    screenCanvas.addEventListener("pointermove", pointerMove);
+    screenCanvas.addEventListener("pointerup", e => pointerUp(e));
+    screenCanvas.addEventListener("pointercancel", e => pointerUp(e, true));
+    screenCanvas.addEventListener("lostpointercapture", e => { if (captured.has(e.pointerId)) { captured.delete(e.pointerId); uiKit.pointerUp({ ...toPoint(e), cancel: true }); } });
+    screenCanvas.addEventListener("pointerleave", e => { if (e.pointerType === "mouse") uiKit.pointerLeave(); });
+    screenCanvas.addEventListener("wheel", wheel, { passive: false });
+    for (const type of ["contextmenu", "dragstart", "selectstart"]) screenCanvas.addEventListener(type, e => e.preventDefault());
+  }
+  if (win) {
+    win.addEventListener("keydown", keyDown);
+    win.addEventListener("keyup", keyUp);
+    win.addEventListener("blur", () => runCtl.autoPause());
+    win.addEventListener("pagehide", () => gameAudio?.setHidden(true));
+    win.addEventListener("pageshow", () => gameAudio?.setHidden(!!doc?.hidden));
+  }
+  if (doc) doc.addEventListener("visibilitychange", () => { gameAudio?.setHidden(!!doc.hidden); if (doc.hidden) runCtl.autoPause(); });
+  gamePlatform.onDisplayChange(() => { runCtl.resetJoystick(); updateEnv(); });
+
+  // -- boot ---------------------------------------------------------------------------------------------------------
+
+  updateEnv();
+  dialogCtl.updateDisplay();
+  runCtl.updateHud();
+  homeCtl.open("battle");
+  requestFrame();
+
+  // -- bridges: tests, QA page, mini-game adapter ------------------------------------------------------------------
+
+  function render() { fullRedraw = true; renderInterface(); }
+  function tap(key) { render(); const ok = uiKit.tapKey(key); render(); return ok; }
+  function node(key) { return uiKit.find(key); }
+  function text(key) { return uiKit.textOf(uiKit.find(key)); }
+  const bridge = {
+    get state() { return state; },
+    render, tap, node, text, boxes: () => uiKit.boxes(), layers: () => uiKit.layers.map(l => l.key),
+    // Painted boxes of one screen's subtree by former DOM path (layout regression checks).
+    refBoxes: rootKey => {
+      const out = [], root = uiKit.find(rootKey) || (rootKey === "app" ? uiKit.find("appOver") : null);
+      const walk = n => {
+        if (!n.cs || n.cs.display === "none") return;
+        if (n.w == null || n.absX == null) { if (n.ref != null) out.push({ ref: n.ref, tag: n.tag || "", inline: true }); for (const k of n.kids || []) walk(k); return; }
+        if (n.ref != null) out.push({ ref: n.ref, tag: n.tag || "", x: n.boxX ?? n.absX, y: n.boxY ?? n.absY, w: n.w, h: n.h });
+        for (const k of n.kids || []) walk(k);
+      };
+      if (root) walk(root);
+      return out;
+    },
+    pointerDown, pointerMove, pointerUp: ev => pointerUp(ev, false), pointerCancel: ev => pointerUp(ev, true), wheel,
+    keyDown, keyUp, pauseForHidden: () => runCtl.autoPause(),
+    resize: () => { updateEnv(); dialogCtl.updateDisplay(); },
+    kit: uiKit, home: homeCtl, run: runCtl, dialogs: dialogCtl, presentation,
+    battlefield, version: GAME_VERSION, stats,
+  };
+  G.EndlessRailsCanvasHost = bridge;
+  G.EndlessRailsGame = {
+    startRun: beginRun, extractRun: () => runCtl.extractRun(), getState: () => state,
+    reloadSave: () => { if (["menu", "result"].includes(state.mode)) { state.metaProfile = longterm.loadMeta(metaStorage); state.record = runRecord.loadRecord(metaStorage); } },
+  };
+  G.EndlessRailsMetaUI = { open: tab => homeCtl.open(tab), close: () => homeCtl.close(), start: () => homeCtl.start(), refresh: () => homeCtl.refresh(), render: () => homeCtl.render(), selectTab: name => homeCtl.selectTab(name), getTab: () => homeCtl.getTab() };
+  G.EndlessRailsSettings = { refresh: () => uiKit.invalidate() };
+  // QA surface: qa.js inspects the live game through the iframe window.
+  Object.assign(G, { update, draw, beginRoute, updateHud: runCtl.updateHud, openLevelUp: runCtl.openLevelUp, chooseLevelUp: runCtl.chooseLevelUp, arriveStation: runCtl.arriveStation, extractRun: () => runCtl.extractRun(), syncSwarm, cameraView });
+  return bridge;
+})();
+
+export { canvasHost };

@@ -78,20 +78,20 @@ purple.run('purpleDischarge(orb,.35)');near(purple.run('state.bondStats.purple.d
 purple.run('orb.x=11;orb.vx=-270;updateShots(.02)');assert.ok(purple.run('orb.vx')>0,'purple reflects like the original ricochet');
 
 const gm=setup({});
-gm.elements.gmToggle.events.click();assert.equal(gm.run('state.paused'),true);
-gm.run('setGMDroneLevel("gun",5);setGMDroneLevel("piercing",5);renderGMBonds();');
-assert.equal(gm.run('state.modules.rapid'),4);assert.match(gm.elements.gmBonds.innerHTML,/蓝色穿透 · Lv.1/);
-gm.run('setGMDroneLevel("gun",6)');assert.equal(gm.run('effects.activeBonds(state.modules)[0].level'),2);
-gm.run('setGMDroneLevel("gun",0)');assert.equal(gm.run('effects.activeBonds(state.modules).length'),0);
+gm.run('homeCtl.isOpen=false;state.mode="combat";state.paused=false;');gm.ui.tap('gmToggle');assert.equal(gm.run('state.paused'),true);assert.equal(gm.ui.visible('gmPanel'),true);
+gm.sandbox.prompt=()=>'5';gm.ui.tap('gmInput-drone-gun');gm.ui.tap('gmInput-drone-piercing');
+assert.equal(gm.run('state.modules.rapid'),4);assert.match(gm.ui.text('gmBonds'),/蓝色穿透 · Lv.1/);assert.equal(gm.ui.text('gmInput-drone-gun'),'5','the field shows the applied level');
+gm.sandbox.prompt=()=>'6';gm.ui.tap('gmInput-drone-gun');assert.equal(gm.run('effects.activeBonds(state.modules)[0].level'),2);
+gm.sandbox.prompt=()=>'0';gm.ui.tap('gmInput-drone-gun');assert.equal(gm.run('effects.activeBonds(state.modules).length'),0);
 assert.equal(gm.run('state.swarm.some(d=>d.id==="gun")'),false);
-gm.run('setGMDroneLevel("gun",10)');assert.equal(gm.run('state.swarm.find(d=>d.id==="gun").level'),10);
-gm.run('state.shots=[{owner:"gun",breakthrough:true}];setGMDroneLevel("gun",9)');assert.equal(gm.run('state.shots.length'),0,'GM removes stale upgraded shots');
-gm.elements.gmClose.events.click();assert.equal(gm.run('state.paused'),false);
-gm.run('state.paused=true;openGM();closeGM()');assert.equal(gm.run('state.paused'),true,'GM preserves prior pause');
+gm.sandbox.prompt=()=>'10';gm.ui.tap('gmInput-drone-gun');assert.equal(gm.run('state.swarm.find(d=>d.id==="gun").level'),10);
+gm.run('state.shots=[{owner:"gun",breakthrough:true}]');gm.sandbox.prompt=()=>'9';gm.ui.tap('gmInput-drone-gun');assert.equal(gm.run('state.shots.length'),0,'GM removes stale upgraded shots');
+gm.ui.tap('gmClose');assert.equal(gm.run('state.paused'),false);
+gm.run('state.paused=true;dialogCtl.openGM();dialogCtl.closeGM()');assert.equal(gm.run('state.paused'),true,'GM preserves prior pause');
 
-all.run('renderDamageSummary();inspector.id="command";inspector.tab="weapon";renderPause()');
-for(const name of ['红色灼杀','蓝色穿透','紫色共振'])assert.ok(all.elements.resultBondDamage.innerHTML.includes(name));
-assert.ok(!all.elements.resultDroneDamage.innerHTML.includes('技能'),'no phantom zero skill rows for specialists');
+all.run('homeCtl.isOpen=false;presentation.renderResult(settleFinish(false));runCtl.renderPause()');
+for(const name of ['红色灼杀','蓝色穿透','紫色共振'])assert.ok(all.ui.text('resultBondDamage').includes(name));
+assert.ok(!all.ui.text('resultDroneDamage').includes('技能'),'no phantom zero skill rows for specialists');
 const summary=record.buildRunSummary({bondStats:{red:{damage:5}}});assert.equal(summary.damageByBond.red.damage,5);
 all.run('beginRun()');assert.equal(all.run('Object.keys(state.bondStats).length'),0);
 console.log('Bonds: thresholds, levels, command-only casting, coexistence, real damage/boss/DoT attribution, GM and records passed.');

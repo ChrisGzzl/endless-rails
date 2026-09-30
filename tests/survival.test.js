@@ -42,7 +42,7 @@ assert.equal(run('state.mode'),"station");
 assert.equal(run('state.docking.offset'),0);
 assert.equal(run('state.enemies.length'),0);
 assert.equal(run('state.trainHp'),75,"station safely repairs the train");
-run('state.selectedUpgrade=stationUpgradePool.find(u=>u.id==="armor");continueRun();beginRoute(routeEvents.ROUTE_EVENTS[2]);');
+run('state.selectedUpgrade=stationUpgradePool.find(u=>u.id==="armor");runCtl.continueRun();beginRoute(routeEvents.ROUTE_EVENTS[2]);');
 assert.equal(run('state.station'),2,"zero scrap never blocks a free upgrade");
 assert.equal(run('state.maxTrainHp'),135);
 assert.equal(run('state.docking'),null);

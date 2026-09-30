@@ -67,42 +67,40 @@ function presetAccount() {
 {
   const storage = memoryStorage();
   meta.saveMeta(storage, presetAccount());
-  const g = createGame({ storage }), e = g.elements;
-  e.homeTabTrain.events.click();
-  e.talentPresetBar.children[1].children[0].events.click();  // load preset B
-  assert.equal(e.talentApply.disabled, false, 'a preset with another lineup is a pending change');
-  e.talentApply.events.click();
+  const g = createGame({ storage }), { ui } = g;
+  ui.tap('homeTabTrain'); ui.tap('trainWorkshopOpen');
+  ui.tap('presetLoad1');  // load preset B
+  assert.equal(ui.disabled('talentApply'), false, 'a preset with another lineup is a pending change');
+  ui.tap('talentApply');
   const saved = meta.loadMeta(storage);
   assert.deepEqual(saved.loadout, ['hangar', 'storage'], 'applying a preset equips its saved cars');
   assert.equal(saved.freeRefits, 3, 'a lineup-only change is free');
 
   // A withdrawal consumes a free refit and the page says so after applying.
-  const h1 = e.talentNodeList.children;  // hull branch rows
-  h1[0].children[1].children[2].events.click();
-  e.talentApply.events.click();
-  h1[0].children[1].children[0].events.click();
-  e.talentApply.events.click();
+  ui.tap('branch-hull');
+  ui.tap('plus-H1');
+  ui.tap('talentApply');
+  ui.tap('minus-H1');
+  ui.tap('talentApply');
   assert.equal(meta.loadMeta(storage).freeRefits, 2);
-  assert.match(e.talentProblems.textContent, /已消耗 1 次免费重构/, 'the refit confirmation stays visible');
-  assert.equal(e.talentProblems.hidden, false);
+  assert.match(ui.text('talentProblems'), /已消耗 1 次免费重构/, 'the refit confirmation stays visible');
+  assert.equal(ui.visible('talentProblems'), true);
 }
 
-// -- presets restore their lineup (canvas) ----------------------------------------
+// -- direct lineup edits stay in the draft until applied --------------------------
 {
   const storage = memoryStorage();
   meta.saveMeta(storage, presetAccount());
-  const g = createGame({ storage, entry: 'canvas.html' });
-  const host = g.run('window.EndlessRailsCanvasHost');
-  host.handleRegionAction({ presetLoad: 1 });
-  assert.equal(host.host.talentSummary.canApply, true);
-  host.handleRegionAction({ talentApply: true });
-  assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'storage'], 'canvas apply commits the preset lineup');
-  // Direct lineup edits now stay in the draft until the player applies them.
-  host.handleRegionAction({ toggleCar: 'pointDefense' });
-  host.handleRegionAction({ toggleCar: 'storage' });
-  assert.deepEqual(Array.from(host.host.talent.loadout), ['hangar', 'pointDefense']);
+  const g = createGame({ storage }), { ui, json } = g;
+  ui.tap('homeTabTrain'); ui.tap('trainWorkshopOpen');
+  ui.tap('presetLoad1');
+  ui.tap('talentApply');
+  assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'storage'], 'apply commits the preset lineup');
+  ui.tap('car-pointDefense');
+  ui.tap('car-storage');
+  assert.deepEqual(json('homeCtl.model().workshop.cars.filter(c => c.active).map(c => c.id)'), ['pointDefense']);
   assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'storage']);
-  host.handleRegionAction({ talentApply: true });
+  ui.tap('talentApply');
   assert.deepEqual(meta.loadMeta(storage).loadout, ['hangar', 'pointDefense']);
 }
 
@@ -110,18 +108,19 @@ function presetAccount() {
 {
   const storage = memoryStorage();
   meta.saveMeta(storage, meta.emptyMeta());
-  const g = createGame({ storage }), e = g.elements;
-  g.run('beginRun();state.mode="station";');
-  e.stationScreen.hidden = false;
+  const g = createGame({ storage }), { ui } = g;
+  g.run('beginRun();Object.assign(runCtl.screens,{contract:null,route:null});state.mode="combat";state.pendingLevelUps=0;arriveStation();');
+  assert.equal(ui.visible('stationScreen'), true);
   storage.failMeta = true;
-  g.run('window.EndlessRailsGame.extractRun()');
+  ui.tap('extractButton');
   assert.equal(g.run('state.mode'), 'station');
-  assert.equal(e.stationScreen.hidden, false, 'the player can still retry from the station');
+  assert.equal(ui.visible('stationScreen'), true, 'the player can still retry from the station');
   storage.failMeta = false;
-  g.run('state.settlementRetryAt=0;window.EndlessRailsGame.extractRun()');
+  g.run('state.settlementRetryAt=0;');
+  ui.tap('extractButton');
   assert.equal(g.run('state.mode'), 'result');
-  assert.equal(e.stationScreen.hidden, true);
-  assert.equal(e.resultScreen.hidden, false);
+  assert.equal(ui.visible('stationScreen'), false);
+  assert.equal(ui.visible('resultScreen'), true);
   assert.equal(meta.loadMeta(storage).totals.extracts, 1);
 }
 

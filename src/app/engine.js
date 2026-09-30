@@ -193,8 +193,10 @@ function frameStep(now) {
   if (!state.paused && (["combat", "docking"].includes(state.mode) || lastDrawMode !== state.mode)) { draw(); lastDrawMode = state.mode; }
 }
 
-function resizeBattlefield() {
-  const box = canvas.getBoundingClientRect(); if (!box.width || !box.height) return;
+// box: the battlefield's CSS-pixel size on screen, supplied by the host from
+// its layout (the canvas UI knows where the arena sits; no DOM query needed).
+function resizeBattlefield(box) {
+  if (!box || !box.width || !box.height) return;
   const scale = 390 / Math.min(box.width, box.height), nextWidth = Math.round(box.width * scale), nextHeight = Math.round(box.height * scale);
   if (nextHeight === H && nextWidth === W) return;
   const dx = (nextWidth - W) / 2, dy = (nextHeight - H) / 2;

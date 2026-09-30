@@ -38,7 +38,7 @@ assert.equal(effects.autonomousGoal(center,{...cutter,x:0,y:0},{x:40,y:10},0,390
 // One mass kill cannot create unbounded particles, text or combo layout restarts.
 run(`state.enemies=Array.from({length:166},(_,i)=>({x:50+i%20*10,y:100,r:9,hp:1,delay:0}));
 state.modules={};state.particles=[];state.texts=[];state.visualTime=10;state.comboFxAt=-1;
-let comboRestarts=0;ui.combo.classList.remove=()=>comboRestarts++;
+let comboRestarts=0;const comboShow=presentation.combo;presentation.combo=text=>{comboRestarts++;comboShow(text);};
 for(const e of state.enemies)killEnemy(e);`);
 assert.ok(run('state.particles.length')<=420);
 assert.ok(run('state.texts.length')<=24);

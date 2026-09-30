@@ -1,5 +1,12 @@
 "use strict";
-module.exports = function createGame({context,window:windowOverrides={},storage,entry="index.html",omitDocument=false} = {}) {
+// Headless game harness. The game is a canvas-only page: index.html hands a
+// canvas to the host and loads one ES module entry. This harness does the
+// same with a fake canvas (a no-op 2D context with deterministic text
+// metrics) inside a vm sandbox, evaluating the real module graph parsed from
+// index.html. Tests drive the interface through the host bridge exactly as
+// input would: taps land on laid-out nodes by key, pointers and keys go
+// through the same handlers the page registers.
+module.exports = function createGame({ context, window: windowOverrides = {}, storage, viewport = { w: 390, h: 844 }, fine = false, platform = {}, sources = {} } = {}) {
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -7,73 +14,69 @@ const path = require("node:path");
 const vm = require("node:vm");
 const projectRoot = path.resolve(__dirname, "..");
 
-const ids = [
-  "gameCanvas", "stationValue", "scrapValue", "healthText", "healthFill", "timerValue", "phaseLabel",
-  "droneLevel", "pulseButton", "pulseCooldown", "objectiveText", "comboText", "toast", "touchHint",
-  "startScreen", "stationScreen", "stationTitle", "upgradeList", "continueButton", "resultScreen",
-  "bossWrap", "bossText", "bossFill", "trainLengthLabel", "miniTrain", "startButton", "restartButton",
-  "routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen", "levelUpList",
-  "pauseButton", "commandRing", "eventScreen", "eventList", "contractScreen", "contractList", "rerollButton", "resultBuild", "resultRecord", "joystickBase", "joystickThumb", "moveSpeedValue",
-];
+// -- fake canvas -------------------------------------------------------------------------
 
-function createElement(id) {
-  return {
-    id,
-    hidden: false,
-    disabled: false,
-    style: {},
-    textContent: "",
-    get innerHTML() { return this._html || ""; },
-    set innerHTML(value) { this._html = value; this.children = []; },
-    children: [],
-    dataset: {},
-    events: {},
-    classList: { add() {}, remove() {}, toggle() {} },
-    addEventListener(type, handler) { this.events[type] = handler; },
-    setAttribute(name,value) { this[name]=String(value); },
-    getAttribute(name) { return this[name]; },
-    focus() { sandbox.document.activeElement=this; },
-    querySelectorAll() { return []; },
-    querySelector(selector) { return (this.queries ||= {})[selector] ||= createElement(selector); },
-    append(...nodes) { this.children.push(...nodes); },
-    setPointerCapture(pointerId) { this.capturedPointer = pointerId; },
-    hasPointerCapture(pointerId) { return this.capturedPointer === pointerId; },
-    releasePointerCapture() { this.capturedPointer = null; },
-    getBoundingClientRect() { return { left: 0, top: 0, width: 390, height: 680 }; },
-    getContext() {
-      if(context)return context;
-      return new Proxy({}, { get: (target, property) => {
-        if(property in target)return target[property];
-        if (property === "createLinearGradient" || property === "createRadialGradient") return () => ({ addColorStop() {} });
-      if (property === "measureText") return () => ({ width: 0 });
-        return () => {};
-      } });
+const CJK = /[⺀-鿿豈-﫿︰-﹏＀-￯]/;
+function fontSize(font) { const m = /(\d+(?:\.\d+)?)px/.exec(font || ""); return m ? parseFloat(m[1]) : 10; }
+function createContext(canvas, custom) {
+  const target = {
+    canvas, font: "10px sans-serif", filter: "none", globalAlpha: 1, letterSpacing: "0px",
+    measureText(text) {
+      const size = fontSize(this.font);
+      let width = 0;
+      for (const ch of String(text)) width += CJK.test(ch) ? size : size * 0.55;
+      return { width, fontBoundingBoxAscent: Math.round(size * 0.8), fontBoundingBoxDescent: Math.round(size * 0.2), actualBoundingBoxAscent: size * 0.7, actualBoundingBoxDescent: size * 0.1 };
     },
+    getTransform() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }; },
+    createLinearGradient() { return { addColorStop() {} }; },
+    createRadialGradient() { return { addColorStop() {} }; },
+    createPattern() { return {}; },
+    getImageData() { return { data: new Uint8ClampedArray(4) }; },
   };
+  return custom || new Proxy(target, { get: (t, p) => (p in t ? t[p] : () => {}), set: (t, p, v) => { t[p] = v; return true; } });
+}
+function createCanvas(width = 300, height = 150, custom = null) {
+  const listeners = {};
+  const canvas = {
+    width, height, style: {},
+    getContext() { return this._ctx || (this._ctx = createContext(canvas, custom)); },
+    getBoundingClientRect() { return { left: 0, top: 0, x: 0, y: 0, width: viewport.w, height: viewport.h }; },
+    addEventListener(type, handler) { (listeners[type] ||= []).push(handler); },
+    setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
+    listeners,
+  };
+  return canvas;
 }
 
-const elements = Object.fromEntries([...fs.readFileSync(path.join(__dirname, "..", entry),'utf8').matchAll(/id="([^"]+)"/g)].map(match => [match[1], createElement(match[1])]));
-Object.assign(elements.gameCanvas, { width: 390, height: 680 });
+// -- sandbox -----------------------------------------------------------------------------
+
+const screenCanvas = createCanvas(viewport.w, viewport.h);
+let battlefieldPending = true;
 let scheduledFrames = 0;
 const windowEvents = {};
 const sandbox = {
   localStorage: storage,
-  window: { ...windowOverrides, addEventListener(type, handler) { (windowEvents[type] ||= []).push(handler); } },
   performance: { now: () => 0 },
-  requestAnimationFrame(callback) {
-    sandbox.nextFrame = callback;
-    scheduledFrames++;
-  },
+  requestAnimationFrame(callback) { sandbox.nextFrame = callback; scheduledFrames++; },
   console,
+  setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {},
+  innerWidth: viewport.w, innerHeight: viewport.h, devicePixelRatio: 1,
+  addEventListener(type, handler) { (windowEvents[type] ||= []).push(handler); },
+  __endlessRailsCanvas: screenCanvas,
+  __endlessRailsPlatform: {
+    // the first offscreen canvas is the battlefield surface: a test's custom
+    // context (drawing assertions) belongs there, the interface keeps the fake
+    createCanvas: (w, h) => { const c = createCanvas(w, h, battlefieldPending ? context : null); battlefieldPending = false; return c; },
+    createImage: () => ({}),
+    viewport: () => ({ w: viewport.w, h: viewport.h, dpr: 1, safe: { top: 0, right: 0, bottom: 0, left: 0 } }),
+    pointerFine: fine, hover: fine, overlayScrollbars: true,
+    ...platform,
+  },
+  ...windowOverrides,
 };
-if (!omitDocument) sandbox.document = { getElementById: id => elements[id], createElement: tag => createElement(tag) };
-if (entry !== "index.html") {
-  // Canvas-only boots receive the surface through the adapter contract instead
-  // of querying the document; hand them the fake canvas the same way.
-  sandbox.window.__endlessRailsCanvas = elements.gameCanvas;
-}
-
 vm.createContext(sandbox);
+sandbox.window = sandbox;
+sandbox.globalThis = sandbox;
 
 // The runtime is a native ES module graph rooted at the single module entry in
 // index.html. Parse that graph from the real sources, validate every named
@@ -81,9 +84,9 @@ vm.createContext(sandbox);
 // (the browser's own order), and execute each module's source with import /
 // export syntax stripped. What the tests exercise is therefore the real page's
 // module set, graph order and cross-module wiring, not a hand-maintained list.
-const html = fs.readFileSync(path.join(__dirname, "..", entry), "utf8");
+const html = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const entries = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(match => match[1].split("?")[0]);
-assert.equal(entries.length, 1, entry + " must declare exactly one module entry");
+assert.equal(entries.length, 1, "index.html must declare exactly one module entry");
 const entryFile = path.resolve(projectRoot, entries[0]);
 
 function parseModule(file) {
@@ -107,29 +110,31 @@ function parseModule(file) {
 
 const modules = new Map();
 const order = [];
-function visit(file, from) {
+function visit(file) {
   if (modules.has(file)) return;
   const mod = parseModule(file);
   modules.set(file, mod);
   for (const decl of mod.imports) {
     assert.ok(decl.specifier.startsWith("."), "only relative imports are supported: " + file);
     const target = path.resolve(path.dirname(file), decl.specifier);
-    visit(target, file);
-    if (decl.names.length) {
-      const targetExports = modules.get(target).exports;
-      for (const { name } of decl.names) {
-        assert.ok(targetExports.has(name), `${path.relative(projectRoot, file)} imports "${name}" but ${path.relative(projectRoot, target)} does not export it`);
-      }
+    visit(target);
+    for (const { name, alias } of decl.names) {
+      assert.equal(alias, name, `${path.relative(projectRoot, file)} must not alias imports (the shared-scope bundle cannot rename)`);
+      assert.ok(modules.get(target).exports.has(name), `${path.relative(projectRoot, file)} imports "${name}" but ${path.relative(projectRoot, target)} does not export it`);
     }
   }
   order.push(mod);
 }
-visit(entryFile, null);
-const expected = ["src/main.js", "src/app/game.js", "src/view/atlas.js", "src/view/render.js", "src/app/meta-ui.js", "src/app/armory.js", "src/app/display.js", "src/app/settings.js", "src/app/cloud-ui.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/balance.js", "src/core/motion.js", "src/core/progression.js", "src/core/combat-effects.js", "src/core/control.js", "src/core/route-events.js", "src/core/run-record.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"];
-if (entry === "index.html") for (const rel of expected) assert.ok(modules.has(path.resolve(projectRoot, rel)), "module graph must include " + rel);
+visit(entryFile);
+for (const rel of ["src/main.js", "src/app/canvas-host.js", "src/app/engine.js", "src/app/ui-home.js", "src/app/ui-run.js", "src/app/ui-dialogs.js", "src/app/platform.js", "src/view/ui/kit.js", "src/view/screens/sheet.js", "src/meta/longterm.js", "src/core/audio.js", "src/core/cloud-sync.js", "src/core/cloud-config.js"]) {
+  assert.ok(modules.has(path.resolve(projectRoot, rel)), "module graph must include " + rel);
+}
 
+// `sources` replaces a module's text by project-relative path, the way the
+// test-save dev server hands out an enabled copy of src/core/cloud-config.js.
 for (const mod of order) {
-  const stripped = mod.src
+  const override = sources[path.relative(projectRoot, mod.file).replace(/\\/g, "/")];
+  const stripped = (override ?? mod.src)
     .replace(/^import\s*["'][^"']+["']\s*;.*$/gm, "")
     .replace(/^import\s*\{[^}]*\}\s*from\s*["'][^"']+["']\s*;.*$/gm, "")
     .replace(/^export\s*\{[^}]*\}\s*;.*$/gm, "")
@@ -137,6 +142,58 @@ for (const mod of order) {
   vm.runInContext(stripped, sandbox, { filename: path.relative(projectRoot, mod.file) });
 }
 
+const run = (code, timeout = 3000) => vm.runInContext(code, sandbox, { timeout });
+const host = () => sandbox.EndlessRailsCanvasHost;
 
-return { sandbox, elements, windowEvents, get scheduledFrames() { return scheduledFrames; }, run: (code, timeout = 3000) => vm.runInContext(code, sandbox, { timeout }) };
+// -- interface helpers -----------------------------------------------------------------------
+
+const ui = {
+  host,
+  render() { host().render(); },
+  node(key) { host().render(); return host().node(key); },
+  // Laid out, displayed and not visibility-hidden (like an unhidden element).
+  visible(key) { const n = ui.node(key); return !!n && n.cs.display !== "none" && n.cs.visibility !== "hidden" && n.w > 0 && n.h > 0; },
+  text(key) { host().render(); return host().text(key); },
+  disabled(key) { const n = ui.node(key); assert.ok(n, "node " + key + " must be on screen"); return !!n.disabled; },
+  // Taps like a finger: through hit-testing at the node's centre.
+  tap(key, pointerId = 90) {
+    let n = ui.node(key);
+    assert.ok(n, "node " + key + " must be on screen to tap");
+    const centre = n => [(n.boxX ?? n.absX) + n.w / 2, (n.boxY ?? n.absY) + n.h / 2];
+    const reachable = n => host().kit.hitPath(...centre(n)).includes(n);
+    if (!reachable(n)) {
+      // scroll it into view first, like a player would
+      for (let p = n.parent; p; p = p.parent) if (p.scrollH != null && p.scrollMax > 0) { host().kit.scrollIntoView(p.key, key); break; }
+      n = ui.node(key);
+    }
+    assert.ok(reachable(n), "node " + key + " must be reachable by a tap");
+    const [x, y] = centre(n);
+    const ev = { pointerId, clientX: x, clientY: y, pointerType: "touch", button: 0, preventDefault() {} };
+    host().pointerDown(ev); host().pointerUp(ev);
+    host().render();
+  },
+  pointer(type, pointerId, clientX, clientY) {
+    const ev = { pointerId, clientX, clientY, pointerType: "touch", button: 0, preventDefault() {} };
+    const h = host();
+    if (type === "down") h.pointerDown(ev); else if (type === "move") h.pointerMove(ev); else if (type === "up") h.pointerUp(ev); else h.pointerCancel(ev);
+  },
+  key(type, code, extra = {}) {
+    host().render();
+    for (const handler of windowEvents[type] || []) handler({ code, repeat: false, shiftKey: false, preventDefault() {}, ...extra });
+  },
+  keys(prefix) { host().render(); return host().boxes().map(b => b.key).filter(k => typeof k === "string" && k.startsWith(prefix)); },
+  layers() { host().render(); return host().layers(); },
+};
+
+// Resize the fake viewport and deliver the resize to the page like a browser would.
+function setViewport(w, h) {
+  viewport.w = w; viewport.h = h; sandbox.innerWidth = w; sandbox.innerHeight = h;
+  for (const handler of windowEvents.resize || []) handler({});
+  host().render();
+}
+
+// Plain data out of the sandbox (vm objects fail deepStrictEqual on prototypes).
+const json = code => JSON.parse(run(`JSON.stringify(${code})`));
+
+return { sandbox, windowEvents, canvas: screenCanvas, createCanvas, ui, setViewport, get scheduledFrames() { return scheduledFrames; }, run, json };
 };

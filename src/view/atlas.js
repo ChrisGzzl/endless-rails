@@ -2,6 +2,12 @@
 
 
 const gameArt={atlas:null,ground:null,regionGround:null,hover:null,vfx:null,combatVfx:null,bond:null,breakthrough:null,evolvedVfx:null};
+const artStatus={startDisabled:false,statusHidden:true,statusText:"",retryHidden:true};
+const artListeners=new Set();
+let artRetry=()=>{};
+function artState(){return {...artStatus};}
+function retryArt(){artRetry();}
+function onArtChange(fn){artListeners.add(fn);}
 if(typeof Image!=="undefined"){
   const assets=[
     {key:"hover",path:"assets/hover-drones-v2-mobile.webp",name:"无人机"},
@@ -17,21 +23,19 @@ if(typeof Image!=="undefined"){
   const standaloneArt=(typeof window!=="undefined"&&window.matchMedia?.("(display-mode: standalone)").matches)||
     (typeof navigator!=="undefined"&&navigator.standalone===true);
   const artObjectUrls=[];
-  // Art status wiring is optional: DOM-free hosts (canvas-only boot, mini-game)
-  // load the same assets without a start button or status line to update.
-  const start=typeof document!=="undefined"?document.getElementById("startButton"):null,
-    status=typeof document!=="undefined"?document.getElementById("artStatus"):null,
-    retry=typeof document!=="undefined"?document.getElementById("retryArtButton"):null;
+  // Art status for the start screen: the canvas home reads artState() and
+  // re-renders on onArtChange; DOM-free hosts simply never subscribe.
   function updateArtStatus(){
-    if(!start||!status||!retry)return;
     const ready=assets.filter(asset=>gameArt[asset.key]).length;
     const failed=assets.filter(asset=>asset.failed);
     const required=assets.filter(asset=>!optionalKeys.has(asset.key));
-    start.disabled=required.some(asset=>!gameArt[asset.key]);
-    status.hidden=required.every(asset=>gameArt[asset.key])&&failed.length===0;
-    status.textContent=failed.length?`${failed.map(asset=>asset.name).join("、")}素材加载失败，请重试。`:`正在加载美术素材 ${ready} / ${assets.length}…`;
-    retry.hidden=failed.length===0;
+    artStatus.startDisabled=required.some(asset=>!gameArt[asset.key]);
+    artStatus.statusHidden=required.every(asset=>gameArt[asset.key])&&failed.length===0;
+    artStatus.statusText=failed.length?`${failed.map(asset=>asset.name).join("、")}素材加载失败，请重试。`:`正在加载美术素材 ${ready} / ${assets.length}…`;
+    artStatus.retryHidden=failed.length===0;
+    for(const fn of artListeners)fn();
   }
+  artRetry=()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);};
   function loadArt(asset,attempt=0){
     asset.failed=false;
     updateArtStatus();
@@ -61,7 +65,6 @@ if(typeof Image!=="undefined"){
     }else picture.src=requestUrl;
   }
   if(typeof window!=="undefined")window.addEventListener?.("pagehide",()=>{for(const url of artObjectUrls)URL.revokeObjectURL?.(url);});
-  if(start&&status&&retry)retry.addEventListener("click",()=>{for(const asset of assets)if(asset.failed)loadArt(asset,1);});
   for(const asset of assets)loadArt(asset);
 }
 // Other regions fetch their ground only after selection; the original desert remains
@@ -132,4 +135,4 @@ function paintCombatVfx(row,phase,x,y,width,height=width,opacity=1,angle=0,loop=
 }
 import { ctx } from "./surface.js";
 
-export { gameArt, spriteCells, paintSprite, paintAttack, paintWeaponVfx, paintCombatVfx, setRegionGround, heroArtFor };
+export { gameArt, artState, retryArt, onArtChange, spriteCells, paintSprite, paintAttack, paintWeaponVfx, paintCombatVfx, setRegionGround, heroArtFor };

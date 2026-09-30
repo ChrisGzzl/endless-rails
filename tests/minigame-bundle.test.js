@@ -1,87 +1,75 @@
 "use strict";
-// Builds the mini-game bundle and executes it inside a simulated mini-game
-// runtime (GameGlobal + wx + canvas, no document, no window, no Image).
-// Guards the whole platform path: if the canvas module graph ever grows a
-// browser-only dependency or the packer drops a module, this test fails.
+// Mini-game smoke test: build the single-file bundle from src/main.js, run the
+// real minigame/game.js adapter against a fake `wx` runtime (no document, no
+// Image, no window), and play through menu -> contract -> route -> combat with
+// touches delivered exactly as wx.onTouch* would deliver them.
 const assert = require("node:assert/strict");
+const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 const vm = require("node:vm");
-const { execFileSync } = require("node:child_process");
 
-const projectRoot = path.resolve(__dirname, "..");
-const bundlePath = path.join(projectRoot, "minigame", "game-bundle.js");
+const root = path.join(__dirname, "..");
+const bundle = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "er-minigame-")), "game-bundle.js");
+execFileSync(process.execPath, [path.join(root, "tools/build-minigame.cjs"), bundle]);
 
-// 1. Build fresh, exactly like the release step does.
-execFileSync(process.execPath, [path.join(projectRoot, "tools", "build-minigame.cjs")], { cwd: projectRoot });
-assert.ok(fs.existsSync(bundlePath), "build must emit minigame/game-bundle.js");
-
-// 2. Simulated mini-game runtime: the global has wx + a canvas with a 2d
-//    context stub; document/Image/localStorage never exist.
-const screenScale = 2;
-function fakeContext() {
-  return new Proxy({}, {
-    get: (target, property) => {
-      if (property in target) return target[property];
-      if (property === "measureText") return () => ({ width: 0 });
-      if (property === "createLinearGradient" || property === "createRadialGradient") return () => ({ addColorStop() {} });
-      return () => {};
-    },
-    set: (target, property, value) => { target[property] = value; return true; },
-  });
-}
-const screenCanvas = { width: 390, height: 680, getContext: () => fakeContext(), addEventListener() {}, focus() {} };
-const systemInfo = { pixelRatio: screenScale, windowWidth: 390, windowHeight: 680 };
-const runtime = {
-  GameGlobal: null,
-  // Real mini-game runtimes wrap this file as a CommonJS module: `module` is
-  // in scope. Keep it here so the UMD branch decision is tested for real.
-  module: { exports: {} },
-  wx: {
-    getSystemInfoSync: () => systemInfo,
-    createCanvas: () => screenCanvas,
-    onTouchStart(handler) { runtime.onTouchStart = handler; },
-    onTouchMove(handler) { runtime.onTouchMove = handler; },
-    onTouchEnd(handler) { runtime.onTouchEnd = handler; },
-    onTouchCancel(handler) { runtime.onTouchCancel = handler; },
-    onHide(handler) { runtime.onHide = handler; },
+const context2d = () => new Proxy({
+  font: "10px sans-serif",
+  measureText(t) { const s = parseFloat(/(\d+(?:\.\d+)?)px/.exec(this.font)?.[1] || 10); return { width: String(t).length * s * 0.6, fontBoundingBoxAscent: s * 0.8, fontBoundingBoxDescent: s * 0.2, actualBoundingBoxAscent: s * 0.7, actualBoundingBoxDescent: s * 0.1 }; },
+  getTransform() { return { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }; },
+  createLinearGradient() { return { addColorStop() {} }; }, createRadialGradient() { return { addColorStop() {} }; },
+  createPattern() { return {}; }, getImageData() { return { data: new Uint8ClampedArray(4) }; },
+}, { get: (t, p) => (p in t ? t[p] : () => {}), set: (t, p, v) => { t[p] = v; return true; } });
+const canvases = [];
+const touch = {};
+let frame = null;
+const wx = {
+  getSystemInfoSync: () => ({ windowWidth: 390, windowHeight: 844, pixelRatio: 3, safeArea: { top: 47, left: 0, right: 390, bottom: 810 } }),
+  createCanvas: () => { const c = { width: 300, height: 150, getContext() { return this._c || (this._c = context2d()); } }; canvases.push(c); return c; },
+  createImage: () => {
+    const image = { width: 64, height: 64, naturalWidth: 64, naturalHeight: 64, complete: false };
+    Object.defineProperty(image, "src", { set(v) { this._src = v; setTimeout(() => { image.complete = true; image.onload?.(); }, 0); }, get() { return this._src; } });
+    return image;
   },
-  console,
-  performance: { now: () => Date.now() },
-  requestAnimationFrame(callback) { runtime.nextFrame = callback; },
-  setTimeout, clearTimeout,
+  onTouchStart: f => { touch.start = f; }, onTouchMove: f => { touch.move = f; }, onTouchEnd: f => { touch.end = f; }, onTouchCancel: f => { touch.cancel = f; },
+  onHide: f => { touch.hide = f; }, onWindowResize() {}, showModal() {},
 };
-runtime.GameGlobal = runtime;
-vm.createContext(runtime);
-
-// 3. Run minigame/game.js against the runtime. Its `require("./game-bundle.js")`
-//    maps to loading the generated bundle; everything else runs verbatim.
-runtime.__loadBundle = () => { vm.runInContext(fs.readFileSync(bundlePath, "utf8"), runtime, { filename: "minigame/game-bundle.js" }); };
-const adapterSource = fs.readFileSync(path.join(projectRoot, "minigame", "game.js"), "utf8")
-  .replace(/^const root = .*$/m, "const root = GameGlobal;")
-  .replace('require("./game-bundle.js");', "__loadBundle();");
-vm.runInContext(`(function(){\n${adapterSource}\n})();`, runtime, { filename: "minigame/game.js" });
-
-const host = runtime.EndlessRailsCanvasHost;
-assert.ok(host, "the mini-game runtime must expose EndlessRailsCanvasHost");
-assert.equal(host.state.mode, "menu", "mini-game boot reaches the menu");
-
-// 4. Simulated wx touches drive the flow with device-scaled coordinates:
-//    pick a region, tap its center expressed in screen pixels, and the
-//    adapter's scale conversion must land the hit.
-const tapRegion = (id, region) => {
-  const logicalX = region.x + region.w / 2, logicalY = region.y + region.h / 2;
-  runtime.onTouchStart({ touches: [{ identifier: id, clientX: logicalX * screenScale, clientY: logicalY * screenScale }] });
-  runtime.onTouchEnd({ changedTouches: [{ identifier: id, clientX: logicalX * screenScale, clientY: logicalY * screenScale }] });
+const G = { wx, console, setTimeout, clearTimeout, setInterval: () => 0, clearInterval() {}, requestAnimationFrame: f => { frame = f; }, performance: { now: () => 0 } };
+G.GameGlobal = G;
+vm.createContext(G);
+const load = file => {
+  const module = { exports: {} };
+  const fn = vm.runInContext("(function (module, exports, require) {" + fs.readFileSync(file, "utf8") + "\n})", G, { filename: file });
+  fn(module, module.exports, spec => load(spec === "./game-bundle.js" ? bundle : path.join(root, "minigame", spec)));
+  return module.exports;
 };
-tapRegion(1, host.regions.find(r => r.action === "start"));
-assert.equal(host.state.mode, "contractChoice", "a scaled wx touch starts the expedition");
-const cards = () => host.regions.filter(r => r.action && typeof r.action === "object");
-tapRegion(2, cards()[0]);
-tapRegion(3, cards()[0]);
-assert.equal(host.state.mode, "combat", "contract and route taps work through wx touch");
 
-for (let i = 0; i < 30; i++) runtime.nextFrame(1000 + i * 16);
-assert.ok(host.state.routeDistance < host.state.routeDistanceTotal, "the mini-game frame loop advances the route");
-
-console.log("Mini-game bundle smoke passed.");
+(async () => {
+  load(path.join(root, "minigame/game.js"));
+  assert.equal(G.document, undefined, "the mini-game runtime has no document");
+  await new Promise(resolve => setTimeout(resolve, 50)); // art images "load"
+  const host = G.EndlessRailsCanvasHost;
+  assert.ok(host, "the bundle publishes the canvas host");
+  assert.equal(canvases[0].width, 390 * 3, "the screen canvas is backed at the device pixel ratio");
+  assert.equal(canvases[0].height, 844 * 3);
+  assert.equal(host.state.mode, "menu");
+  const tap = key => {
+    host.render();
+    const n = host.node(key);
+    assert.ok(n, key + " is on screen");
+    const t = { identifier: 3, clientX: n.boxX + n.w / 2, clientY: n.boxY + n.h / 2 };
+    touch.start({ touches: [t], changedTouches: [t] }); touch.end({ touches: [], changedTouches: [t] });
+    host.render();
+  };
+  for (let i = 1; i < 5; i++) frame(i * 16);
+  tap("startButton");
+  assert.equal(host.state.mode, "contractChoice");
+  tap("contractList-0"); tap("eventList-0");
+  assert.equal(host.state.mode, "combat");
+  for (let i = 5; i < 90; i++) frame(i * 16);
+  assert.ok(host.state.routeDistance < host.state.routeDistanceTotal, "combat advances on the mini-game path");
+  touch.hide();
+  assert.equal(host.state.paused, true, "going to the background pauses the run");
+  console.log("mini-game bundle smoke test passed");
+})().catch(error => { console.error(error); process.exitCode = 1; });

@@ -5,13 +5,12 @@ const vm=require("node:vm");
 
 function boot(){
   const requests=[],timers=new Map(),draws=[];
-  const elements=Object.fromEntries(["startButton","artStatus","retryArtButton"].map(id=>[id,{hidden:true,events:{},addEventListener(type,fn){this.events[type]=fn;}}]));
   let timerId=0;
   class Image{
     constructor(){this.naturalWidth=1254;}
     set src(value){this.url=value;requests.push(this);}
   }
-  const context={Image,document:{getElementById:id=>elements[id]},setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);},ctx:new Proxy({drawImage(...args){draws.push(args);}},{get:(target,key)=>target[key]||(()=>{})})};
+  const context={Image,setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);},ctx:new Proxy({drawImage(...args){draws.push(args);}},{get:(target,key)=>target[key]||(()=>{})})};
   vm.createContext(context);
   // renderer.js is a real ES module; strip its import/export syntax exactly
   // like test-harness.cjs does before feeding it to the isolated sandbox.
@@ -21,7 +20,15 @@ function boot(){
     .replace(/^export\s*\{[^}]*\}\s*;.*$/gm,"")
     .replace(/^export\s+(?=(?:async\s+)?(?:const|let|var|function\s*\*?|class))/gm,"");
   vm.runInContext(source,context);
-  return {requests,timers,elements,draws,run:code=>vm.runInContext(code,context)};
+  // The start screen reads artState() and offers retryArt(); expose them the
+  // way the canvas home shows them (start button / status line / retry button).
+  const run=code=>vm.runInContext(code,context);
+  const elements={
+    startButton:{get disabled(){return run("artState()").startDisabled;}},
+    artStatus:{get hidden(){return run("artState()").statusHidden;},get textContent(){return run("artState()").statusText;}},
+    retryArtButton:{get hidden(){return run("artState()").retryHidden;},events:{click:()=>run("retryArt()")}},
+  };
+  return {requests,timers,elements,draws,run};
 }
 
 // A missing atlas must never silently leave a whole run using line-art turrets.

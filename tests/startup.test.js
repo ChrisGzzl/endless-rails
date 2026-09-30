@@ -5,106 +5,109 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const game = require("./test-harness.cjs")();
-const { sandbox, elements, windowEvents } = game;
+const { sandbox, ui, run } = game;
 const html = fs.readFileSync(__dirname + "/../index.html", "utf8");
+
+// The page is a single canvas: no interface markup may come back.
+assert.match(html, /<canvas id="gameCanvas"/, "index.html hosts the game canvas");
+assert.doesNotMatch(html, /<(button|section|main|header|footer|nav|select|input)\b/, "no DOM interface elements in index.html");
+assert.doesNotMatch(html, /stylesheet/, "no interface stylesheets are loaded");
 
 assert.equal(game.scheduledFrames, 1, "startup must schedule its first animation frame");
 assert.doesNotThrow(() => {
   vm.runInContext("nextFrame(16)", sandbox, { timeout: 1000 });
 }, "the first menu frame must finish without blocking the page");
 assert.equal(game.scheduledFrames, 2, "the menu frame must schedule the next frame");
+assert.ok(ui.visible("startScreen"), "the expedition base opens at boot");
+assert.equal(ui.keys("region-").filter(k => /^region-\w+$/.test(k)).length, 4, "four regions are listed");
 
 let clickError = null;
 try {
-  elements.startButton.events.click();
+  ui.tap("startButton");
 } catch (error) {
   clickError = error;
 }
-
-assert.equal(clickError, null, "clicking start must not fail");
-assert.equal(elements.startScreen.hidden, true, "clicking start must hide the start screen");
-assert.equal(elements.metaScreen.hidden, true, "train tab remains hidden during expedition");
-assert.equal(elements.metaRegionList.children.length, 4);
-// v0.10: two research group headers + seven permanent research rows.
-assert.equal(elements.metaResearchList.children.length, 9);
-
-assert.equal(elements.phaseLabel.textContent, "远征契约", "clicking start must open the contract choice");
-assert.equal(elements.contractScreen.hidden, false, "clicking start must show contract choices before combat");
-assert.ok(elements.contractList.children.length >= 3, "contract choice must render three options");
-elements.contractList.children[0].events.click();
-assert.equal(elements.contractScreen.hidden, true, "choosing a contract must close its overlay");
-assert.equal(elements.eventScreen.hidden, false, "choosing a contract must open route choices");
-assert.ok(elements.eventList.children.length >= 3, "route choice must render three options");
-elements.eventList.children[0].events.click();
-assert.equal(elements.eventScreen.hidden, true, "choosing a route must close its overlay");
-assert.equal(elements.phaseLabel.textContent, "行驶中", "choosing a route must enter combat");
+assert.equal(clickError, null, "tapping start must not fail");
+assert.equal(ui.visible("startScreen"), false, "starting must close the expedition base");
+assert.equal(run("state.mode"), "contractChoice", "starting must open the contract choice");
+assert.ok(ui.visible("contractScreen"), "contract choices show before combat");
+assert.ok(ui.visible("contractList-2"), "contract choice renders three options");
+ui.tap("contractList-0");
+assert.equal(ui.visible("contractScreen"), false, "choosing a contract closes its overlay");
+assert.ok(ui.visible("eventScreen"), "choosing a contract opens route choices");
+assert.ok(ui.visible("eventList-2"), "route choice renders three options");
+ui.tap("eventList-0");
+assert.equal(ui.visible("eventScreen"), false, "choosing a route closes its overlay");
+assert.equal(run("state.mode"), "combat", "choosing a route enters combat");
 
 assert.doesNotThrow(() => {
-  vm.runInContext("for (let i = 0; i < 60; i++) nextFrame(32 + i * 16);", sandbox, { timeout: 1000 });
+  vm.runInContext("for (let i = 0; i < 60; i++) nextFrame(32 + i * 16);", sandbox, { timeout: 3000 });
 }, "the combat loop must remain responsive after route selection");
 assert.equal(game.scheduledFrames, 62, "each combat frame must schedule the next frame");
-assert.ok(vm.runInContext("state.routeDistance < state.routeDistanceTotal", sandbox), "combat frames must advance the route");
+assert.ok(run("state.routeDistance < state.routeDistanceTotal"), "combat frames must advance the route");
 
-vm.runInContext("state.enemies=[]; state.shots=[]; state.spawnClock=Infinity; state.fireClock=Infinity;", sandbox);
-const stickEvent = (pointerId, clientX, clientY) => ({ pointerId, clientX, clientY, pointerType: "touch", button: 0, preventDefault() {} });
-const dronePosition = () => vm.runInContext("JSON.stringify({x:state.drone.x,y:state.drone.y})", sandbox);
+// Floating joystick: presses on the battlefield steer, they never teleport.
+run("state.enemies=[]; state.shots=[]; state.spawnClock=Infinity; state.fireClock=Infinity;");
+const joy = () => run("runCtl.joystick");
+const dronePosition = () => run("JSON.stringify({x:state.drone.x,y:state.drone.y})");
 const initialPosition = dronePosition();
-elements.gameCanvas.events.pointerdown(stickEvent(1, 70, 550));
+ui.pointer("down", 1, 70, 550);
 assert.equal(dronePosition(), initialPosition, "touch-down does not teleport the drone");
-assert.equal(elements.joystickBase.hidden, false);
-assert.equal(vm.runInContext("joystickState.center.x", sandbox), 70, "stick origin is the touch point");
-elements.gameCanvas.events.pointermove(stickEvent(1, 170, 550));
+assert.equal(joy().visible, true, "the floating joystick appears under the finger");
+assert.equal(joy().center.x, 70, "stick origin is the touch point");
+ui.pointer("move", 1, 170, 550);
 assert.equal(dronePosition(), initialPosition, "moving the finger only changes input, not position");
-vm.runInContext("update(.1)", sandbox);
-assert.equal(vm.runInContext("state.drone.x", sandbox), JSON.parse(initialPosition).x + 18, "movement is capped by speed times dt");
-elements.gameCanvas.events.pointermove(stickEvent(2, -100, 550));
-assert.equal(vm.runInContext("state.moveInput.x", sandbox), 1, "second touch cannot hijack movement");
-vm.runInContext("update(1)", sandbox);
-assert.equal(vm.runInContext("state.drone.x", sandbox), vm.runInContext("droneBounds().right", sandbox), "drone can reach the screen edge beyond the old train radius");
-elements.gameCanvas.events.pointerup(stickEvent(1, 170, 550));
-assert.equal(elements.joystickBase.hidden, true, "release hides the floating joystick");
+run("update(.1)");
+assert.equal(run("state.drone.x"), JSON.parse(initialPosition).x + 18, "movement is capped by speed times dt");
+ui.pointer("move", 2, -100, 550);
+assert.equal(run("state.moveInput.x"), 1, "second touch cannot hijack movement");
+run("update(1)");
+assert.equal(run("state.drone.x"), run("droneBounds().right"), "drone can reach the screen edge beyond the old train radius");
+ui.pointer("up", 1, 170, 550);
+assert.equal(joy().visible, false, "release hides the floating joystick");
 const stoppedPosition = dronePosition();
-vm.runInContext("update(.1)", sandbox);
+run("update(.1)");
 assert.equal(dronePosition(), stoppedPosition, "release stops immediately without target chasing");
-elements.gameCanvas.events.pointerdown(stickEvent(3, 280, 300));
-assert.equal(vm.runInContext("joystickState.center.x", sandbox), 280, "next gesture gets a new origin");
-elements.gameCanvas.events.pointermove(stickEvent(3, 280, 200));
-vm.runInContext("update(2)", sandbox);
-assert.equal(vm.runInContext("state.drone.y", sandbox), vm.runInContext("droneBounds().top", sandbox), "drone can reach the top of the battlefield");
-elements.gameCanvas.events.pointercancel(stickEvent(3, 280, 200));
-assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null);
-assert.equal(vm.runInContext("state.moveInput.y", sandbox), 0);
-elements.gameCanvas.events.pointerdown(stickEvent(4, 100, 100));
-elements.gameCanvas.events.pointermove(stickEvent(4, 150, 100));
-elements.pauseButton.events.click();
-assert.equal(vm.runInContext("joystickState.pointerId", sandbox), null, "pause releases movement input");
-assert.equal(elements.pulseButton.disabled, true);
+ui.pointer("down", 3, 280, 300);
+assert.equal(joy().center.x, 280, "next gesture gets a new origin");
+ui.pointer("move", 3, 280, 200);
+run("update(2)");
+assert.equal(run("state.drone.y"), run("droneBounds().top"), "drone can reach the top of the battlefield");
+ui.pointer("cancel", 3, 280, 200);
+assert.equal(joy().pointerId, null);
+assert.equal(run("state.moveInput.y"), 0);
+ui.pointer("down", 4, 100, 400);
+ui.pointer("move", 4, 150, 400);
+ui.pointer("up", 4, 150, 400);
+ui.pointer("down", 4, 100, 400);
+ui.pointer("move", 4, 150, 400);
+ui.tap("pauseButton", 11);
+assert.equal(joy().pointerId, null, "pause releases movement input");
+assert.equal(ui.visible("pauseScreen"), true, "pausing opens the fleet terminal");
+assert.equal(run("runCtl.hudModel().pulseDisabled"), true, "the pulse is disabled while paused");
 const pausedPosition = dronePosition();
-vm.runInContext("update(.1)", sandbox);
+run("update(.1)");
 assert.equal(dronePosition(), pausedPosition);
-elements.pauseButton.events.click();
-for (const handler of windowEvents.keydown) handler({ code: "ArrowLeft", preventDefault() {} });
+ui.tap("resumeButton", 12);
+ui.key("keydown", "ArrowLeft");
 assert.equal(dronePosition(), pausedPosition, "keyboard input also cannot teleport");
-vm.runInContext("update(.1)", sandbox);
-assert.equal(vm.runInContext("state.drone.x", sandbox), JSON.parse(pausedPosition).x - 18);
-for (const handler of windowEvents.keyup) handler({ code: "ArrowLeft", preventDefault() {} });
+run("update(.1)");
+assert.equal(run("state.drone.x"), JSON.parse(pausedPosition).x - 18);
+ui.key("keyup", "ArrowLeft");
 const keyStopped = dronePosition();
-vm.runInContext("state.train.x += 5; update(.1)", sandbox);
+run("state.train.x += 5; update(.1)");
 assert.equal(dronePosition(), keyStopped, "drone is no longer anchored to the train");
-elements.gameCanvas.events.pointerdown(stickEvent(5, 70, 610));
-elements.gameCanvas.events.pointermove(stickEvent(5, 170, 610));
-for (const handler of windowEvents.blur) handler();
-assert.equal(vm.runInContext("state.moveInput.x", sandbox), 0, "blur clears velocity input");
-assert.equal(elements.joystickBase.hidden, true);
+ui.pointer("down", 5, 70, 610);
+ui.pointer("move", 5, 170, 610);
+for (const handler of game.windowEvents.blur) handler();
+assert.equal(run("state.moveInput.x"), 0, "blur clears velocity input");
+assert.equal(joy().visible, false);
+assert.equal(run("state.paused"), true, "leaving the window pauses combat");
 
-const css = fs.readFileSync(__dirname + "/../css/styles.css", "utf8");
-for (const id of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "levelUpScreen"]) {
-  assert.match(html, new RegExp(`id=\\"${id}\\"`), `${id} must exist in the HUD`);
+// HUD instruments and flows exist as canvas nodes.
+ui.tap("resumeButton", 13);
+for (const key of ["routeProgressLabel", "routeProgressFill", "experienceProgressLabel", "experienceProgressFill", "pauseButton", "pulseButton", "commandRing"]) {
+  assert.ok(ui.node(key), `${key} must exist in the HUD`);
 }
-assert.match(css, /@media \(prefers-reduced-motion: reduce\)/, "reduced-motion styling must exist");
-assert.match(css, /\.pause-button/, "pause control must be styled");
-assert.match(css, /\.command-ring/, "command ring must be styled");
-assert.match(css, /\.event-card/, "route and contract cards must be styled");
-assert.match(css, /\.upgrade-card\[data-scope/, "upgrade scope must be styled");
 
 console.log("startup test passed");

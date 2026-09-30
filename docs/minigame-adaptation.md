@@ -1,5 +1,19 @@
 # Canvas 化改造与小游戏适配（实施记录）
 
+> **2026-09-30 更新（v0.11.0.0）：界面全部 canvas 化，网页与小游戏合为一条路径。**
+> 本文下方是 2026-09-28 第一轮"一套引擎、两种呈现"的记录，其中 `game.js` DOM 壳、
+> `canvas.html`、`canvas-ui.js`、`canvas-main.js` 与 `css/` 均已删除。现状：
+>
+> - index.html 只剩一块 `<canvas>`；准备页、HUD、契约/路线/升级/进站/结算、暂停与
+>   机体检视、设置/显示帮助/GM/测试存档全部由 `src/view/ui`（排版 + 绘制 + 交互引擎）
+>   按 `src/view/screens/sheet.js` 中逐条转写的原 CSS 计算样式绘制，外观与原 DOM 版
+>   逐元素对齐（390×844、320×568、844×390、1280×720、1920×1080 等视口下自动比对）。
+> - 控制器 `src/app/ui-home.js` / `ui-run.js` / `ui-dialogs.js` 承接原
+>   meta-ui/armory/flows/input/display/settings/cloud-ui/gm 的全部行为。
+> - 小游戏与网页共用入口 `src/main.js`；`minigame/game.js` 只提供平台能力与触摸桥接，
+>   `tests/minigame-bundle.test.js` 覆盖。美术已可经 `wx.createImage` 加载。
+> - 仍待接入：存档（wx storage）、音频、包体瘦身；微信开发者工具未实跑。
+
 2026-09-28 实施。本文是 `PORTING.md`（移植方案）的后续：该文的结论是"ESM 打包零改动可解，app 层 DOM 是真正大头，走 shim 或 canvas 化"。本轮把其中"canvas 化"路线**正式落地**：运行时核心已完全无 DOM，微信小游戏与 TapTap Minigame 只差平台 SDK 桥接。
 
 ## 一、架构：一套引擎，两种呈现

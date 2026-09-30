@@ -1,12 +1,8 @@
 "use strict";
-// Composition root and the single module entry referenced by index.html.
-// ES modules evaluate depth-first in import order, so this list is now the
-// one load-order contract that used to live in the 18 script tags.
+// Composition root and the single module entry of index.html and of the
+// mini-game bundle. ES modules evaluate depth-first in import order: the
+// optional test-save modules first, then the canvas host, which boots the
+// engine and draws the entire game on the page's (or adapter's) canvas.
 import "./core/cloud-config.js";
 import "./core/cloud-sync.js";
-import "./app/game.js";
-import "./app/meta-ui.js";
-import "./app/armory.js";
-import "./app/display.js";
-import "./app/settings.js";
-import "./app/cloud-ui.js";
+import "./app/canvas-host.js";

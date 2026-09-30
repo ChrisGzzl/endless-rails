@@ -39,14 +39,16 @@ const qaHost={location:{search:'?qa=1'},localStorage:storage};
 assert.equal(meta.gameStorage(qaHost),meta.gameStorage(qaHost));assert.notEqual(meta.gameStorage(qaHost),storage,'QA must be isolated');
 assert.equal(meta.gameStorage({get localStorage(){throw new Error('blocked');}}),null);
 
-const g=createGame({storage});
+// finish(): settle the run and show the report, like the engine does at a run's end.
+const withFinish=game=>{game.run('globalThis.finish=r=>{const d=settleFinish(r);if(d)presentation.renderResult(d);}');return game;};
+const g=withFinish(createGame({storage}));
 g.run(`beginRun();state.longtermRun.risk={scrap:100,components:10,data:10};state.kills=20;state.routeElapsed=40;finish(false);`);
 const resources=g.run('state.metaProfile.resources.scrap'),runs=g.run('state.record.runs');
 g.run('finish(false);');assert.equal(g.run('state.metaProfile.resources.scrap'),resources);assert.equal(g.run('state.record.runs'),runs,'settlement and records are idempotent');
 // A rejected local write must not consume the settlement in memory.
 let rejectWrite=false;
 const flakyValues=new Map(),flakyStorage={getItem:k=>flakyValues.get(k)??null,setItem:(k,v)=>{if(rejectWrite)throw Error('quota');flakyValues.set(k,String(v));}};
-const retryGame=createGame({storage:flakyStorage});
+const retryGame=withFinish(createGame({storage:flakyStorage}));
 retryGame.run('beginRun();state.mode="combat";state.longtermRun.risk.scrap=10;');
 rejectWrite=true;
 retryGame.run('finish(false);');
@@ -59,7 +61,7 @@ retryGame.run('finish(false);');
 assert.equal(retryGame.run('state.metaSettled'),true);
 assert.equal(retryGame.run('state.settlementRetryAt'),0);
 assert.equal(meta.loadMeta(flakyStorage).totals.expeditions,1);
-const noStorageGame=createGame({storage:null});
+const noStorageGame=withFinish(createGame({storage:null}));
 noStorageGame.run('beginRun();state.mode="combat";finish(false);');
 assert.equal(noStorageGame.run('metaStorage'),null);
 assert.equal(noStorageGame.run('state.metaSettled'),true,'storage-disabled browsers can still finish a run in memory');
@@ -73,9 +75,9 @@ assert.equal(g.run('carEnabled("storage")'),false,'another climber still suppres
 g.run('state.enemies[1].dead=true;releaseCarSuppression(state.enemies[1]);');assert.equal(g.run('carEnabled("storage")'),true);
 g.run(`state.metaProfile.research.fireControl=0;state.metaProfile.train.level=5;
 state.modules={missile:9};state.pendingLevelUps=1;state.mode='combat';openLevelUp();chooseLevelUp({id:'missile'});`);
-assert.equal(g.run('state.mode'),'levelup');assert.equal(g.elements.levelUpList.children.length,2);
-g.elements.levelUpList.children[0].events.click();assert.equal(g.run('state.breakthroughs.missile'),'cluster','breakthroughs no longer gate on the removed per-drone research');
-g.run(`state.modules.missile=10;inspector.tab='weapon';inspector.id='missile';`);
+assert.equal(g.run('state.mode'),'levelup');g.run('homeCtl.isOpen=false');assert.equal(g.ui.keys('levelCard-').filter(k=>/^levelCard-\d+$/.test(k)).length,2);
+g.ui.tap('levelCard-0');assert.equal(g.run('state.breakthroughs.missile'),'cluster','breakthroughs no longer gate on the removed per-drone research');
+g.run(`state.modules.missile=10;runCtl.inspector.tab='weapon';runCtl.inspector.id='missile';`);
 const rows=JSON.parse(g.run('JSON.stringify(inspectRows({id:"missile",level:10,owned:true}))'));
 near(Number(rows[0][1]),Number(g.run('numberText(applyResearchProfile("missile",effects.weaponProfile("missile",10,state.coreStacks)).damage)')));
 // v0.10 快照：研究在出发时固化，局内修改存档不改变本局倍率

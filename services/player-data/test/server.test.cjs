@@ -54,7 +54,8 @@ test('HTTP read/write, invalid JSON, origin guard, static game config and data p
  assert.equal((await fetch(base+'/services/player-data/data/pl/player.json')).status,404);
  assert.equal((await fetch(base+'/.git/config')).status,404);
  assert.match(await (await fetch(base+'/src/core/cloud-config.js')).text(),/enabled:true/);
- assert.match(await (await fetch(base+'/')).text(),/测试存档/);
+ assert.match(await (await fetch(base+'/')).text(),/<canvas id="gameCanvas"/);
+ assert.match(await (await fetch(base+'/src/view/screens/dialogs.js')).text(),/测试存档/);
  r=await fetch(base+'/api/saves/player',{method:'PUT',headers:{'Content-Type':'application/json'},body:'{'});assert.equal(r.status,400);
  r=await fetch(base+'/api/saves/player',{method:'PUT',headers:{'Content-Type':'application/json'},body:'x'.repeat(40000)});assert.equal(r.status,413);
 });

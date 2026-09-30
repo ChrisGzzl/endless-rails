@@ -16,7 +16,8 @@ assert.ok(progression.experienceForEnemy({},5,10)<progression.experienceForEnemy
 assert.ok(progression.experienceForEnemy({},1,10)<1);
 assert.equal(progression.experienceForEnemy({},1,1),1,"first two upgrades still form the initial fleet quickly");
 
-const {run,sandbox,elements}=createGame();
+const fs={on:false,fail:false};
+const {run,sandbox,ui}=createGame({platform:{isFullscreen:()=>fs.on,requestFullscreen:async()=>{if(fs.fail)throw new Error('unsupported');fs.on=true;},exitFullscreen:async()=>{fs.on=false;}}});
 run(`state.mode="combat";state.routeDistance=50;state.level=4;state.pendingLevelUps=2;state.visualTime=10;state.nextUpgradeAt=20;`);
 assert.equal(run('progression.shouldOfferUpgrade(state)'),false);
 run('state.visualTime=20;');assert.equal(run('progression.shouldOfferUpgrade(state)'),true);
@@ -30,11 +31,11 @@ assert.equal(run('state.mode'),"station");assert.equal(run('state.pendingLevelUp
 run(`state.drone.x=240;state.drone.y=300;state.zones=[{x:170,y:280,sx:180,sy:260,flight:.5,life:4}];
 state.hostileShots=[{x:90,y:170,vx:0,vy:20,life:2}];state.enemies=[{x:100,y:200}];`);
 const before=JSON.parse(run('JSON.stringify({train:{...state.train},drone:{...state.drone},zone:{...state.zones[0]}})'));
-elements.gameCanvas.getBoundingClientRect=()=>({width:393,height:720});run('resizeBattlefield();');
+run('resizeBattlefield({width:393,height:720});');
 assert.ok(Math.abs(run('W/H')-393/720)<.002,"canvas uses the same aspect as its CSS box");
 assert.equal(run('state.drone.y-state.train.y'),before.drone.y-before.train.y);
 assert.equal(run('state.zones[0].y-state.zones[0].sy'),before.zone.y-before.zone.sy);
-elements.gameCanvas.getBoundingClientRect=()=>({width:800,height:280});run('resizeBattlefield();');
+run('resizeBattlefield({width:800,height:280});');
 assert.ok(Math.abs(run('W/H')-800/280)<.002,"landscape remains uniformly scaled");
 assert.ok(run('state.swarm.every(d=>d.x>=18&&d.x<=W-18&&d.y>=18&&d.y<=H-18)'));
 
@@ -52,35 +53,35 @@ const hp=run('state.trainHp');run('for(let i=0;i<90;i++)updateHostileShots(1/60)
 // Route completion now grows alongside XP, reaches full on arrival and resets
 // for the next route even when route modifiers change its duration.
 run('state.mode="combat";state.routeDistanceTotal=60;state.routeDistance=60;state.experience=0;state.experienceToNext=10;updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"0%");
-assert.equal(elements.experienceProgressFill.style.width,"0%");
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"0%");
+assert.equal(run('runCtl.hudModel().xpPercent')+'%',"0%");
 run('state.routeDistance=45;state.experience=2.5;updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"25%");
-assert.equal(elements.experienceProgressFill.style.width,"25%");
-assert.match(elements.routeProgressLabel.textContent,/已完成 25%/);
-assert.match(elements.experienceProgressLabel.textContent,/经验 Lv/);
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"25%");
+assert.equal(run('runCtl.hudModel().xpPercent')+'%',"25%");
+assert.match(ui.text('routeProgressLabel'),/已完成 25%/);
+assert.match(ui.text('experienceProgressLabel'),/经验 Lv/);
 run('state.mode="docking";state.routeDistance=0;updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"100%");
-assert.match(elements.routeProgressLabel.textContent,/已抵达车站/);
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"100%");
+assert.match(ui.text('routeProgressLabel'),/已抵达车站/);
 run('beginRoute(null);updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"0%");
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"0%");
 run('state.routeDistanceTotal=90;state.routeDistance=45;updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"50%");
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"50%");
 run('state.routeDistance=-1;updateHud();');
-assert.equal(elements.routeProgressFill.style.width,"100%");
+assert.equal(run('runCtl.hudModel().routePercent')+'%',"100%");
 
 (async()=>{
   // Fullscreen is initiated by explicit user action; unsupported/rejected calls get a usable fallback.
-  sandbox.document.documentElement={classList:{toggle(){}}};
-  run('document.documentElement.requestFullscreen=async()=>{document.fullscreenElement=document.documentElement;};');
-  await elements.startFullscreenButton.events.click();assert.ok(sandbox.document.fullscreenElement);
-  run('document.exitFullscreen=async()=>{document.fullscreenElement=null;};');
-  await elements.startFullscreenButton.events.click();assert.equal(sandbox.document.fullscreenElement,null);
-  run('document.documentElement.requestFullscreen=async()=>{throw new Error("unsupported");};');
-  await elements.startFullscreenButton.events.click();assert.equal(elements.displayHelp.hidden,false);
+  run('Object.assign(runCtl.screens,{result:null,station:null,levelUp:null,route:null,contract:null,pause:false});state.paused=false;homeCtl.open("settings")');
+  ui.tap('startFullscreenButton');await new Promise(r=>setTimeout(r,0));assert.equal(fs.on,true);
+  assert.equal(ui.text('startFullscreenButton').includes('退出全屏'),true,'the button offers to leave fullscreen');
+  ui.tap('startFullscreenButton');await new Promise(r=>setTimeout(r,0));assert.equal(fs.on,false);
+  fs.fail=true;run('state.mode="combat";state.paused=false;');
+  ui.tap('startFullscreenButton');await new Promise(r=>setTimeout(r,0));assert.equal(ui.visible('displayHelp'),true);
   assert.equal(run('state.paused'),true,"fallback instructions never let combat run underneath");
-  elements.closeDisplayHelp.events.click();assert.equal(elements.displayHelp.hidden,true);
-  sandbox.navigator={userAgent:"iPhone",standalone:false};
-  await elements.startInstallButton.events.click();assert.ok(elements.displayHelpText.textContent.includes("Safari"));
+  ui.tap('closeDisplayHelp');assert.equal(ui.visible('displayHelp'),false);
+  ui.tap('resumeButton');run('state.mode="menu"');
+  sandbox.__endlessRailsPlatform.apple=true;
+  ui.tap('startInstallButton');await new Promise(r=>setTimeout(r,0));assert.ok(ui.text('displayHelpText').includes("Safari"));
   console.log("60-second routes, flow cadence, variants, viewport and fullscreen fallback tests passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});

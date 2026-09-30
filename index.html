@@ -4,184 +4,41 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#132833">
-  <link rel="manifest" href="manifest.webmanifest?v=v0.10.3.3">
+  <link rel="manifest" href="manifest.webmanifest?v=v0.11.0.1">
   <link rel="apple-touch-icon" href="assets/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="荒原轨道">
   <title>荒原轨道：无人机守卫</title>
-  <link rel="stylesheet" href="css/styles.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/ui-wasteland.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/home.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/ui-refresh.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/battle-ui.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/edge-ui.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/sand-ui.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/icon-ui.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/reference-ui.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/talents.css?v=v0.10.3.3">
-  <link rel="stylesheet" href="css/mobile-icons.css?v=v0.10.3.3">
-  <script type="importmap">{"imports":{"./src/meta/longterm.js":"./src/meta/longterm.js?v=v0.10.3.3","./src/app/meta-ui.js":"./src/app/meta-ui.js?v=v0.10.3.3","./src/app/flows.js":"./src/app/flows.js?v=v0.10.3.3","./src/app/gm.js":"./src/app/gm.js?v=v0.10.3.3"}}</script>
+  <style>
+    /* The whole game is drawn on the canvas below; the page only hosts it. */
+    html { background: #132833; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    body { background: #a5a394; }
+    #gameCanvas { position: fixed; left: 0; top: 0; display: block; width: 100vw; height: 100dvh; touch-action: none; outline: none; }
+  </style>
+  <script type="importmap">{"imports":{"./src/app/canvas-host.js":"./src/app/canvas-host.js?v=v0.11.0.1","./src/app/engine.js":"./src/app/engine.js?v=v0.11.0.1","./src/app/flow-logic.js":"./src/app/flow-logic.js?v=v0.11.0.1","./src/app/platform.js":"./src/app/platform.js?v=v0.11.0.1","./src/app/telemetry.js":"./src/app/telemetry.js?v=v0.11.0.1","./src/app/ui-dialogs.js":"./src/app/ui-dialogs.js?v=v0.11.0.1","./src/app/ui-home.js":"./src/app/ui-home.js?v=v0.11.0.1","./src/app/ui-run.js":"./src/app/ui-run.js?v=v0.11.0.1","./src/core/audio.js":"./src/core/audio.js?v=v0.11.0.1","./src/core/balance.js":"./src/core/balance.js?v=v0.11.0.1","./src/core/cloud-config.js":"./src/core/cloud-config.js?v=v0.11.0.1","./src/core/cloud-sync.js":"./src/core/cloud-sync.js?v=v0.11.0.1","./src/core/combat-effects.js":"./src/core/combat-effects.js?v=v0.11.0.1","./src/core/control.js":"./src/core/control.js?v=v0.11.0.1","./src/core/motion.js":"./src/core/motion.js?v=v0.11.0.1","./src/core/progression.js":"./src/core/progression.js?v=v0.11.0.1","./src/core/route-events.js":"./src/core/route-events.js?v=v0.11.0.1","./src/core/run-record.js":"./src/core/run-record.js?v=v0.11.0.1","./src/meta/longterm.js":"./src/meta/longterm.js?v=v0.11.0.1","./src/sim/combat.js":"./src/sim/combat.js?v=v0.11.0.1","./src/sim/docking.js":"./src/sim/docking.js?v=v0.11.0.1","./src/sim/enemies.js":"./src/sim/enemies.js?v=v0.11.0.1","./src/sim/fx.js":"./src/sim/fx.js?v=v0.11.0.1","./src/sim/run.js":"./src/sim/run.js?v=v0.11.0.1","./src/sim/spawn.js":"./src/sim/spawn.js?v=v0.11.0.1","./src/sim/station.js":"./src/sim/station.js?v=v0.11.0.1","./src/sim/weapons.js":"./src/sim/weapons.js?v=v0.11.0.1","./src/sim/world.js":"./src/sim/world.js?v=v0.11.0.1","./src/view/atlas.js":"./src/view/atlas.js?v=v0.11.0.1","./src/view/render.js":"./src/view/render.js?v=v0.11.0.1","./src/view/screens/battle.js":"./src/view/screens/battle.js?v=v0.11.0.1","./src/view/screens/dialogs.js":"./src/view/screens/dialogs.js?v=v0.11.0.1","./src/view/screens/flows.js":"./src/view/screens/flows.js?v=v0.11.0.1","./src/view/screens/home.js":"./src/view/screens/home.js?v=v0.11.0.1","./src/view/screens/icons.js":"./src/view/screens/icons.js?v=v0.11.0.1","./src/view/screens/pause.js":"./src/view/screens/pause.js?v=v0.11.0.1","./src/view/screens/sheet.js":"./src/view/screens/sheet.js?v=v0.11.0.1","./src/view/surface.js":"./src/view/surface.js?v=v0.11.0.1","./src/view/ui/css.js":"./src/view/ui/css.js?v=v0.11.0.1","./src/view/ui/kit.js":"./src/view/ui/kit.js?v=v0.11.0.1","./src/view/ui/layout.js":"./src/view/ui/layout.js?v=v0.11.0.1","./src/view/ui/paint.js":"./src/view/ui/paint.js?v=v0.11.0.1","./src/view/ui/text.js":"./src/view/ui/text.js?v=v0.11.0.1"}}</script>
 </head>
 <body>
-  <main id="app">
-    <header class="hud" aria-label="战斗状态">
-      <button class="pause-button" id="pauseButton" aria-label="暂停游戏" type="button">Ⅱ</button>
-      <div class="run-readout"><span id="phaseLabel">待命</span><strong id="timerValue">60.0</strong><small>秒 / 下一站</small></div>
-      <div class="brand"><button class="brand-mark" id="gmToggle" type="button" aria-label="GM 模式">ER</button><div><small>SWARM ESCORT</small><strong>荒原轨道</strong></div></div>
-      <div class="hud-stat"><span>车站</span><strong id="stationValue">01 / 05</strong></div>
-      <div class="hud-stat hud-stat--right"><span>废料</span><strong id="scrapValue">000</strong></div>
-      <div class="progress-strip" aria-label="路线与经验进度">
-        <div class="progress-row"><span id="routeProgressLabel">行程 · 已完成 0%</span><i id="routeProgressTrack" role="progressbar" aria-label="本段行程，满格到站" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b id="routeProgressFill"></b></i><small>到站</small></div>
-        <div class="progress-row progress-row--xp"><span id="experienceProgressLabel">经验 Lv.1 · 0 / 4</span><i id="experienceProgressTrack" role="progressbar" aria-label="当前等级经验，满格升级" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><b id="experienceProgressFill"></b></i><small>升级</small></div>
-      </div>
-    </header>
-
-    <section class="arena-wrap" aria-label="荒原战场">
-      <canvas id="gameCanvas" width="390" height="680" tabindex="0" aria-label="无人机移动战场，按住任意位置滑动或使用方向键移动"></canvas>
-      <div class="joystick-base floating-joystick" id="joystickBase" hidden aria-hidden="true"><span class="joystick-cross"></span><span class="joystick-thumb" id="joystickThumb"></span></div>
-      <button class="fullscreen-button" id="gameFullscreenButton" aria-label="进入全屏" type="button">⛶</button>
-      <aside class="skill-rail" aria-label="战斗技能">
-        <button class="pulse-button" id="pulseButton" aria-label="释放电磁脉冲" type="button"><span class="pulse-ring" aria-hidden="true"><span class="ui-icon ui-icon--pulse"></span></span><span>脉冲</span><i id="pulseCooldown"></i></button>
-        <button class="claim-upgrade" id="claimUpgradeButton" type="button" hidden><span aria-hidden="true">✦</span><small>强化</small></button>
-      </aside>
-      <div class="command-ring" id="commandRing" aria-hidden="true"></div>
-      <div class="objective"><span class="pulse-dot"></span><span id="objectiveText">护送列车抵达下一站</span></div>
-      <div class="health-wrap"><div class="health-label"><span>列车完整度</span><strong id="healthText">100%</strong></div><div class="health-track"><i id="healthFill"></i></div></div>
-      <div class="boss-wrap" id="bossWrap" hidden><div class="health-label"><span id="bossName">感染巨兽</span><strong id="bossText">100%</strong></div><div class="health-track boss-track"><i id="bossFill"></i></div></div>
-      <div class="combo" id="comboText"></div>
-      <div class="toast" id="toast"></div>
-      <div class="touch-hint" id="touchHint">按住滑动 · 自动开火</div>
-    </section>
-
-    <footer class="controls">
-      <div class="movement-readout"><span>无人机移速</span><strong id="moveSpeedValue">180 px/s</strong><small>滑动 / 方向键</small></div>
-      <div class="control-readouts">
-        <div class="drone-readout"><span>蜂群</span><strong id="droneLevel">2 架</strong></div>
-      </div>
-    </footer>
-  </main>
-  <section class="gm-panel" id="gmPanel" role="dialog" aria-modal="true" aria-labelledby="gmTitle" hidden><div class="gm-content"><h2 id="gmTitle">GM · 机队调试</h2><p>战斗已暂停 · 输入实际等级 · 0 为下架<br>Lv.10：普攻伤害 +35%，范围 +25%，切换突破皮肤</p><div id="gmControls"></div><div id="gmBonds"></div><button class="primary-button" id="gmClose" type="button">应用并返回</button></div></section>
-
-  <section class="overlay start-screen home-hub" id="startScreen" aria-label="远征基地">
-    <header class="home-header">
-      <div class="home-profile"><span class="home-emblem" aria-hidden="true">ER</span><div><b>荒原轨道</b><small id="homePlayerLevel">列车 Lv.1</small></div></div>
-      <div class="home-wallet" aria-label="长期资源"><span title="废料"><i class="ui-icon ui-icon--scrap" aria-hidden="true"></i><b id="homeScrap">0</b><small>废料</small></span><span title="技术组件"><i class="ui-icon ui-icon--components" aria-hidden="true"></i><b id="homeComponents">0</b><small>组件</small></span><span title="研究数据"><i class="ui-icon ui-icon--data" aria-hidden="true"></i><b id="homeData">0</b><small>数据</small></span></div>
-    </header>
-    <div class="home-content">
-      <section class="home-pane home-battle" id="homeBattle" role="tabpanel" aria-labelledby="homeTabBattle">
-        <div class="mission-heading"><p class="eyebrow">RAILWAY EXPEDITION / 铁路远征</p><h1 id="homeRegionName">起始荒原</h1><p id="homeRegionDescription">开阔荒原，护送列车穿越尸潮。</p></div>
-        <div class="home-keyart"><img id="homeHeroImage" src="assets/hero-wasteland-v3.webp" alt="四架无人机护送装甲列车穿越明亮荒原" draggable="false" fetchpriority="high" width="768" height="432"><span class="home-route-mark" aria-hidden="true">01 — 05</span><div class="mission-stamp"><span id="homeRegionStatus">已侦察 · 低危铁路</span><b>护送最后一班列车</b></div></div>
-        <div class="mission-launch"><div class="home-regions" id="metaRegionList" aria-label="选择远征区域"></div><button class="mission-loadout" id="homeLoadout" type="button">编组 4 节 · 前往列车调整 →</button><button class="primary-button" id="startButton" type="button"><span>开始远征</span><span aria-hidden="true">»</span></button><p class="mission-note">5 段护送 · 每段 60 秒 · 到站可安全撤离</p><p class="art-status" id="artStatus" role="status" aria-live="polite" hidden></p><button class="art-retry" id="retryArtButton" type="button" hidden>重新加载素材</button></div>
-      </section>
-      <section class="home-pane home-scroll meta-scroll" id="metaScreen" role="tabpanel" aria-labelledby="homeTabTrain" hidden>
-        <header class="home-page-heading"><p class="eyebrow">TRAIN WORKSHOP</p><h2>我的列车</h2><p>升级列车获得改装点，选择车厢决定远征方式。</p></header>
-        <section class="train-showcase" aria-label="当前列车"><div class="train-showcase__art" aria-hidden="true"><span class="train-showcase__route">ENDLESS RAILS / 01</span></div><div class="train-showcase__body"><div><small>远征列车</small><h3 id="metaTrainLevel">列车 Lv.1</h3><p id="metaTalentPoints" class="talent-points">可用改装点 2</p></div><div class="train-showcase__stats"><span id="trainFirepower">无人机伤害 ×1.00</span><span id="trainDurability">列车耐久 ×1.00</span></div><button id="metaTrainUpgradeButton" type="button">升级列车</button><p class="train-showcase__hint" id="trainUpgradeHint"></p></div></section>
-        <section class="train-build-preview" aria-label="已应用编组"><div class="meta-section__head"><b>当前编组</b><span id="trainBuildCount">0 / 0 车厢</span></div><div class="train-build-preview__cars" id="trainBuildCars"></div><button class="train-workshop-entry" id="trainWorkshopOpen" type="button" aria-expanded="false" aria-controls="trainWorkshop">打开改装台 <span aria-hidden="true">›</span></button></section>
-        <section class="train-workshop" id="trainWorkshop" aria-label="列车改装台" hidden><div class="train-workshop__head"><div><small>WORKSHOP / 改装台</small><h3>车厢与天赋</h3><p>选择车厢、分配改装点，最后应用草稿。</p></div><button id="trainWorkshopClose" type="button" aria-label="收起改装台">收起</button></div>
-        <div class="talent-presets" id="talentPresetBar" role="group" aria-label="改装方案槽"></div>
-        <div class="meta-section__head"><b>功能车厢</b><span>调整草稿 · 应用后生效</span></div><p id="metaLoadoutSummary" class="home-muted"></p><div class="meta-grid" id="metaCarList"></div>
-        <div class="meta-section__head"><b>列车改装</b><span id="talentBranchNote">未装备车厢的分支不生效</span></div>
-        <div class="talent-branches" id="talentBranchTabs" role="tablist" aria-label="天赋分支"></div>
-        <div id="talentNodeList" class="talent-nodes"></div>
-        <section class="talent-summary" id="talentSummary" aria-live="polite"><b class="talent-summary__title">改装预览</b><div class="talent-summary__rows" id="talentSummaryRows"></div><div class="talent-summary__foot"><span class="talent-summary__points" id="talentPointsLine"></span><span class="talent-summary__cost" id="talentCostLine"></span><button type="button" id="talentReset">重置</button><button type="button" id="talentApply" class="primary-button">应用改装</button></div><div class="talent-summary__problems" id="talentProblems" hidden></div></section></section>
-        <button class="home-secondary" id="metaStartButton" type="button">编组完成 · 前往出发 →</button>
-      </section>
-      <section class="home-pane home-scroll meta-scroll" id="homeResearch" role="tabpanel" aria-labelledby="homeTabResearch" hidden>
-        <header class="home-page-heading"><p class="eyebrow">RESEARCH LABORATORY</p><h2>永久研究</h2><p>资源足够即可升级；增益永久保留。</p></header><div class="meta-research" id="metaResearchList"></div><details class="research-guide"><summary>研究规则说明</summary><div id="researchDetails"></div></details><details class="research-extra"><summary>查看编组配色与蓝图收藏</summary><section class="bond-guide" aria-label="无人机编组配色"><h3>编组配色</h3><p><i class="bond-dot bond-dot--purple"></i>紫 · 电弧 + 跳弹：北辰额外发射放电跳弹</p><p><i class="bond-dot bond-dot--blue"></i>蓝 · 机枪 + 磁轨：北辰使用穿透激光</p><p><i class="bond-dot bond-dot--red"></i>红 · 燃烧 + 导弹：北辰发射追踪燃烧弹</p><p><i class="bond-dot bond-dot--cyan"></i>青 · 旋刃 + 霰弹：同色编组</p><small>前三组在两架无人机都达到 Lv.5 后激活。青色当前仅作为编组配色，不改变技能规则。</small></section><section class="home-blueprints"><div class="meta-section__head"><b>已回收蓝图</b><span>收藏记录</span></div><div id="metaBlueprintList" class="meta-blueprints"></div></section></details>
-      </section>
-      <section class="home-pane home-scroll meta-scroll" id="homeShop" role="tabpanel" aria-labelledby="homeTabShop" hidden>
-        <header class="home-page-heading"><p class="eyebrow">SUPPLY DEPOT</p><h2>荒原补给站</h2><p>远征之外的补给与支援。</p></header><div class="shop-coming"><i class="ui-icon ui-icon--supply" aria-hidden="true"></i><h3>补给线路尚未开通</h3><p>补给商店将在后续版本开放。<br>现在可通过远征回收废料、组件与研究数据。</p></div><section class="supply-preview"><h3>可回收资源</h3><div><span><i class="ui-icon ui-icon--scrap" aria-hidden="true"></i>废料</span><span><i class="ui-icon ui-icon--components" aria-hidden="true"></i>组件</span><span><i class="ui-icon ui-icon--data" aria-hidden="true"></i>数据</span></div></section><button class="home-secondary" id="shopToBattle" type="button">前往出发获取资源 →</button>
-      </section>
-      <section class="home-pane home-scroll meta-scroll" id="homeSettings" role="tabpanel" aria-labelledby="startSettingsButton" hidden>
-        <header class="home-page-heading"><p class="eyebrow">TERMINAL PREFERENCES</p><h2>设置</h2><p>让每一次护送都保持舒适。</p></header>
-        <div class="sound-options"><div class="sound-option"><div><h3 id="homeMusicLabel">背景音乐</h3><p>低音量氛围配乐</p></div><button id="homeMusicToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="homeMusicLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div><div class="sound-option"><div><h3 id="homeSfxLabel">游戏音效</h3><p>武器与关键提示</p></div><button id="homeSfxToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="homeSfxLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div></div>
-        <p class="sound-note" id="homeSoundNote">声音偏好自动保存</p><div class="home-settings-actions"><button id="startFullscreenButton" class="home-secondary" type="button">全屏游玩 <span aria-hidden="true">⛶</span></button><button id="startInstallButton" class="home-secondary" type="button">添加到主屏幕 <span aria-hidden="true">＋</span></button><button id="cloudButton" class="home-secondary" type="button" hidden>测试存档</button></div><p class="home-about">荒原轨道 · 无人机守卫<br><span class="version-label">v0.10.3.3</span></p>
-      </section>
-    </div>
-    <nav class="home-tabs" role="tablist" aria-label="基地导航"><button id="homeTabShop" type="button" role="tab" aria-controls="homeShop" aria-selected="false" tabindex="-1" data-home-tab="shop"><i class="ui-icon ui-icon--shop" aria-hidden="true"></i><span>商店</span></button><button id="homeTabTrain" type="button" role="tab" aria-controls="metaScreen" aria-selected="false" tabindex="-1" data-home-tab="train"><i class="ui-icon ui-icon--trainNav" aria-hidden="true"></i><span>列车</span></button><button id="homeTabBattle" type="button" role="tab" aria-controls="homeBattle" aria-selected="true" tabindex="0" data-home-tab="battle"><i class="ui-icon ui-icon--battle" aria-hidden="true"></i><span>出发</span></button><button id="homeTabResearch" type="button" role="tab" aria-controls="homeResearch" aria-selected="false" tabindex="-1" data-home-tab="research"><i class="ui-icon ui-icon--research" aria-hidden="true"></i><span>研究</span></button><button id="startSettingsButton" type="button" role="tab" aria-controls="homeSettings" aria-selected="false" tabindex="-1" data-home-tab="settings"><i class="ui-icon ui-icon--settings" aria-hidden="true"></i><span>设置</span></button></nav>
-  </section>
-
-  <section class="overlay station-screen selection-screen" id="stationScreen" hidden>
-    <div class="selection-terminal">
-    <div class="station-heading"><p class="eyebrow">安全停靠 · <span id="stationTitle">01</span> / 04</p><h2>车站大升级</h2><p>免费选择一项 · 列车完整度已修复</p><button class="inspect-entry" id="stationInspectButton" type="button">查看机队数据</button></div>
-    <div class="upgrade-list" id="upgradeList"></div>
-    <div class="station-actions">
-    <button class="reroll-button" id="rerollButton" type="button">重新抽取 · 15 废料</button>
-    <div class="train-strip"><span class="train-strip__label">当前编组 · <b id="trainLengthLabel">3 节车厢</b></span><div class="mini-train" id="miniTrain"><i class="mini-car mini-car--cab">◆</i><i class="mini-car">▦</i><i class="mini-car">▤</i><i class="mini-car mini-car--empty">+</i></div></div>
-    <p class="station-salvage" id="stationSalvage"></p>
-    <div class="station-decision-row"><button class="display-secondary extract-button" id="extractButton" type="button">安全撤离</button><button class="primary-button continue-button" id="continueButton" disabled>选择模块后继续</button></div>
-    </div>
-    </div>
-  </section>
-
-  <section class="overlay choice-screen selection-screen" id="contractScreen" hidden>
-    <div class="selection-terminal">
-      <div class="station-heading"><p class="eyebrow">远征指挥部 / 契约授权</p><h2>签订远征契约</h2><p>更高风险，换取更高回报。</p></div>
-      <div class="upgrade-list" id="contractList"></div>
-      <div class="terminal-footer"><span class="terminal-status">选择一份契约 · 本次远征生效</span><span aria-hidden="true">三选一</span></div>
-    </div>
-  </section>
-  <section class="overlay choice-screen selection-screen" id="eventScreen" hidden>
-    <div class="selection-terminal">
-      <div class="station-heading"><p class="eyebrow">轨道导航 / 路线规划</p><h2>选择前方路线</h2><p>路线会改变地面、敌群和掉落。</p></div>
-      <div class="upgrade-list" id="eventList"></div>
-      <div class="terminal-footer"><span class="terminal-status">选择一条路线 · 即刻发车</span><span aria-hidden="true">三选一</span></div>
-    </div>
-  </section>
-
-  <section class="overlay levelup-screen selection-screen" id="levelUpScreen" hidden>
-    <div class="selection-terminal">
-    <div class="level-health"><span aria-hidden="true">▣</span><b>列车耐久</b><i><em id="levelTrainHealthFill"></em></i><strong id="levelTrainHealthText">100%</strong></div>
-    <div class="levelup-heading"><p class="eyebrow">战斗升级 · 三选一</p><h2>选择升级</h2><p>选择一项武器强化，继续护送。</p><button class="inspect-entry" id="levelInspectButton" type="button">查看机队数据</button></div>
-    <div class="upgrade-list" id="levelUpList"></div>
-    <div class="terminal-footer"><span class="terminal-status">战斗已暂停 · 选择后继续护送</span><span aria-hidden="true">FLEET</span></div>
-    </div>
-  </section>
-
-  <section class="overlay pause-screen selection-screen" id="pauseScreen" role="dialog" aria-modal="true" aria-labelledby="pauseTitle" hidden>
-    <div class="selection-terminal fleet-terminal" id="fleetTerminal">
-    <header class="pause-heading"><p class="eyebrow">战斗暂停 / 机队遥测</p><h2 id="pauseTitle">机队战术终端</h2><p id="pauseSummary"></p></header>
-    <div class="display-actions pause-display"><button id="pauseFullscreenButton" type="button">全屏游玩</button><button id="pauseInstallButton" type="button">添加到主屏幕</button><button id="pauseSettingsButton" type="button">设置</button></div>
-    <div class="inspect-unit"><span class="inspect-portrait" id="inspectPortrait" aria-hidden="true"></span><div><label for="inspectSelect">查看飞机</label><select id="inspectSelect"></select><p id="inspectRole"></p></div><div class="inspect-arrows"><button id="inspectPrev" aria-label="上一架飞机">‹</button><button id="inspectNext" aria-label="下一架飞机">›</button></div></div>
-    <div class="telemetry-deck">
-    <nav class="inspect-tabs" aria-label="数据分类"><button id="inspectWeapon" type="button">武器参数</button><button id="inspectStatus" type="button">作战状态</button><button id="inspectUpgrade" type="button">下级变化</button><button id="inspectGlobal" type="button">全队构筑</button></nav>
-    <div class="inspect-viewport" id="inspectViewport"><dl class="inspect-stats" id="inspectStats"></dl></div>
-    <div class="inspect-page-nav" id="inspectPageNav"><button id="inspectPrevPage" aria-label="上一页数据">‹</button><span id="inspectPage"></span><button id="inspectNextPage" aria-label="下一页数据">›</button></div>
-    <p class="inspect-note" id="inspectNote"></p>
-    </div>
-    <div class="fleet-actions">
-    <button class="primary-button" id="resumeButton" type="button">继续护送</button><small class="pause-shortcut">P / Esc 暂停或继续 · 切换窗口自动暂停</small>
-    </div>
-    </div>
-  </section>
-
-  <section class="overlay result-screen" id="resultScreen" hidden>
-    <div class="result-badge" id="resultBadge">◆</div><p class="eyebrow" id="resultEyebrow">护送完成</p><h2 id="resultTitle">列车穿过了黑夜</h2><p id="resultCopy">你让最后一班车抵达了安全区。</p><div class="result-stats"><div><span>击破</span><strong id="resultKills">0</strong></div><div><span>抵达</span><strong id="resultStations">0</strong></div><div><span>废料</span><strong id="resultScrap">0</strong></div></div><div class="result-damage"><h3>伤害统计</h3><p class="damage-note">只计实际扣血；突破后的攻击仍计普攻。蓝色激光单独归入蓝色穿透。</p><div class="damage-columns"><div><b>飞机编队</b><div id="resultDroneDamage"></div></div><div class="bond-damage-column"><b>北辰 · 羁绊攻击</b><div id="resultBondDamage"></div></div><div><b>列车系统</b><div id="resultTrainDamage">车炮　0</div></div></div></div><p class="result-build" id="resultBuild"></p><p class="result-meta" id="resultMeta"></p><p class="result-record" id="resultRecord"></p><button class="primary-button" id="restartButton">返回出发主页</button></section>
-
-  <section class="display-help" id="displayHelp" role="dialog" aria-modal="true" aria-labelledby="displayHelpTitle" hidden><div><h2 id="displayHelpTitle">使用独立窗口游玩</h2><p id="displayHelpText"></p><p>从桌面图标打开后，浏览器地址栏不再占用游戏空间。首次打开仍需联网。</p><button class="primary-button" id="closeDisplayHelp" type="button">知道了</button></div></section>
-  <section class="overlay selection-screen settings-screen" id="settingsScreen" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" hidden>
-    <div class="selection-terminal settings-terminal">
-      <header class="station-heading"><p class="eyebrow">终端偏好 / 声音控制</p><h2 id="settingsTitle">设置</h2><p>让声音保持在舒服的位置。</p></header>
-      <div class="sound-options">
-        <div class="sound-option"><div><h3 id="musicLabel">背景音乐</h3><p>低音量氛围配乐 · 缓慢电子节拍</p></div><button id="musicToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="musicLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div>
-        <div class="sound-option"><div><h3 id="sfxLabel">游戏音效</h3><p>武器与关键提示 · 限制密集叠音</p></div><button id="sfxToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-labelledby="sfxLabel"><span class="switch-track" aria-hidden="true"></span><span class="switch-value">开启</span></button></div>
-      </div>
-      <p class="sound-note" id="soundNote">设置自动保存 · 切到后台时静音</p>
-      <button class="primary-button" id="closeSettingsButton" type="button">完成</button>
-    </div>
-  </section>
-  <section class="overlay selection-screen cloud-screen" id="cloudScreen" role="dialog" aria-modal="true" aria-labelledby="cloudTitle" hidden>
-    <div class="selection-terminal cloud-terminal">
-      <header><p class="eyebrow">远征档案</p><h2 id="cloudTitle">测试存档</h2><p id="cloudIdentity"></p><small id="cloudBadge">本机存档</small></header>
-      <p>开发测试用：输入相同 ID 可读取同一份服务器存档，不是真实账号登录。</p>
-      <div id="cloudLogin"><label for="cloudUserId">测试用户 ID</label><input id="cloudUserId" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="48" placeholder="例如 player-001"><button id="cloudSelect" type="button">切换到此测试用户</button></div>
-      <div id="cloudAccount" hidden><p>长期成长与战绩会在返回准备页后自动同步。战斗中的位置和敌人不保存。</p><button id="cloudSync" type="button">立即同步</button><button id="cloudImport" type="button">将游客进度导入这个新用户</button><button id="cloudLogout" type="button">返回游客存档</button></div>
-      <div id="cloudConflict" hidden><p id="cloudCompare"></p><p>设备进度不同，自动同步已暂停。选择后会替换另一份进度，不会叠加资源。</p><button id="cloudUseRemote" type="button">使用服务器进度，替换本机</button><button id="cloudUseLocal" type="button">保留本机进度，覆盖服务器</button></div>
-      <p id="cloudStatus" role="status" aria-live="polite">测试存档保存在运行服务的电脑上。</p>
-      <button class="primary-button" id="cloudClose" type="button">返回游戏</button>
-    </div>
-  </section>
-  <script type="module" src="src/main.js?v=v0.10.3.3"></script>
+  <canvas id="gameCanvas" tabindex="0" aria-label="荒原轨道：无人机守卫"></canvas>
+  <script>
+    // Hand the canvas to the host before the module graph evaluates (the
+    // mini-game adapter performs the same step with its own canvas), and let
+    // the host read the notch / home-indicator insets the page is given.
+    globalThis.__endlessRailsCanvas = document.getElementById("gameCanvas");
+    globalThis.__endlessRailsSafeArea = (() => {
+      let probe = null;
+      return () => {
+        if (!probe) {
+          probe = document.createElement("i");
+          probe.style.cssText = "position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)";
+          document.documentElement.appendChild(probe);
+        }
+        const s = getComputedStyle(probe);
+        return { top: parseFloat(s.paddingTop) || 0, right: parseFloat(s.paddingRight) || 0, bottom: parseFloat(s.paddingBottom) || 0, left: parseFloat(s.paddingLeft) || 0 };
+      };
+    })();
+  </script>
+  <script type="module" src="src/main.js?v=v0.11.0.1"></script>
 </body>
 </html>

@@ -9,10 +9,15 @@ function profile(grown=false){
  if(grown){m.train.level=11;m.resources={scrap:500,components:20,data:100};m.loadout=['hangar','pointDefense','storage','radar','repair'];for(const id in m.research)m.research[id]=3;for(const id in m.regions)m.regions[id].unlocked=true;m.blueprints=['cargo-lock','radar-pulse'];}
  w.EndlessRailsLongterm.saveMeta(w.EndlessRailsLongterm.gameStorage(w),m);return m;
 }
+// The interface is painted on one canvas: overlays are host screen state, not elements.
+function hideOverlays(w){
+ const h=w.EndlessRailsCanvasHost;h.home.isOpen=false;h.dialogs.resetGM();
+ Object.assign(h.run.screens,{contract:null,route:null,levelUp:null,station:null,result:null,pause:false});h.kit.invalidate();
+}
 function scenario(name){
  const w=gameWindow();if(!w.EndlessRailsGame)return;
  stress=false;resetSamples();
- for(const el of w.document.querySelectorAll('.overlay,#gmPanel'))el.hidden=true;
+ hideOverlays(w);
  const m=profile(!['fresh','normal'].includes(name));
  if(name==='reference'){
    m.train={level:3,xp:51};m.resources={scrap:5116,components:56,data:26};
@@ -25,7 +30,7 @@ function scenario(name){
  if(name==='fresh'||name==='grown'){readState().mode='menu';readState().paused=false;w.EndlessRailsMetaUI.open();return;}
  if(['ruins','industrial','infection'].includes(name))m.selectedRegion=name;
  w.EndlessRailsGame.startRun(w.EndlessRailsLongterm.planFor(m));
- const s=readState();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.document.getElementById('contractScreen').hidden=true;
+ const s=readState();s.activeContract=w.EndlessRailsRouteEvents.CONTRACTS[2];w.EndlessRailsCanvasHost.run.screens.contract=null;
  w.beginRoute(w.EndlessRailsRouteEvents.ROUTE_EVENTS[2]);
  if(name==='normal'||['ruins','industrial','infection'].includes(name))return;
  if(name==='levelup'){s.pendingLevelUps=1;w.openLevelUp();w.updateHud();w.draw();return;}
@@ -57,19 +62,20 @@ setInterval(()=>{
  const w=gameWindow();if(!w.EndlessRailsGame)return;
  const s=readState(),mean=a=>a.length?a.reduce((a,b)=>a+b,0)/a.length:0,p95=a=>a.length?[...a].sort((a,b)=>a-b)[Math.floor((a.length-1)*.95)]:0;
  document.getElementById('metrics').textContent=JSON.stringify({viewport:`${w.innerWidth}×${w.innerHeight}`,mode:s.mode,frames:samples.length,fps:+(1000/(mean(samples)||Infinity)).toFixed(1),frameP95ms:+p95(samples).toFixed(2),workMeanMs:+mean(costs).toFixed(2),workP95Ms:+p95(costs).toFixed(2),enemies:s.enemies.filter(e=>!e.dead).length,shots:s.shots.length,effects:s.weaponFx.length,particles:s.particles.length,zoom:+s.cameraZoom.toFixed(3)},null,2);
- const problems=[];
- for(const panel of w.document.querySelectorAll('.overlay:not([hidden]),#gmPanel:not([hidden])')){
-   for(const el of panel.querySelectorAll('button,.upgrade-card h3,.upgrade-card p')){
-     if(!el.getClientRects().length)continue;
-     // Scrollable preparation/result content is intentionally outside its scrollport.
-     if(el.closest('.meta-scroll')||panel.id==='resultScreen')continue;
-     const r=el.getBoundingClientRect();
-     if(r.left<-.5||r.top<-.5||r.right>w.innerWidth+.5||r.bottom>w.innerHeight+.5)problems.push(el.textContent.trim().slice(0,32)+' 超出视口');
-     if(el.scrollHeight>el.clientHeight+2&&w.getComputedStyle(el).overflowY==='hidden')problems.push(el.textContent.trim().slice(0,32)+' 内容被裁切');
-   }
+ const problems=[],h=w.EndlessRailsCanvasHost;h.render();
+ // Controls and card copy of the open overlay layers must sit inside the viewport.
+ // Scrollable preparation/result content is intentionally outside its scrollport.
+ const scrolls=new Set(['metaScreen','homeResearch','homeShop','homeSettings','resultScreen','inspectViewport']);
+ const inScroll=n=>{for(let p=n;p;p=p.parent)if(scrolls.has(p.key))return true;return false;};
+ const label=n=>h.kit.textOf(n).trim().slice(0,32)||String(n.key);
+ for(const b of h.boxes()){
+   const n=b.node;if(!(n.onTap||/^(levelCard|stationCard|contractList|eventList)-\d+$/.test(String(n.key))))continue;
+   if(!b.w||!b.h||n.cs?.visibility==='hidden'||inScroll(n))continue;
+   if(b.x<-.5||b.y<-.5||b.x+b.w>w.innerWidth+.5||b.y+b.h>w.innerHeight+.5)problems.push(label(n)+' 超出视口');
+   if(n.scrollH!=null&&n.scrollH>b.h+2&&n.cs?.overflowY==='hidden')problems.push(label(n)+' 内容被裁切');
  }
  const v=w.cameraView();
- if(s.mode==='combat')for(let i=0;i<s.trainLength;i++){const p=w.carPosition(i),x=(p.x-v.cx)*v.zoom+w.innerWidth*0,y=(p.y-v.cy)*v.zoom;if(Math.abs(x)>w.document.getElementById("gameCanvas").width/2-20||Math.abs(y)>w.document.getElementById("gameCanvas").height/2-20)problems.push('车厢 '+i+' 超出战场');}
+ if(s.mode==='combat')for(let i=0;i<s.trainLength;i++){const p=w.carPosition(i),x=(p.x-v.cx)*v.zoom+w.innerWidth*0,y=(p.y-v.cy)*v.zoom;if(Math.abs(x)>h.battlefield.width/2-20||Math.abs(y)>h.battlefield.height/2-20)problems.push('车厢 '+i+' 超出战场');}
  document.getElementById('layout').textContent=problems.length?[...new Set(problems)].join('\n'):'可见操作区未超出视口';
  document.getElementById('errors').textContent=errors.length?errors.join('\n'):'无';
 },1000);
