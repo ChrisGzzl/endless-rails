@@ -76,8 +76,15 @@ const homeCtl = (() => {
     const slots = metaApi.carSlots(meta);
     const carNames = cars => cars.filter(id => id !== "hangar").map(id => metaApi.CAR_DEFS.find(c => c.id === id)?.name || id).join(" / ") || "未选功能车厢";
     const art = host?.art ? host.art() : { startDisabled: false, statusHidden: true, retryHidden: true, statusText: "" };
+    // v0.12 departure summary (规划 §18.1): one visited node per layer, so the
+    // visited count is the reached layer.
+    const expedition = meta.activeExpedition;
+    const active = expedition?.status === "active";
     const m = {
       tab: activeTab, region: selected.id, workshopOpen,
+      startButtonText: active ? "继续远征" : "开始远征",
+      routeMark: active ? `L${expedition.visitedIds.length} / 12 · 券 ${Math.floor(expedition.tokens)}` : "01 — 05",
+      missionNote: "12 层持久远征 · 每个战斗节点约 60 秒 · 进度自动保存",
       trainLevelText: "列车 Lv." + meta.train.level,
       wallet: [
         { key: "scrap", iconStyle: "Scrap", valueStyle: "homeScrap", valueKey: "homeScrap", label: "废料", title: "废料" },
@@ -232,9 +239,9 @@ const homeCtl = (() => {
   function start() {
     if (host?.cloudBlocksStart?.()) { host.openCloud(); return; }
     meta = metaApi.loadMeta(storage);
-    const plan = metaApi.planFor(meta);
     open = false; changed();
-    host?.startRun(plan);
+    // v0.12: departure enters the persistent expedition map (alpha.1).
+    host?.startExpedition?.();
   }
   function refresh() { meta = metaApi.loadMeta(storage); draftFromMeta(); changed(); }
 

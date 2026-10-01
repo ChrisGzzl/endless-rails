@@ -56,16 +56,27 @@ const load = file => {
   assert.equal(host.state.mode, "menu");
   const tap = key => {
     host.render();
-    const n = host.node(key);
+    let n = host.node(key);
     assert.ok(n, key + " is on screen");
+    // Like a player, scroll the map column first when the chip is clipped.
+    const centre = node => [(node.boxX ?? node.absX) + node.w / 2, (node.boxY ?? node.absY) + node.h / 2];
+    if (!host.kit.hitPath(...centre(n)).includes(n)) {
+      for (let p = n.parent; p; p = p.parent) if (p.scrollH != null && p.scrollMax > 0) { host.kit.scrollIntoView(p.key, key); break; }
+      host.render();
+      n = host.node(key);
+    }
     const t = { identifier: 3, clientX: n.boxX + n.w / 2, clientY: n.boxY + n.h / 2 };
     touch.start({ touches: [t], changedTouches: [t] }); touch.end({ touches: [], changedTouches: [t] });
     host.render();
   };
   for (let i = 1; i < 5; i++) frame(i * 16);
   tap("startButton");
-  assert.equal(host.state.mode, "contractChoice");
-  tap("contractList-0"); tap("eventList-0");
+  assert.equal(!!host.state.activeExpedition, true, "the mini-game path persists an expedition");
+  assert.equal(host.state.activeExpedition.visitedIds.length, 1, "departure clears the start node");
+  const start = host.state.activeExpedition.nodes.find(n => n.layer === 1);
+  const reachable = host.state.activeExpedition.nodes.filter(n => start.nextIds.includes(n.id)).map(n => n.id);
+  tap("mapNode-" + reachable[0]);
+  tap("mapStartButton");
   assert.equal(host.state.mode, "combat");
   for (let i = 5; i < 90; i++) frame(i * 16);
   assert.ok(host.state.routeDistance < host.state.routeDistanceTotal, "combat advances on the mini-game path");

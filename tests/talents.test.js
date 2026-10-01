@@ -186,7 +186,7 @@ const backup = new Map();
 const store = { getItem: key => backup.get(key) ?? null, setItem: (key, value) => backup.set(key, value) };
 store.setItem(meta.STORAGE_KEY, JSON.stringify(legacy));
 const migrated = meta.loadMeta(store);
-assert.equal(migrated.version, 3);
+assert.equal(migrated.version, 4);
 assert.equal(migrated.train.level, 12, 'levels up to 30 are kept');
 assert.deepEqual(migrated.train, {level:12}, 'migration removes the experience field');
 assert.equal(migrated.migration.refundedData, 48 + 8, 'old research is fully refunded in data');
@@ -195,7 +195,7 @@ assert.equal(migrated.resources.data, 10 + 56 + 30 * 2, 'refund + two blueprint 
 assert.equal(migrated.resources.scrap, 500 + 90 * 2 + Math.floor(35 / (70 + 11 * 35) * meta.trainUpgradeCost(12)), 'old progress returns scrap once');
 const oldV2 = { ...meta.emptyMeta(), version: 2, resources: { scrap: 100, components: 0, data: 0 }, train: { level: 4, xp: 375, totalXp: 1000 } };
 const converted = meta.normalizeMeta(oldV2);
-assert.equal(converted.version, 3);
+assert.equal(converted.version, 4);
 assert.deepEqual(converted.train, { level: 4 });
 assert.equal(converted.resources.scrap, 100 + Math.floor(375 / (150 + 200 * 3) * meta.trainUpgradeCost(4)));
 assert.deepEqual(meta.normalizeMeta(converted), converted, 'v2 conversion is idempotent');

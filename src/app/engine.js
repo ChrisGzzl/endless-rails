@@ -14,6 +14,7 @@ import "../core/combat-effects.js";
 import "../core/control.js";
 import "../core/route-events.js";
 import "../core/run-record.js";
+import "../meta/expedition.js";
 import "../meta/longterm.js";
 import { canvas, W, H, resizeSurface } from "../view/surface.js";
 import { draw, setRegionGround } from "../view/render.js";
@@ -27,7 +28,7 @@ import { releaseCarSuppression, collideTrain, nearestTarget, bladeHuntTarget, da
 import { syncSwarm, updateSwarm, beginRoute, pulse, settleLongterm } from "../sim/run.js";
 import { stationCenter, stationTurrets, startDocking, updateDocking } from "../sim/docking.js";
 import { upgradePool, experiencePool } from "../sim/station.js";
-import { settleFinish, prepareLevelUp } from "./flow-logic.js";
+import { settleFinish, prepareLevelUp, failExpeditionNode } from "./flow-logic.js";
 
 // Presentation hooks, replaced by each host. Defaults are inert so a bare
 // boot (tests, headless smoke) can run the simulation without a surface.
@@ -43,6 +44,9 @@ export const presentation = {
   renderStation() {},
   renderResult() {},
   runReset() {},
+  showMap() {},
+  hideMap() {},
+  encounterStart() {},
 };
 
 const requireModule = (file, value) => { if (!value) throw new Error(file + " 未加载"); return value; };
@@ -55,10 +59,11 @@ const effects = requireModule("combat-effects.js", window.EndlessRailsCombatEffe
 const control = requireModule("control.js", window.EndlessRailsControl);
 const routeEvents = requireModule("route-events.js", window.EndlessRailsRouteEvents);
 const runRecord = requireModule("run-record.js", window.EndlessRailsRunRecord);
+const expedition = requireModule("expedition.js", window.EndlessRailsExpedition);
 const longterm = requireModule("longterm.js", window.EndlessRailsLongterm);
 const metaStorage = longterm.gameStorage ? longterm.gameStorage(window) : null;
 
-const state = { metaProfile: longterm.loadMeta(metaStorage), expeditionPlan: null, longtermRun: null, metaSettlement: null, metaSettled: false, disabledCars: {}, breakthroughs: {}, cameraZoom: 1, targetCameraZoom: 1, pointDefenseClock: 0, nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "menu", visualTime: 0, paused: false, commandRing: null, commandRingLife: 0, runSeed: 1, activeEvent: null, activeContract: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, record: runRecord.loadRecord(metaStorage), escortClock: .2, eventChoices: [], contractChoices: [], rerollUsed: false, coreHitCounter: 0, station: 1, timer: 60, maxTrainHp: 100, trainHp: 100, scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: balance.START_TRAIN_LENGTH, fireClock: 0, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, moveInput: { x: 0, y: 0 }, drone: { id: "command", x: 240, y: 300, moveSpeed: control.DRONE_MOVE_SPEED, flash: 0 }, train: { x: W / 2, y: H / 2 }, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, ...progression.createProgression({ routeDistanceTotal: 60 }) };
+const state = { metaProfile: longterm.loadMeta(metaStorage), expeditionPlan: null, longtermRun: null, metaSettlement: null, metaSettled: false, disabledCars: {}, breakthroughs: {}, cameraZoom: 1, targetCameraZoom: 1, pointDefenseClock: 0, nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "menu", visualTime: 0, paused: false, commandRing: null, commandRingLife: 0, runSeed: 1, activeEvent: null, activeContract: null, activeExpedition: null, expeditionNode: null, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, record: runRecord.loadRecord(metaStorage), escortClock: .2, eventChoices: [], contractChoices: [], rerollUsed: false, coreHitCounter: 0, station: 1, timer: 60, maxTrainHp: 100, trainHp: 100, scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: balance.START_TRAIN_LENGTH, fireClock: 0, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, moveInput: { x: 0, y: 0 }, drone: { id: "command", x: 240, y: 300, moveSpeed: control.DRONE_MOVE_SPEED, flash: 0 }, train: { x: W / 2, y: H / 2 }, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: {}, boss: null, shieldReady: false, ...progression.createProgression({ routeDistanceTotal: 60 }) };
 const level = id => state.modules[id] || 0;
 const carEnabled = id => !!state.expeditionPlan?.cars?.includes(id) && !state.disabledCars?.[id];
 
@@ -70,6 +75,7 @@ function beginRun(plan) {
   setRegionGround(state.expeditionPlan?.regionId || "wasteland");
   ensureCombatArt();
   state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
+  state.activeExpedition = null; state.expeditionNode = null;
   state.metaSettlement = null; state.metaSettled = false; state.settlementRetryAt = 0; state.disabledCars = {}; state.breakthroughs = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
   // v0.10: attributes freeze into a per-run snapshot at departure (需求 §14.3/§17).
   state.runStats = state.longtermRun.stats;
@@ -81,6 +87,42 @@ function beginRun(plan) {
   Object.assign(state.drone, { x: W / 2 + 45, y: H / 2 - 40, moveSpeed: control.DRONE_MOVE_SPEED, flightAngle: -Math.PI / 2, direction: 0, bank: 0, thrust: 0, vx: 0, vy: 0 });
   presentation.resetJoystick();
   presentation.runReset();
+  presentation.updateHud();
+}
+
+// v0.12 alpha.1: start one node of a persistent expedition (规划 §5/§8). Like
+// beginRun it freezes a fresh departure snapshot (stats from the CURRENT
+// applied train/research), but the in-run build, growth and normalized HP come
+// back from the expedition; combat stays the current 60-second timed segment.
+function beginEncounter(plan, exp, node) {
+  if (window.EndlessRailsCloud && !window.EndlessRailsCloud.canStart()) { window.EndlessRailsCloud.open(); return; }
+  state.record = runRecord.loadRecord(metaStorage);
+  state.metaProfile = longterm.loadMeta(metaStorage);
+  state.expeditionPlan = plan || longterm.planFor(state.metaProfile);
+  setRegionGround(state.expeditionPlan?.regionId || exp.regionId || "wasteland");
+  ensureCombatArt();
+  state.longtermRun = longterm.createRun(state.metaProfile, state.expeditionPlan);
+  state.longtermRun.riskBlueprints = [...(exp.riskBlueprints || [])];
+  state.metaSettlement = null; state.metaSettled = false; state.settlementRetryAt = 0; state.disabledCars = {}; state.cameraZoom = 1; state.targetCameraZoom = 1; state.pointDefenseClock = 0; state.trainDamage = 0; state.effectiveRepair = 0;
+  state.activeExpedition = exp; state.expeditionNode = node;
+  state.runStats = state.longtermRun.stats;
+  state.emergencyReserveUsed = !!exp.emergencyReserveUsed; state.fieldRepairClock = 0;
+  const maxHp = Math.max(1, Math.round(state.runStats.maxHp));
+  const startHp = Math.max(1, Math.round(Math.min(1, Math.max(0.05, exp.trainHpPct ?? 1)) * maxHp));
+  const build = exp.build || {}, growth = exp.growth || {};
+  const seed = routeEvents.createSeed(exp.seed + ":" + node.id + ":" + exp.summary.attempts);
+  // Layer drives the difficulty stage; capped at 4 so the legacy station-5
+  // boss trigger never fires inside an expedition node (alpha.1 has no boss).
+  const stage = Math.max(1, Math.min(4, Math.ceil((node.layer / expedition.LAYER_COUNT) * 4)));
+  Object.assign(state, { nextUpgradeAt: 0, upgradeReturnMode: "combat", hostileShots: [], weaponStats: {}, bondStats: {}, worldDistance: 0, comboFxAt: -1, swarm: [], routeElapsed: 0, docking: null, zones: [], weaponFx: [], weaponClocks: {}, mode: "combat", visualTime: 0, paused: false, runSeed: seed, activeEvent: null, activeContract: exp.contract || expedition.NEUTRAL_CONTRACT, routeModifiers: { routeDistance: 60, enemySpeed: 1, enemyHp: 1, eliteChance: .07, coreChance: 1, rewardMultiplier: 1, scrapMultiplier: 1, weather: "clear" }, station: stage, timer: 60, maxTrainHp: maxHp, trainHp: startHp, scrap: 0, kills: 0, combo: 0, bestCombo: 0, score: 0, droneLevel: 1, trainLength: state.expeditionPlan?.trainLength || balance.START_TRAIN_LENGTH, fireClock: 0, escortClock: .2, missileClock: 0, spawnClock: .2, pulseClock: 0, railClock: 0, hurtFlash: 0, shake: 0, coreHitCounter: 0, enemies: [], shots: [], particles: [], texts: [], selectedUpgrade: null, modules: { ...build.modules }, boss: null, shieldReady: false, commandRing: null, rerollUsed: false, breakthroughs: { ...build.breakthroughs }, ...progression.createProgression({ routeDistanceTotal: 60, experience: growth.experience, experienceToNext: growth.experienceToNext, level: growth.level, pendingLevelUps: growth.pendingLevelUps, coreStacks: build.coreStacks }) });
+  state.train.x = W / 2; state.train.y = H / 2;
+  Object.assign(state.drone, { x: W / 2 + 45, y: H / 2 - 40, moveSpeed: control.DRONE_MOVE_SPEED, flightAngle: -Math.PI / 2, direction: 0, bank: 0, thrust: 0, vx: 0, vy: 0 });
+  presentation.resetJoystick();
+  presentation.encounterStart();
+  beginRoute(expedition.NEUTRAL_EVENT);
+  const override = expedition.ROUTE_OVERRIDES[node.type] || {};
+  if (override.enemyHp) state.routeModifiers.enemyHp *= override.enemyHp;
+  if (override.eliteChance) state.routeModifiers.eliteChance *= override.eliteChance;
   presentation.updateHud();
 }
 
@@ -171,11 +213,13 @@ function update(dt, refreshHud = true) {
   updateArsenal(dt);
   updateShots(dt); updateParticles(dt);
   if (state.trainHp <= 0) {
-    const resultData = settleFinish(false);
+    const resultData = state.activeExpedition ? failExpeditionNode() : settleFinish(false);
     if (resultData) presentation.renderResult(resultData);
     return;
   }
-  if (state.routeDistance <= 0) startDocking(state.station === 5);
+  // alpha.1 expedition nodes always end in a normal arrival dock; the legacy
+  // station-5 final defense only belongs to the five-segment run.
+  if (state.routeDistance <= 0) startDocking(state.station === 5 && !state.activeExpedition);
   else if (progression.shouldOfferUpgrade(state)) {
     const picks = prepareLevelUp();
     if (picks) presentation.renderLevelUp(picks);
@@ -212,4 +256,4 @@ function resizeBattlefield(box) {
   if (state.paused) draw();
 }
 
-export { state, metaStorage, gameAudio, motion, balance, progression, effects, control, routeEvents, runRecord, longterm, level, carEnabled, beginRun, update, frameStep, resizeBattlefield, syncSwarm, pulse, beginRoute, cameraView, carPosition, droneBounds, stationCenter, stationTurrets, bladePositions, applyResearchProfile, upgradePool, experiencePool };
+export { state, metaStorage, gameAudio, motion, balance, progression, effects, control, routeEvents, runRecord, expedition, longterm, level, carEnabled, beginRun, beginEncounter, update, frameStep, resizeBattlefield, syncSwarm, pulse, beginRoute, cameraView, carPosition, droneBounds, stationCenter, stationTurrets, bladePositions, applyResearchProfile, upgradePool, experiencePool };

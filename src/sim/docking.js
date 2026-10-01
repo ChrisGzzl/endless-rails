@@ -5,7 +5,7 @@ import { WORLD_SPEED, advanceWorld } from "./world.js";
 import { updateSwarm } from "./run.js";
 import { updateParticles, burst, showToast } from "./fx.js";
 import { killBoss, releaseCarSuppression } from "./combat.js";
-import { enterStation, settleFinish } from "../app/flow-logic.js";
+import { enterStation, settleFinish, finishExpeditionNode } from "../app/flow-logic.js";
 
 function stationCenter() {
   const distance=state.mode==="docking"?state.docking.offset:
@@ -56,6 +56,7 @@ function updateDocking(dt) {
   updateParticles(dt);
   if(d.time>=Math.max(3.4,d.duration+.6)&&!state.enemies.some(e=>!e.dead)&&(!d.final||!state.boss||state.boss.dead)) {
     if(d.final){const resultData=settleFinish(true);if(resultData)presentation.renderResult(resultData);}
+    else if(state.activeExpedition){const resultData=finishExpeditionNode(true);if(resultData){state.mode="menu";if(resultData.expeditionFinal)presentation.renderResult(resultData);else presentation.showMap(resultData);}}
     else presentation.renderStation(enterStation());
   }
 }

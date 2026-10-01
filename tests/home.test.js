@@ -33,6 +33,6 @@ assert.equal(ui.keys('research-').filter(k=>/^research-\w+$/.test(k)).length,7);
 ui.tap('research-fireControl');
 assert.equal(meta.loadMeta(storage).research.fireControl,1);assert.equal(ui.text('homeData'),'97');
 ui.tap('homeTabTrain');ui.tap('metaStartButton');assert.equal(home.getTab(),'battle');assert.equal(ui.visible('startScreen'),true);
-ui.tap('startButton');assert.equal(ui.visible('startScreen'),false);assert.equal(g.run('state.mode'),'contractChoice');
+ui.tap('startButton');assert.equal(ui.visible('startScreen'),false);assert.equal(g.run('state.mode'),'menu');assert.ok(ui.visible('mapScreen'));
 g.run('presentation.renderResult(settleFinish(false))');ui.tap('restartButton');assert.equal(home.getTab(),'battle');assert.equal(ui.visible('startScreen'),true);
 console.log('home tabs, keyboard navigation, talent draft economy, research purchase, direct launch and return passed');

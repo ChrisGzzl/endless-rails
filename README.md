@@ -16,12 +16,12 @@
   export/                供稿目录（全局 agent.md 标准）：manifest.yaml + worklog.md（工作记录：继续工作前先读，改动后追加条目）
   minigame/              微信小游戏/TapTap 构建产物（node tools/build-minigame.cjs 生成 bundle；适配层 game.js）
   src/                   游戏运行时代码（原生 ES Module，见下）
-  tests/                 34 个测试 + test-harness.cjs；根目录 node --test 递归执行
+  tests/                 35 个测试 + test-harness.cjs；根目录 node --test 递归执行
   tools/                 importmap.cjs（生成 index.html 的版本化 import map）、build-minigame.cjs、pacing-check.cjs、dev-server.cjs
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.11.1.0`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.12.0.2`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 局外列车等级由废料手动购买整级（Lv1→2 为 71 废料，Lv1→30 合计 21,273）；每级获得 2 个**改装点**用于车厢与分支构筑。永久研究消耗废料加研究数据/技术组件，七项全满的废料费用为 21,196。远征只带回废料、组件、数据与蓝图，不再产生局外 XP。旧 v1/v2 存档保留列车等级，级内 XP 按比例折为废料且只转换一次。局内武器经验仍用于当局升级，与列车无关。
 
@@ -47,7 +47,7 @@ python3 -m http.server 8123     # 或 npx serve 等价
 node --test
 ```
 
-34 个测试文件 + 12 项存档服务测试全绿为改动的验收线（`node --test` 共 47 项）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：模块加载图解析自真实的 index.html，每条具名导入都会校验目标确实导出；沙箱里只有一块假画布（确定性文字度量的 2D 上下文），**没有 `document`**。测试通过宿主桥 `EndlessRailsCanvasHost` 驱动界面：`ui.tap(key)` 在排版后的节点中心做命中测试再按下/抬起（必要时先滚动到可见），和手指点击走同一条路径。canvas-purity 测试另外静态扫描 `src/`，除 `app/platform.js` 外禁止任何 DOM 构造/查询；minigame-bundle 测试构建小游戏 bundle，在模拟 wx 运行时里跑通整条流程。
+35 个测试文件 + 13 项存档服务测试全绿为改动的验收线（`node --test` 共 49 项）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：模块加载图解析自真实的 index.html，每条具名导入都会校验目标确实导出；沙箱里只有一块假画布（确定性文字度量的 2D 上下文），**没有 `document`**。测试通过宿主桥 `EndlessRailsCanvasHost` 驱动界面：`ui.tap(key)` 在排版后的节点中心做命中测试再按下/抬起（必要时先滚动到可见），和手指点击走同一条路径。canvas-purity 测试另外静态扫描 `src/`，除 `app/platform.js` 外禁止任何 DOM 构造/查询；minigame-bundle 测试构建小游戏 bundle，在模拟 wx 运行时里跑通整条流程。
 
 ## src/ 结构
 
@@ -58,7 +58,8 @@ src/
               balance 数值 · motion 运动 · progression 经验/掉落 · combat-effects 武器与羁绊
               control 操控 · route-events 路线/契约 · run-record 战绩
               audio 音频 · cloud-sync 云存档核心 · cloud-config 云开关
-  meta/       longterm 长期养成存档（等级/五分支天赋/七项永久研究/方案槽/蓝图/区域/v0.9→v0.10 迁移）
+  meta/       longterm 长期养成存档（等级/五分支天赋/七项永久研究/方案槽/蓝图/区域/远征字段/v0.9→v0.12 迁移）
+              expedition 远征域（12 层地图生成/白名单规范化/节点奖励账本，零依赖 UMD）
   sim/        纯模拟逻辑
               world 世界与相机 · spawn 出怪 · fx 粒子与提示 · enemies 敌人行为
               combat 目标/伤害/击杀 · weapons 武器与弹道 · docking 进站清场
@@ -69,12 +70,12 @@ src/
               · kit 节点树、状态样式（hover/active/disabled/focus-visible）、命中测试、多指按压、
               滚动、焦点与 Tab/Enter/Space、补间动画
     screens/  界面描述：sheet 样式表（由原 CSS 逐条转写的计算样式，含 media/状态变体）
-              · icons 图标精灵 · home 准备页 · battle 战斗 HUD · flows 契约/路线/升级/进站/结算
+              · icons 图标精灵 · home 准备页 · map 远征路线图 · battle 战斗 HUD · flows 契约/路线/升级/进站/结算
               · pause 暂停与机体检视 · dialogs 设置/显示帮助/GM/测试存档
   app/        engine 核心状态机（state/update/frameStep + presentation 钩子）
-              flow-logic 流程逻辑（契约/路线/升级/进站/结算，返回纯数据）
+              flow-logic 流程逻辑（契约/路线/升级/进站/结算/远征节点事务，返回纯数据）
               canvas-host 宿主：图层叠放、帧管线（战场离屏 + 界面缓存层）、输入路由、桥接对象
-              ui-home 准备页控制器 · ui-run 局内控制器（HUD/摇杆/暂停/流程屏）
+              ui-home 准备页控制器 · ui-map 远征地图控制器 · ui-run 局内控制器（HUD/摇杆/暂停/流程屏）
               ui-dialogs 设置/全屏/安装/GM/测试存档控制器
               platform 平台服务（视口/像素比/安全区、离屏画布、图片、全屏、文本输入）
               telemetry 局内统计

@@ -5,13 +5,14 @@ const fs=require('node:fs/promises');
 const path=require('node:path');
 const {randomUUID}=require('node:crypto');
 const meta=require('../../src/meta/longterm');
+const expedition=require('../../src/meta/expedition');
 const ROOT=path.resolve(__dirname,'../..');
 const MAX_PAYLOAD=32768, MAX_BODY=MAX_PAYLOAD+4096;
 class ApiError extends Error {constructor(status,message){super(message);this.status=status;}}
 const object=x=>x&&typeof x==='object'&&!Array.isArray(x);
 function validate(payload){
  if(!object(payload)||payload.schemaVersion!==1||!object(payload.meta)||!object(payload.record)
-   ||![1,2,3].includes(payload.meta.version)||payload.record.version!==1
+   ||![1,2,3,4].includes(payload.meta.version)||payload.record.version!==1
    ||!object(payload.meta.resources)||!object(payload.meta.train)
    ||Object.keys(payload).some(k=>!['schemaVersion','meta','record'].includes(k)))throw new ApiError(400,'invalid_save');
  if(Buffer.byteLength(JSON.stringify(payload))>MAX_PAYLOAD)throw new ApiError(413,'save_too_large');
@@ -28,7 +29,7 @@ function validate(payload){
  // v0.10 resources use fixed-3 fractional bookkeeping (需求 §19.2).
  const fixed3=value=>Number.isFinite(value)&&value>=0&&value<=1e12&&Math.abs(value*1000-Math.round(value*1000))<1e-6;
  if(!['scrap','components','data'].every(k=>integer(m.resources[k])||fixed3(m.resources[k]))
-   ||(m.version<3&&!integer(m.train.xp))||(m.version===3&&Object.keys(m.train).some(k=>k!=='level'))||!Number.isInteger(m.train.level)||m.train.level<1||m.train.level>30
+   ||(m.version<3&&!integer(m.train.xp))||(m.version>=3&&Object.keys(m.train).some(k=>k!=='level'))||!Number.isInteger(m.train.level)||m.train.level<1||m.train.level>30
    ||!object(m.totals)||!['expeditions','extracts','wins','losses'].every(k=>integer(m.totals[k]))
    ||!object(m.research)||!meta.RESEARCH_IDS.every(k=>Number.isInteger(m.research[k])&&m.research[k]>=0&&m.research[k]<=meta.MAX_RESEARCH_LEVEL)
    ||!object(m.regions)||!meta.REGIONS.every(region=>object(m.regions[region.id])&&integer(m.regions[region.id].clears)&&typeof m.regions[region.id].unlocked==='boolean'&&typeof m.regions[region.id].repaired==='boolean')
@@ -50,6 +51,10 @@ function validate(payload){
  for(const [key,allowed,max] of [['loadout',meta.CAR_DEFS.map(c=>c.id),6],['blueprints',meta.BLUEPRINTS.map(b=>b.id),12]]){
    if(!Array.isArray(m[key])||m[key].length>max||!m[key].every(id=>allowed.includes(id)))throw new ApiError(400,'invalid_save');
  }
+ // v0.12: an attached expedition must survive the full whitelist rebuild; a
+ // corrupt map is rejected whole, never partially sanitized (规划 §19.1).
+ if(m.activeExpedition!==undefined&&m.activeExpedition!==null
+   &&!expedition.normalizeExpedition(m.activeExpedition,{regionIds:meta.REGIONS.map(r=>r.id)}))throw new ApiError(400,'invalid_save');
  return payload;
 }
 function createFileStore(dataDir){

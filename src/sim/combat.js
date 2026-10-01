@@ -11,11 +11,14 @@ function killEnemy(e, fromBlast=false){
   const gain=Math.ceil((e.elite?14:6)*(1+level("cargo")*.3+level("magnet")*.5)*state.routeModifiers.scrapMultiplier);
   state.scrap+=gain;state.score+=Math.ceil((e.elite?130:50)*Math.max(1,state.combo)*state.routeModifiers.rewardMultiplier);
   if(state.longtermRun){
-    longterm.awardRisk(state.longtermRun,"scrap",Math.max(1,Math.round((e.elite?4:1)*(state.expeditionPlan?.region?.reward||1))));
-    if(["charger","climber","spitter"].includes(e.kind)){state.longtermRun.specialKills++;if(Math.random()<.18)state.drops.push({type:"research-data",x:e.x,y:e.y,life:7});}
+    // v0.12 expeditions pay permanent resources through the fixed per-node
+    // budget B (规划 §7.1); kill-driven scrap/data/tech drops stay on the
+    // legacy five-segment run so pickups never double-pay.
+    if(!state.activeExpedition)longterm.awardRisk(state.longtermRun,"scrap",Math.max(1,Math.round((e.elite?4:1)*(state.expeditionPlan?.region?.reward||1))));
+    if(["charger","climber","spitter"].includes(e.kind)){state.longtermRun.specialKills++;if(!state.activeExpedition&&Math.random()<.18)state.drops.push({type:"research-data",x:e.x,y:e.y,life:7});}
     if(e.elite){
-      state.longtermRun.eliteKills++;state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});
-      longterm.awardRisk(state.longtermRun,"data",1);
+      state.longtermRun.eliteKills++;
+      if(!state.activeExpedition){state.drops.push({type:"meta-tech",x:e.x,y:e.y,life:8});longterm.awardRisk(state.longtermRun,"data",1);}
       if(Math.random()<.14){const bp=longterm.rollBlueprint(state.runStats?.ownedBlueprints,state.expeditionPlan?.regionId);if(bp)state.drops.push({type:"blueprint",blueprintId:bp,x:e.x+10,y:e.y-8,life:10});}
     }else if(Math.random()<.025)state.drops.push({type:"repair-kit",x:e.x,y:e.y,life:6});
   }

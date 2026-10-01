@@ -31,6 +31,23 @@ test('simultaneous writes with same base: one succeeds and the other conflicts',
  const results=await Promise.all([store.save('player',put(0,'one')),store.save('player',put(0,'two'))]);
  assert.deepEqual(results.map(r=>r.status),['ok','conflict']);assert.equal((await store.read('player')).revision,1);
 });
+test('v4 expeditions validate as a whole and reject partial corruption',async t=>{
+ const {store}=await fixture(t);
+ const expedition=require('../../../src/meta/expedition');
+ const good=payload();
+ good.meta.version=4;
+ good.meta.activeExpedition=expedition.generateExpedition({regionId:'wasteland',seed:7,id:'k7zz01',startExpeditions:0});
+ assert.equal((await store.save('hiker',put(0,'v4good',good))).status,'ok','a legal v4 expedition save is accepted');
+ const broken=payload();
+ broken.meta.version=4;
+ const corrupt=expedition.generateExpedition({regionId:'wasteland',seed:7,id:'k7zz01'});
+ corrupt.nodes[3].nextIds=['nowhere'];
+ broken.meta.activeExpedition=corrupt;
+ await assert.rejects(store.save('hiker',put(1,'v4broken',broken)),/invalid_save/,'a broken graph rejects instead of sanitizing');
+ const future=payload();
+ future.meta.version=5;
+ await assert.rejects(store.save('hiker',put(1,'v5',future)),/invalid_save/,'unknown versions still reject');
+});
 test('invalid IDs cannot escape data folder; invalid payload cannot destroy existing save',async t=>{
  const {store}=await fixture(t);
  for(const id of ['../secret','a/b','UPPER','x'.repeat(49),''])await assert.rejects(store.read(id),/invalid_test_id/);

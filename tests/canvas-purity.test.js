@@ -16,9 +16,10 @@ assert.ok(host, "the canvas graph must boot without a document");
 assert.equal(host.state.mode, "menu", "a documentless boot still reaches the menu");
 
 ui.tap("startButton");
-assert.equal(host.state.mode, "contractChoice", "flow logic runs without any DOM panels");
-ui.tap("contractList-0");
-ui.tap("eventList-0");
+assert.ok(ui.visible("mapScreen"), "the expedition map is reachable without any DOM panels");
+const firstNode = game.json("expedition.reachableNext(state.activeExpedition).map(n=>n.id)")[0];
+ui.tap("mapNode-" + firstNode);
+ui.tap("mapStartButton");
 assert.equal(host.state.mode, "combat", "combat is reachable entirely without the document");
 game.run("for (let i = 0; i < 60; i++) nextFrame(2000 + i * 16);");
 assert.ok(host.state.routeDistance < host.state.routeDistanceTotal, "simulation advances without any DOM");

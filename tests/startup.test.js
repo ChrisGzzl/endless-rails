@@ -29,16 +29,14 @@ try {
 }
 assert.equal(clickError, null, "tapping start must not fail");
 assert.equal(ui.visible("startScreen"), false, "starting must close the expedition base");
-assert.equal(run("state.mode"), "contractChoice", "starting must open the contract choice");
-assert.ok(ui.visible("contractScreen"), "contract choices show before combat");
-assert.ok(ui.visible("contractList-2"), "contract choice renders three options");
-ui.tap("contractList-0");
-assert.equal(ui.visible("contractScreen"), false, "choosing a contract closes its overlay");
-assert.ok(ui.visible("eventScreen"), "choosing a contract opens route choices");
-assert.ok(ui.visible("eventList-2"), "route choice renders three options");
-ui.tap("eventList-0");
-assert.equal(ui.visible("eventScreen"), false, "choosing a route closes its overlay");
-assert.equal(run("state.mode"), "combat", "choosing a route enters combat");
+assert.ok(ui.visible("mapScreen"), "departure opens the persistent map directly (no L1 contract)");
+assert.equal(run("state.activeExpedition.visitedIds.length"), 1, "the start node is cleared on departure");
+const firstNode = game.json("expedition.reachableNext(state.activeExpedition).map(n=>n.id)")[0];
+ui.tap("mapNode-" + firstNode);
+assert.ok(ui.visible("mapDetail"), "tapping a reachable node opens its detail card");
+ui.tap("mapStartButton");
+assert.equal(ui.visible("mapScreen"), false, "starting a node closes the map");
+assert.equal(run("state.mode"), "combat", "confirming a node enters combat");
 
 assert.doesNotThrow(() => {
   vm.runInContext("for (let i = 0; i < 60; i++) nextFrame(32 + i * 16);", sandbox, { timeout: 3000 });

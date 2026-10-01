@@ -30,11 +30,13 @@ import { battleScreen } from "../view/screens/battle.js";
 import { flowScreens } from "../view/screens/flows.js";
 import { pauseScreen } from "../view/screens/pause.js";
 import { dialogScreens } from "../view/screens/dialogs.js";
+import { mapScreen } from "../view/screens/map.js";
 import { homeCtl } from "./ui-home.js";
 import { runCtl } from "./ui-run.js";
 import { dialogCtl } from "./ui-dialogs.js";
+import { mapCtl } from "./ui-map.js";
 
-const GAME_VERSION = "v0.11.1.0";
+const GAME_VERSION = "v0.12.0.2";
 const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
 const canvasHost = (() => {
@@ -97,6 +99,7 @@ const canvasHost = (() => {
     const out = [];
     const flows = runCtl.flowModels();
     if (homeCtl.isOpen) out.push(["start", homeScreen.build(homeCtl.model()), false]);
+    if (mapCtl.visible) out.push(["map", mapScreen.build(mapCtl.model()), false]);
     if (flows.station) out.push(["station", flowScreens.station(flows.station), true]);
     if (flows.contract) out.push(["contract", flowScreens.contract(flows.contract), true]);
     if (flows.route) out.push(["event", flowScreens.route(flows.route), true]);
@@ -402,6 +405,19 @@ const canvasHost = (() => {
     releasePointer,
     openHome: () => homeCtl.open(),
     closeHome: () => { homeCtl.isOpen = false; uiKit.invalidate(); },
+    showMap: result => mapCtl.open(result),
+    hideMap: () => mapCtl.close(),
+    afterRender: fn => { afterRender.push(fn); uiKit.invalidate(); },
+    // Scroll a container to a node; `centre` aims the node at the middle of
+    // the viewport instead of its top edge (the route map's auto-locate).
+    scrollIntoView: (containerKey, targetKey, centre = false) => {
+      const c = uiKit.find(containerKey), t = uiKit.find(targetKey);
+      if (!c || !t) return;
+      const key = c.scrollKey || c.key;
+      const cur = uiKit.getScroll(key);
+      const offset = t.absY - (c.absY + c.bt) + cur;
+      uiKit.setScroll(key, centre ? offset - Math.max(0, (c.h - t.h) / 2) : offset, c.scrollMax);
+    },
     displayChanged: () => { updateEnv(); },
     measurePause,
     home: { refresh: () => homeCtl.refresh() },
@@ -432,6 +448,7 @@ const canvasHost = (() => {
     scrollIntoView: (container, target) => uiKit.scrollIntoView(container, target),
     afterRender: fn => { afterRender.push(fn); uiKit.invalidate(); },
     startRun: plan => beginRun(plan),
+    startExpedition: () => runCtl.startExpedition(),
     cloudBlocksStart: () => dialogCtl.cloud.enabled && !dialogCtl.cloud.canStart(),
     openCloud: () => dialogCtl.cloud.open(),
     openCloudFromButton: () => dialogCtl.cloud.openFromButton(),
@@ -448,6 +465,7 @@ const canvasHost = (() => {
   });
   runCtl.attach(hub);
   dialogCtl.attach(hub);
+  mapCtl.attach(hub);
   onArtChange(() => uiKit.invalidate());
 
   // -- page events (browser) -------------------------------------------------------------------------------------

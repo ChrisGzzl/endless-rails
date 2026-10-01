@@ -16,15 +16,14 @@ assert.equal(host().state.mode, "menu", "canvas boot starts at the menu");
 assert.ok(game.scheduledFrames >= 1, "canvas boot must schedule its first frame");
 
 ui.tap("startButton");
-assert.equal(host().state.mode, "contractChoice", "starting must open the contract choice");
-assert.ok(host().state.contractChoices.length >= 3, "contract choice must offer three contracts");
-assert.equal(ui.keys("contractList-").filter(k => /^contractList-\d+$/.test(k)).length, host().state.contractChoices.length, "every contract is a card");
+assert.ok(ui.visible("mapScreen"), "departure opens the expedition map directly");
+assert.equal(host().state.activeExpedition.contract, null, "alpha.1 expeditions run contract-less");
 
-ui.tap("contractList-0");
-assert.equal(host().state.mode, "routeChoice", "choosing a contract must open the route choice");
-
-ui.tap("eventList-0");
-assert.equal(host().state.mode, "combat", "choosing a route must enter combat");
+const firstNode = game.json("expedition.reachableNext(state.activeExpedition).map(n=>n.id)")[0];
+ui.tap("mapNode-" + firstNode);
+assert.ok(ui.visible("mapDetail"), "tapping a map node opens its detail card");
+ui.tap("mapStartButton");
+assert.equal(host().state.mode, "combat", "confirming a map node must enter combat");
 
 run("for (let i = 0; i < 90; i++) nextFrame(1000 + i * 16);");
 assert.ok(host().state.routeDistance < host().state.routeDistanceTotal, "combat frames must advance the route on the canvas path");

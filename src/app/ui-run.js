@@ -8,7 +8,7 @@
 // DOM version's verbatim.
 
 import { state, presentation, beginRun, pulse, level, effects, control, gameAudio, syncSwarm, applyResearchProfile, longterm, upgradePool, experiencePool } from "./engine.js";
-import { chooseContract, prepareContractChoice, chooseUpgrade, chooseBreakthrough, breakthroughOptions, selectStationUpgrade, rerollStation, departStation, settleFinish, prepareLevelUp, enterStation, damageSummary } from "./flow-logic.js";
+import { chooseContract, prepareContractChoice, chooseUpgrade, chooseBreakthrough, breakthroughOptions, selectStationUpgrade, rerollStation, departStation, settleFinish, prepareLevelUp, enterStation, damageSummary, createExpedition, resumeExpeditionMeta } from "./flow-logic.js";
 import { beginRoute } from "../sim/run.js";
 import { upgradeBrief, scopeLabel, upgradeFamily } from "../sim/station.js";
 import { inspectFleet, inspectRows, tabNote } from "./telemetry.js";
@@ -38,7 +38,7 @@ const runCtl = (() => {
     const next = {
       paused: state.paused,
       timer: Math.max(0, state.timer).toFixed(1),
-      station: String(Math.min(state.station, 5)).padStart(2, "0") + " / 05",
+      station: state.activeExpedition ? "L" + (state.expeditionNode?.layer || 1) + "/" + "12" : String(Math.min(state.station, 5)).padStart(2, "0") + " / 05",
       scrap: String(state.scrap).padStart(3, "0"),
       routeLabel: arrived ? "行程 · 已抵达车站" : `行程 · 已完成 ${Math.floor(routePercent)}%`,
       routePercent,
@@ -50,7 +50,7 @@ const runCtl = (() => {
       pulseCooldown: state.pulseClock ? state.pulseClock / 7 * 100 : 0,
       claimVisible: !claimHidden,
       claimText: "强化 ×" + state.pendingLevelUps,
-      objective: state.mode === "docking" ? "防卫炮台清场 · 列车减速进站" : state.mode === "station" ? "安全区 · 列车已停稳" : state.station === 5 ? "守住列车，抵达终点防区" : "护送列车抵达下一站",
+      objective: state.activeExpedition ? (state.mode === "docking" ? "防卫炮台清场 · 节点即将完成" : state.expeditionNode?.type === "final" ? "守住列车 · 完成终点轨道" : "护送列车走完本节点轨道") : state.mode === "docking" ? "防卫炮台清场 · 列车减速进站" : state.mode === "station" ? "安全区 · 列车已停稳" : state.station === 5 ? "守住列车，抵达终点防区" : "护送列车抵达下一站",
       health: Math.ceil(state.trainHp) + "/" + state.maxTrainHp,
       healthPercent,
       levelHealthText: Math.ceil(state.trainHp) + " / " + state.maxTrainHp,
@@ -217,6 +217,33 @@ const runCtl = (() => {
 
   // -- flows -------------------------------------------------------------------------------------------
 
+  // v0.12 departure: enter the persistent expedition map (alpha.1). The L1
+  // contract choice was removed - departure goes straight to the route map.
+  function startExpedition() {
+    gameAudio?.unlock();
+    const meta = resumeExpeditionMeta();
+    const exp = meta.activeExpedition;
+    if (exp && exp.status === "active") {
+      state.activeExpedition = exp;
+      hub?.closeHome();
+      presentation.showMap();
+      return;
+    }
+    const created = createExpedition();
+    if (!created) return;
+    state.activeExpedition = created;
+    hub?.closeHome();
+    presentation.showMap();
+  }
+  function runReset() {
+    gameAudio?.unlock();
+    hub.dialogs.resetGM();
+    screens.pause = false; hub.closeHome(); hub.hideMap?.();
+    screens.station = null; screens.levelUp = null; screens.result = null; screens.route = null; screens.contract = null;
+    hintOpacity = 0.8;
+    openContractChoice();
+    changed();
+  }
   function openContractChoice() {
     const choices = prepareContractChoice();
     if (!choices) return;
@@ -323,9 +350,10 @@ const runCtl = (() => {
     const gained = settlement?.gained || { scrap: 0, components: 0, data: 0 }, bps = settlement?.blueprints || [];
     screens.result = {
       outcome,
-      eyebrow: won ? "远征完成" : extracted ? "安全撤离" : "列车失守",
-      title: won ? "列车穿过了黑夜" : extracted ? "资源已经锁定" : "铁轨被荒原吞没",
-      copy: won ? "你完成了区域远征，并将成果带回列车。" : extracted ? "你选择在风险继续扩大前返回基地。" : "已锁定资源被带回，未保护的风险资源发生损失。",
+      mapReturn: !!data.nodeFailure,
+      eyebrow: won ? (data.expeditionFinal ? "整图通关" : "节点完成") : extracted ? "安全撤离" : "节点失败",
+      title: won ? (data.expeditionFinal ? "远征路线全部打通" : "本节点已通过") : extracted ? "资源已经锁定" : "列车在节点内失守",
+      copy: won ? (data.expeditionFinal ? "你完成了整张远征地图，通关奖励已入账。" : "检查点已更新，路线推进到下一层。") : extracted ? "你选择在风险继续扩大前返回基地。" : "已回滚到节点入口：临时成长不保留，失败保留资源已按上限发放，可调整局外配置后重试本节点。",
       kills: state.kills, stations: outcome === "won" ? 5 : state.longtermRun?.stationsBanked || 0, scrap: state.scrap,
       damage: damageSummary(),
       build: "构筑：" + Object.keys(state.modules).filter(id => level(id) > 0).map(id => (experiencePool.find(u => u.id === id) || upgradePool.find(u => u.id === id))?.name || id).join(" / ") + " / 核心：" + Object.keys(state.coreStacks).filter(id => state.coreStacks[id] > 0).join(" · "),
@@ -335,7 +363,13 @@ const runCtl = (() => {
     hub?.resetScroll("resultScreen");
     changed();
   }
-  function restart() { screens.result = null; changed(); hub.openHome(); }
+  function restart() {
+    const backToMap = !!screens.result?.mapReturn;
+    screens.result = null; changed();
+    if (backToMap) { state.mode = "menu"; presentation.showMap(); return; }
+    state.activeExpedition = null;
+    hub.openHome();
+  }
   function claim() { if (state.mode === "combat" && !state.paused && state.pendingLevelUps > 0) openLevelUp(); }
 
   // -- engine presentation hooks -----------------------------------------------------------------------
@@ -351,13 +385,15 @@ const runCtl = (() => {
     presentation.renderResult = renderResult;
     presentation.toast = text => { toast.text = text; toast.serial++; changed(); };
     presentation.combo = text => { combo.text = text; combo.serial++; changed(); };
-    presentation.runReset = () => {
+    presentation.runReset = runReset;
+    presentation.showMap = result => hub.showMap?.(result);
+    presentation.hideMap = () => hub.hideMap?.();
+    presentation.encounterStart = () => {
       gameAudio?.unlock();
       hub.dialogs.resetGM();
-      screens.pause = false; hub.closeHome();
-      screens.station = null; screens.levelUp = null; screens.result = null; screens.route = null; screens.contract = null;
+      hub.closeHome(); hub.hideMap?.();
+      screens.pause = false; screens.result = null;
       hintOpacity = 0.8;
-      openContractChoice();
       changed();
     };
   }
@@ -396,6 +432,7 @@ const runCtl = (() => {
   return {
     attach, updateHud, hudModel, battleModel, flowModels, pauseModel, renderPause, togglePause, autoPause, resetJoystick,
     keyDownSteer, keyUpSteer, selectKey, openLevelUp, chooseLevelUp, arriveStation, extractRun, continueRun, rerollUpgrades,
+    startExpedition,
     get pauseVisible() { return screens.pause; }, get selectOpen() { return selectOpen && screens.pause; },
     closeSelect: () => { if (selectOpen) { selectOpen = false; changed(); } },
     screens, pauseActions, startRun: plan => beginRun(plan),

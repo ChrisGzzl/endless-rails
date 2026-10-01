@@ -17,8 +17,15 @@ function gameStorage(host) {
 }
 const MAX_TRAIN_LEVEL = 30;
 const MAX_RESEARCH_LEVEL = 30;
-const SAVE_VERSION = 3;
+const SAVE_VERSION = 4;
 const MAX_SETTLED_RUN_IDS = 256; // Bounded by the development save service's 32 KiB payload.
+// v0.12: expedition normalization lives in expedition.js (loaded before this
+// module in the browser graph; required directly under CJS). normalizeMeta is
+// NOT a sanitizing boundary by itself - the expedition field is only safe
+// after passing through normalizeExpedition's whitelist.
+let expeditionApi = null;
+if (typeof window !== "undefined") expeditionApi = window.EndlessRailsExpedition || null;
+if (!expeditionApi && typeof module !== "undefined" && module.exports && typeof require === "function") { try { expeditionApi = require("./expedition.js"); } catch { expeditionApi = null; } }
 
 const CAR_DEFS = Object.freeze([
   { id: "hangar", name: "无人机机库", icon: "◇", fixed: true, description: "远征核心车厢；管理无人机与长期研究。" },
@@ -405,6 +412,7 @@ function emptyMeta() {
     settledRunIds: [],
     research,
     totals: { expeditions: 0, extracts: 0, wins: 0, losses: 0 },
+    activeExpedition: null,
     migration: null,
   };
 }
@@ -524,6 +532,9 @@ function normalizeMeta(value) {
   result.research = {};
   for (const id of RESEARCH_IDS) result.research[id] = Math.max(0, Math.min(MAX_RESEARCH_LEVEL, Math.floor(Number(src.research?.[id]) || 0)));
   result.totals = { expeditions: Math.max(0, Number(src.totals?.expeditions) || 0), extracts: Math.max(0, Number(src.totals?.extracts) || 0), wins: Math.max(0, Number(src.totals?.wins) || 0), losses: Math.max(0, Number(src.totals?.losses) || 0) };
+  // A structurally invalid expedition is dropped (map progress lost, every
+  // permanent asset kept) rather than partially repaired (规划 §19.1).
+  result.activeExpedition = src.activeExpedition == null ? null : (expeditionApi ? expeditionApi.normalizeExpedition(src.activeExpedition, { regionIds: REGIONS.map(region => region.id) }) : null);
   result.migration = src.migration && typeof src.migration === "object" ? src.migration : null;
   return result;
 }
