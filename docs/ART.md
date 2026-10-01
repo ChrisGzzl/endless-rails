@@ -78,3 +78,11 @@ A sleek ivory-and-cyan manta-wing command aircraft leads a swarm of different sm
 
 ## 羁绊组合技 VFX
 - `assets/bond-vfx-v1.png`：Imagegen 生成的四组羁绊攻击图集。紫色共振、红色灼杀号、蓝色穿透、青色近卫。
+
+
+## 铁路探索地图图例 v1（v0.12.0.5）
+
+- 原始透明图集：`assets/source-map-icons-v1/atlas.png`，1536×1024，3 列×2 行；完整内置 ImageGen 生成与定向修正提示词在同目录 README。
+- 手机图集：`assets/map-legends-v1.webp`，768×512，119,988 字节；等比缩小与 WebP 质量 88 编码，保留 alpha。
+- 图集顺序：列车、启程站、废弃站 / 补给站、隔离区、污染核心。统一象牙白/灰钢/暖金属色工业微缩插画，列车车头朝上，隔离区红色警示，核心带紫红感染体与绿光。
+- 仅地图 `rail-map.js` 按需加载和采样，按 alpha 边界保持原始长宽比；实际图标最大边 52/56/60/64px。未知站点继续使用无类型问号；未加载/失败时保留 Canvas 图例，不阻塞节点点击、主页或战斗。补给只预留美术，不增加玩法。

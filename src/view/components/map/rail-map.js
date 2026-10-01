@@ -1,4 +1,5 @@
 "use strict";
+import { uiKit } from "../../ui/kit.js";
 // Presentation only: topology stays visible; undiscovered contents stay private.
 // The existing controller supplies glyphs rather than types; keep that public
 // projection intact and translate its four alpha.1 glyphs here.
@@ -9,8 +10,23 @@ const railMap = (() => {
   const NAMES = { start: "启程车站", combat: "废弃站点", risk: "危险区域", elite: "危险区域", final: "污染核心", boss: "污染核心", shop: "补给站", supply: "补给站" };
   const typeOf = node => node.type || TYPES[node.glyph] || "combat";
   const nameOf = node => NAMES[typeOf(node)] || node.name;
-  const sizeOf = type => type === "final" || type === "boss" ? 28 : 20;
+  const sizeOf = type => ["final", "boss"].includes(type) ? 32 : ["risk", "elite"].includes(type) ? 28 : type ? 26 : 20;
   const dangerOf = node => ["final", "boss"].includes(typeOf(node)) ? 3 : ["risk", "elite"].includes(typeOf(node)) ? 2 : ["start", "shop", "supply"].includes(typeOf(node)) ? 0 : 1;
+  // One lazy map-only sheet; it never joins the game's boot/battle art gates.
+  // Alpha-trimmed sampling bounds retain every icon's original aspect ratio.
+  const ATLAS = "assets/map-legends-v1.webp?v=v0.12.0.5";
+  const FRAMES = {
+    train: [87, 24, 91, 226], start: [266, 20, 216, 228], combat: [512, 45, 235, 197],
+    supply: [20, 271, 229, 203], risk: [269, 260, 234, 230], final: [525, 266, 225, 223],
+  };
+
+  function sprite(ctx, image, type, size) {
+    const frame = FRAMES[{ shop: "supply", elite: "risk", boss: "final" }[type] || type];
+    if (!image || !frame) return false;
+    const [x, y, w, h] = frame, scale = size / Math.max(w, h);
+    ctx.drawImage(image, x, y, w, h, -w * scale / 2, -h * scale / 2, w * scale, h * scale);
+    return true;
+  }
 
   function graph(m, shortScreen = false) {
     const currentLayer = Math.max(1, Math.min(LAYERS, m.currentLayer || 1));
@@ -186,6 +202,7 @@ const railMap = (() => {
   }
   function paint(ctx, box, wrapper, g) {
     ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.setLineDash([]);
+    const atlas = uiKit.image(ATLAS);
     terrain(ctx, box);
     const positioned = new Map(g.nodes.map(n => [n.id, { ...n, x: box.x + n.cx * box.w, y: box.y + n.cy }]));
     // Draw the entire railway network first; travelled/available routes receive
@@ -202,21 +219,26 @@ const railMap = (() => {
     }
     for (const node of positioned.values()) {
       ctx.save(); ctx.translate(node.x, node.y);
-      const current = node.id === g.currentId, r = current ? 26 : sizeOf(node.type);
+      const current = node.id === g.currentId, r = current ? 30 : sizeOf(node.type);
       ctx.fillStyle = current ? "#c6d3b5" : node.state === "next" ? "#e9d7a3" : PAPER;
       ctx.fillRect(-r - 2, -r - 2, (r + 2) * 2, (r + 2) * 2);
       ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = 2;
-      if (current) train(ctx);
+      if (current) {
+        if (!sprite(ctx, atlas, "train", 60)) train(ctx);
+        polygon(ctx, [[0, -39], [5, -33], [-5, -33]], "#315e4d");
+      }
       else if (!node.known) {
         ctx.setLineDash([3, 3]); ctx.strokeStyle = "#929580"; ctx.lineWidth = 1.2;
         ctx.strokeRect(-16, -16, 32, 32); ctx.setLineDash([]);
         ctx.fillStyle = "#747b68"; ctx.font = "600 23px ui-monospace, monospace"; ctx.fillText("?", 0, 1);
       } else {
         if (node.state === "locked") ctx.globalAlpha = 0.55;
-        if (["risk", "elite"].includes(node.type)) danger(ctx);
-        else if (["final", "boss"].includes(node.type)) core(ctx);
-        else if (["shop", "supply"].includes(node.type)) supply(ctx);
-        else station(ctx, node.type === "start");
+        if (!sprite(ctx, atlas, node.type, r * 2)) {
+          if (["risk", "elite"].includes(node.type)) danger(ctx);
+          else if (["final", "boss"].includes(node.type)) core(ctx);
+          else if (["shop", "supply"].includes(node.type)) supply(ctx);
+          else station(ctx, node.type === "start");
+        }
       }
       if (node.id === g.selectedId || node.state === "next") {
         ctx.strokeStyle = node.id === g.selectedId ? "#315e4d" : "#9e8137";

@@ -22,7 +22,7 @@ const mapScreen = (() => {
     keepTrainVisible = false;
     const column = uiKit.find("mapColumn"), train = graph.nodes.find(n => n.id === graph.currentId);
     if (!column || !train) return;
-    const bottom = box.y + train.cy + 52;
+    const bottom = box.y + train.cy + 60;
     const overflow = bottom - (column.absY + column.h);
     if (overflow > 0) uiKit.setScroll("mapColumn", uiKit.getScroll("mapColumn") + overflow, column.scrollMax);
   }

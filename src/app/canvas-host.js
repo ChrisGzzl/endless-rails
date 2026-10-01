@@ -36,7 +36,7 @@ import { runCtl } from "./ui-run.js";
 import { dialogCtl } from "./ui-dialogs.js";
 import { mapCtl } from "./ui-map.js";
 
-const GAME_VERSION = "v0.12.0.4";
+const GAME_VERSION = "v0.12.0.5";
 const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
 const canvasHost = (() => {

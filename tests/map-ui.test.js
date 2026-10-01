@@ -4,9 +4,21 @@ const assert = require('node:assert/strict');
 const createGame = require('./test-harness.cjs');
 
 for (const viewport of [{ w: 320, h: 568 }, { w: 390, h: 844 }]) {
-  const game = createGame({ viewport });
+  const requests = [], spriteDraws = [];
+  const spriteContext = new Proxy({
+    measureText: text => ({ width: String(text).length * 10 }),
+    drawImage: (...args) => spriteDraws.push(args),
+  }, { get: (target, key) => key in target ? target[key] : () => {} });
+  const game = createGame({ viewport, window: { __mapSpriteContext: spriteContext },
+    platform: { createImage: () => { const image = {}; requests.push(image); return image; } } });
   const { run, json, ui } = game;
+  assert.ok(requests.every(image => !image.src.includes('map-legends')), 'the map sheet never loads at home boot');
   ui.tap('startButton');
+  const atlas = requests.find(image => image.src.includes('map-legends'));
+  assert.ok(atlas, 'opening the map requests its own sheet');
+  const loaded = viewport.w === 320;
+  if (loaded) { atlas.width = 768; atlas.height = 512; atlas.onload(); }
+  else atlas.onerror(); // Same input/save assertions run with a failed art load.
   const initial = run('JSON.stringify(state.activeExpedition)');
   const initialGraph = json('railMap.graph(mapCtl.model())');
   for (const layer of [1, 5, 10, 11, 12]) {
@@ -26,6 +38,14 @@ for (const viewport of [{ w: 320, h: 568 }, { w: 390, h: 844 }]) {
     assert.equal(g.height, initialGraph.height, 'exploration never resizes the map');
     const current = g.nodes.find(n => n.id === g.currentId);
     assert.equal(current.layer, layer, 'the train follows the current node');
+    spriteDraws.length = 0;
+    run(`railMap.paint(__mapSpriteContext, { x: 0, y: 0, w: ${viewport.w}, h: ${g.height} }, null, railMap.graph(mapCtl.model()))`);
+    assert.equal(spriteDraws.length, loaded ? g.nodes.filter(n => n.known).length : 0, 'only discovered stations sample art; failure keeps procedural legends');
+    for (const [image, x, y, w, h, dx, dy, dw, dh] of spriteDraws) {
+      assert.equal(image, atlas, 'map art stays on its dedicated sheet');
+      assert.ok(x >= 0 && y >= 0 && x + w <= 768 && y + h <= 512, 'sprite sampling stays inside the atlas');
+      assert.ok(Math.max(dw, dh) <= 64 && Math.abs(dw / dh - w / h) < 1e-6, 'map icons preserve their proportions and fit the tap target');
+    }
     for (const row of model.rows) for (const n of row.nodes) {
       const visited = model.rows.flatMap(r => r.nodes).filter(n => ['current', 'cleared'].includes(n.state)).map(n => n.id);
       const known = visited.includes(n.id) || model.edges.some(e => e.to === n.id && visited.includes(e.from));
@@ -89,5 +109,6 @@ for (const viewport of [{ w: 320, h: 568 }, { w: 390, h: 844 }]) {
   ui.tap('mapStartButton');
   assert.equal(run('state.mode'), 'combat', 'the existing transaction still enters battle');
   assert.equal(run('state.activeExpedition.checkpoint.nodeId'), next.id);
+  assert.equal(requests.filter(image => image.src.includes('map-legends')).length, 1, 'the map loader never repeatedly requests a failed or decoded sheet');
 }
 console.log('Rail map visibility, input and save boundaries passed.');
