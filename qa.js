@@ -65,7 +65,7 @@ setInterval(()=>{
  const problems=[],h=w.EndlessRailsCanvasHost;h.render();
  // Controls and card copy of the open overlay layers must sit inside the viewport.
  // Scrollable preparation/result content is intentionally outside its scrollport.
- const scrolls=new Set(['metaScreen','homeResearch','homeShop','homeSettings','resultScreen','inspectViewport']);
+ const scrolls=new Set(['mapColumn','metaScreen','homeResearch','homeShop','homeSettings','resultScreen','inspectViewport']);
  const inScroll=n=>{for(let p=n;p;p=p.parent)if(scrolls.has(p.key))return true;return false;};
  const label=n=>h.kit.textOf(n).trim().slice(0,32)||String(n.key);
  for(const b of h.boxes()){

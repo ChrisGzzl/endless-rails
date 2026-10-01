@@ -190,7 +190,7 @@ const createGame = require('./test-harness.cjs');
   ui2.tap('startButton');
   assert.ok(ui2.visible('mapScreen'), 'a reload resumes the expedition map');
   assert.equal(json2('longterm.loadMeta(metaStorage).activeExpedition.visitedIds.length'), 2, 'with the persisted route');
-  assert.ok(ui2.text('mapTitle').includes('2/12'), 'the header shows the current layer');
+  assert.ok(ui2.text('mapProgress').includes('2 / 12'), 'the header shows the current layer');
   assert.deepEqual(json2('expedition.reachableNext(state.activeExpedition).map(n=>n.id)'), [next[0]], 'the failure lock survives the reload');
 
   // Interrupt: starting a node and closing the page rolls back without payout.

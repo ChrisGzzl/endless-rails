@@ -16,12 +16,12 @@
   export/                供稿目录（全局 agent.md 标准）：manifest.yaml + worklog.md（工作记录：继续工作前先读，改动后追加条目）
   minigame/              微信小游戏/TapTap 构建产物（node tools/build-minigame.cjs 生成 bundle；适配层 game.js）
   src/                   游戏运行时代码（原生 ES Module，见下）
-  tests/                 35 个测试 + test-harness.cjs；根目录 node --test 递归执行
+  tests/                 36 个测试 + test-harness.cjs；根目录 node --test 递归执行
   tools/                 importmap.cjs（生成 index.html 的版本化 import map）、build-minigame.cjs、pacing-check.cjs、dev-server.cjs
   services/player-data/  开发用存档服务（node server.cjs；测试 node --test）
 ```
 
-当前版本：`v0.12.0.2`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
+当前版本：`v0.12.0.3`（对应 index.html 版本标签与全站 `?v=` 缓存参数）。
 
 局外列车等级由废料手动购买整级（Lv1→2 为 71 废料，Lv1→30 合计 21,273）；每级获得 2 个**改装点**用于车厢与分支构筑。永久研究消耗废料加研究数据/技术组件，七项全满的废料费用为 21,196。远征只带回废料、组件、数据与蓝图，不再产生局外 XP。旧 v1/v2 存档保留列车等级，级内 XP 按比例折为废料且只转换一次。局内武器经验仍用于当局升级，与列车无关。
 
@@ -47,7 +47,7 @@ python3 -m http.server 8123     # 或 npx serve 等价
 node --test
 ```
 
-35 个测试文件 + 13 项存档服务测试全绿为改动的验收线（`node --test` 共 49 项）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：模块加载图解析自真实的 index.html，每条具名导入都会校验目标确实导出；沙箱里只有一块假画布（确定性文字度量的 2D 上下文），**没有 `document`**。测试通过宿主桥 `EndlessRailsCanvasHost` 驱动界面：`ui.tap(key)` 在排版后的节点中心做命中测试再按下/抬起（必要时先滚动到可见），和手指点击走同一条路径。canvas-purity 测试另外静态扫描 `src/`，除 `app/platform.js` 外禁止任何 DOM 构造/查询；minigame-bundle 测试构建小游戏 bundle，在模拟 wx 运行时里跑通整条流程。
+36 个测试文件 + 13 项存档服务测试全绿为改动的验收线（`node --test` 共 50 项）。`test-harness.cjs` 的纪律是"测试环境跟随真实页面"：模块加载图解析自真实的 index.html，每条具名导入都会校验目标确实导出；沙箱里只有一块假画布（确定性文字度量的 2D 上下文），**没有 `document`**。测试通过宿主桥 `EndlessRailsCanvasHost` 驱动界面：`ui.tap(key)` 在排版后的节点中心做命中测试再按下/抬起（必要时先滚动到可见），和手指点击走同一条路径。canvas-purity 测试另外静态扫描 `src/`，除 `app/platform.js` 外禁止任何 DOM 构造/查询；minigame-bundle 测试构建小游戏 bundle，在模拟 wx 运行时里跑通整条流程。
 
 ## src/ 结构
 
