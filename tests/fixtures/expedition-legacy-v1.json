@@ -1,0 +1,285 @@
+{
+  "id": "legacy42",
+  "regionId": "wasteland",
+  "seed": 42,
+  "contentVersion": 1,
+  "status": "active",
+  "startExpeditions": 0,
+  "nodes": [
+    {
+      "id": "n0",
+      "layer": 1,
+      "type": "start",
+      "nextIds": [
+        "n1",
+        "n2"
+      ]
+    },
+    {
+      "id": "n1",
+      "layer": 2,
+      "type": "combat",
+      "nextIds": [
+        "n3",
+        "n4"
+      ]
+    },
+    {
+      "id": "n2",
+      "layer": 2,
+      "type": "combat",
+      "nextIds": [
+        "n4",
+        "n5"
+      ]
+    },
+    {
+      "id": "n3",
+      "layer": 3,
+      "type": "combat",
+      "nextIds": [
+        "n6"
+      ]
+    },
+    {
+      "id": "n4",
+      "layer": 3,
+      "type": "risk",
+      "nextIds": [
+        "n6",
+        "n7"
+      ]
+    },
+    {
+      "id": "n5",
+      "layer": 3,
+      "type": "combat",
+      "nextIds": [
+        "n7"
+      ]
+    },
+    {
+      "id": "n6",
+      "layer": 4,
+      "type": "risk",
+      "nextIds": [
+        "n8",
+        "n9"
+      ]
+    },
+    {
+      "id": "n7",
+      "layer": 4,
+      "type": "combat",
+      "nextIds": [
+        "n9",
+        "n10"
+      ]
+    },
+    {
+      "id": "n8",
+      "layer": 5,
+      "type": "combat",
+      "nextIds": [
+        "n11",
+        "n12"
+      ]
+    },
+    {
+      "id": "n9",
+      "layer": 5,
+      "type": "combat",
+      "nextIds": [
+        "n12",
+        "n13"
+      ]
+    },
+    {
+      "id": "n10",
+      "layer": 5,
+      "type": "risk",
+      "nextIds": [
+        "n13"
+      ]
+    },
+    {
+      "id": "n11",
+      "layer": 6,
+      "type": "combat",
+      "nextIds": [
+        "n14"
+      ]
+    },
+    {
+      "id": "n12",
+      "layer": 6,
+      "type": "combat",
+      "nextIds": [
+        "n14",
+        "n15"
+      ]
+    },
+    {
+      "id": "n13",
+      "layer": 6,
+      "type": "risk",
+      "nextIds": [
+        "n15"
+      ]
+    },
+    {
+      "id": "n14",
+      "layer": 7,
+      "type": "risk",
+      "nextIds": [
+        "n16",
+        "n17"
+      ]
+    },
+    {
+      "id": "n15",
+      "layer": 7,
+      "type": "combat",
+      "nextIds": [
+        "n17",
+        "n18"
+      ]
+    },
+    {
+      "id": "n16",
+      "layer": 8,
+      "type": "combat",
+      "nextIds": [
+        "n19",
+        "n20"
+      ]
+    },
+    {
+      "id": "n17",
+      "layer": 8,
+      "type": "risk",
+      "nextIds": [
+        "n20",
+        "n21"
+      ]
+    },
+    {
+      "id": "n18",
+      "layer": 8,
+      "type": "combat",
+      "nextIds": [
+        "n21"
+      ]
+    },
+    {
+      "id": "n19",
+      "layer": 9,
+      "type": "risk",
+      "nextIds": [
+        "n22",
+        "n23"
+      ]
+    },
+    {
+      "id": "n20",
+      "layer": 9,
+      "type": "combat",
+      "nextIds": [
+        "n23",
+        "n24"
+      ]
+    },
+    {
+      "id": "n21",
+      "layer": 9,
+      "type": "combat",
+      "nextIds": [
+        "n24"
+      ]
+    },
+    {
+      "id": "n22",
+      "layer": 10,
+      "type": "risk",
+      "nextIds": [
+        "n25",
+        "n26"
+      ]
+    },
+    {
+      "id": "n23",
+      "layer": 10,
+      "type": "combat",
+      "nextIds": [
+        "n26",
+        "n27"
+      ]
+    },
+    {
+      "id": "n24",
+      "layer": 10,
+      "type": "risk",
+      "nextIds": [
+        "n27"
+      ]
+    },
+    {
+      "id": "n25",
+      "layer": 11,
+      "type": "combat",
+      "nextIds": [
+        "n28"
+      ]
+    },
+    {
+      "id": "n26",
+      "layer": 11,
+      "type": "risk",
+      "nextIds": [
+        "n28"
+      ]
+    },
+    {
+      "id": "n27",
+      "layer": 11,
+      "type": "combat",
+      "nextIds": [
+        "n28"
+      ]
+    },
+    {
+      "id": "n28",
+      "layer": 12,
+      "type": "final",
+      "nextIds": []
+    }
+  ],
+  "visitedIds": [
+    "n0"
+  ],
+  "lockedNodeId": null,
+  "contract": null,
+  "build": {
+    "modules": {},
+    "coreStacks": {},
+    "breakthroughs": {}
+  },
+  "growth": {
+    "experience": 0,
+    "experienceToNext": 4,
+    "level": 1,
+    "pendingLevelUps": 0
+  },
+  "trainHpPct": 1,
+  "emergencyReserveUsed": false,
+  "tokens": 0,
+  "riskBlueprints": [],
+  "nodeLedger": [],
+  "checkpoint": null,
+  "pendingOp": null,
+  "summary": {
+    "attempts": 0,
+    "failures": 0,
+    "kills": 0
+  }
+}

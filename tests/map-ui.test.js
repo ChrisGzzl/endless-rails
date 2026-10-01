@@ -21,6 +21,14 @@ for (const viewport of [{ w: 320, h: 568 }, { w: 390, h: 844 }]) {
   else atlas.onerror(); // Same input/save assertions run with a failed art load.
   const initial = run('JSON.stringify(state.activeExpedition)');
   const initialGraph = json('railMap.graph(mapCtl.model())');
+  const dense = initialGraph.nodes.filter(n => n.layer === initialGraph.nodes.find(n => initialGraph.nodes.filter(v => v.layer === n.layer).length === 4).layer);
+  const targets = dense.map(n => ui.node('mapNode-' + n.id)).sort((a, b) => a.absX - b.absX);
+  for (const [i, target] of targets.entries()) {
+    assert.ok(target.w >= 44 && target.h >= 44, 'four-station rows retain finger-sized targets');
+    assert.ok(target.absX >= 0 && target.absX + target.w <= viewport.w, 'dense rows stay inside the phone');
+    if (i) assert.ok(targets[i - 1].absX + targets[i - 1].w <= target.absX, 'neighboring stations have independent, non-overlapping tap targets');
+  }
+  assert.ok(new Set(dense.map(n => n.cy)).size > 1, 'stations scatter off the rigid row grid');
   for (const layer of [1, 5, 10, 11, 12]) {
     // Advance a real generated path without changing its topology.
     run(`state.activeExpedition.visitedIds = [state.activeExpedition.nodes.find(n => n.layer === 1).id];
@@ -44,7 +52,7 @@ for (const viewport of [{ w: 320, h: 568 }, { w: 390, h: 844 }]) {
     for (const [image, x, y, w, h, dx, dy, dw, dh] of spriteDraws) {
       assert.equal(image, atlas, 'map art stays on its dedicated sheet');
       assert.ok(x >= 0 && y >= 0 && x + w <= 768 && y + h <= 512, 'sprite sampling stays inside the atlas');
-      assert.ok(Math.max(dw, dh) <= 64 && Math.abs(dw / dh - w / h) < 1e-6, 'map icons preserve their proportions and fit the tap target');
+      assert.ok(Math.max(dw, dh) <= 48 && Math.abs(dw / dh - w / h) < 1e-6, 'small phone icons preserve their proportions and fit the tap target');
     }
     for (const row of model.rows) for (const n of row.nodes) {
       const visited = model.rows.flatMap(r => r.nodes).filter(n => ['current', 'cleared'].includes(n.state)).map(n => n.id);

@@ -39,7 +39,7 @@ const mapScreen = (() => {
           E({ ...S.mapEyebrow, ref: "/2/0/0/0" }, "TACTICAL TERMINAL / 战术终端"),
           E({ ...S.mapDetail_b, key: "mapDetailTitle", ref: "/2/0/0/1" }, name,
             E({ ...S.mapDetail_small, ref: "/2/0/0/1/0" }, "L" + d.layer))),
-        E({ ...S.mapDanger, key: "mapDetailDanger", ref: "/2/0/1", color: danger > 1 ? "#ffaaa0" : "#e5ce9b" }, danger ? "危险 " + "★".repeat(danger) : "安全区")),
+        E({ ...S.mapDanger, key: "mapDetailDanger", ref: "/2/0/1", color: danger > 1 ? "#b15b53" : "#927044" }, danger ? "危险 " + "★".repeat(danger) : "安全区")),
       E({ ...S.mapDetail_copy, ref: "/2/1" },
         E({ ...S.mapDetail_p, ref: "/2/1/0" }, start ? "远征起点 · 沿铁路向上探索" : node.type === "final" ? "目标  走完终点轨道 · 完成整图结算" : "目标  护送列车 · 存活约 60 秒"),
         E({ ...S.mapDetail_p_v2, key: "mapDetailReward", ref: "/2/1/1" }, start ? "启程已完成 · 请选择下一站" : "收益  " + d.rewardHint),
@@ -69,12 +69,12 @@ const mapScreen = (() => {
           const progress = (graph.currentLayer - 1) / (railMap.LAYERS - 1);
           const x = box.x + 5, width = Math.max(0, box.w - 10), y = box.y + box.h / 2;
           ctx.save(); ctx.lineCap = "round"; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#65725f"; ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#b7c69b"; ctx.stroke();
-          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#eee9cf"; ctx.fill(); ctx.restore();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#c4cecb"; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#6c9baa"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#346b81"; ctx.fill(); ctx.restore();
         } }),
         E({ ...S.mapHeader_row, ref: "/0/3" },
-          E({ ...S.mapGuide, key: "mapGuide", ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "上滑查看全图 · ？站点尚未侦察"),
+          E({ ...S.mapGuide, key: "mapGuide", ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "拖动查看全图 · ？站点尚未侦察"),
           m.resetConfirm ? E({ ...S.mapResetRow, ref: "/0/1/1" },
             E({ tag: "button", ...S.mapResetConfirm, key: "mapResetConfirm", ref: "/0/1/1/0", onTap: m.on.reset }, "确认重置"),
             E({ tag: "button", ...S.mapCloseDetail, key: "mapResetCancel", ref: "/0/1/1/1", onTap: m.on.cancelReset }, "取消"))

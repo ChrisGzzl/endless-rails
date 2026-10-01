@@ -1075,6 +1075,7 @@ if (typeof window !== "undefined") window.EndlessRailsRunRecord = runRecordApi;
 
 const CONTENT_VERSION = 1;
 const LAYER_COUNT = 12;
+// Legacy template retained for callers/old saves; new maps vary their widths.
 const LAYER_SIZES = Object.freeze([1, 2, 3, 2, 3, 3, 2, 3, 3, 3, 3, 1]);
 const REGION_IDS = Object.freeze(["wasteland", "ruins", "industrial", "infection"]);
 const STATUS_VALUES = Object.freeze(["active", "completed", "reset"]);
@@ -1152,45 +1153,61 @@ const LAYER_TYPE_POOL = Object.freeze([
   Object.freeze(["final"]),
 ]);
 
-// Staircase roads: each source owns a contiguous run of target slots and the
-// runs advance monotonically (max(run_i) <= min(run_k) for i < k), which makes
-// the drawn graph planar by construction - zero crossings. Edge nodes keep a
-// single road where geometry leaves no room (规划 §3.1's required >=1 rule;
-// the >=2 recommendation is kept wherever the layout allows).
-function connectLayers(fromNodes, toNodes, layer) {
-  const m = fromNodes.length, n = toNodes.length;
-  const j0 = i => Math.min(n - 1, Math.floor(i * n / m));
-  for (let i = 0; i < m; i++) {
-    const a = j0(i);
-    let b = Math.min(a + 1, n - 1);
-    if (i + 1 < m) b = Math.min(b, j0(i + 1)); // stay laminar against the next slot
-    fromNodes[i].nextIds = [toNodes[a].id];
-    if (b !== a) fromNodes[i].nextIds.push(toNodes[b].id);
+// Varied widths fit the existing flat save and 32-node budget. Every new map
+// contains narrow passages and 2/3/4-station layers. A one-station source can
+// cover at most three exits, so it never directly precedes a four-station row.
+function layerWidths(rng) {
+  const middle = [1, 2, 2, 2, 3, 3, 3, 4, 1 + Math.floor(rng() * 4), 1 + Math.floor(rng() * 4)];
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const widths = [1, ...shuffle(middle, rng), 1];
+    if (widths.every((n, i) => !i || n <= widths[i - 1] * 3)) return widths;
   }
-  // Coverage: any target without an incoming road takes its nearest source.
-  const covered = new Set(fromNodes.flatMap(node => node.nextIds));
-  for (let j = 0; j < n; j++) {
-    if (covered.has(toNodes[j].id)) continue;
-    const i = Math.min(m - 1, Math.floor(j * m / n));
-    fromNodes[i].nextIds.push(toNodes[j].id);
-    covered.add(toNodes[j].id);
+  return [1, ...middle.sort((a, b) => a - b), 1];
+}
+
+// Contiguous target runs keep the topology planar. Random run lengths and
+// occasional shared junctions produce one, two or three real forward choices.
+function connectLayers(fromNodes, toNodes, rng) {
+  const m = fromNodes.length, n = toNodes.length;
+  if (n >= m) {
+    const lengths = Array(m).fill(1);
+    for (let extra = n - m; extra > 0; extra--) {
+      const room = lengths.map((length, i) => length < 3 ? i : -1).filter(i => i >= 0);
+      lengths[room[Math.floor(rng() * room.length)]]++;
+    }
+    let cursor = 0;
+    for (let i = 0; i < m; i++) {
+      fromNodes[i].nextIds = toNodes.slice(cursor, cursor + lengths[i]).map(node => node.id);
+      cursor += lengths[i];
+      if (i < m - 1 && lengths[i] < 3 && rng() < 0.5) fromNodes[i].nextIds.push(toNodes[cursor].id);
+    }
+  } else {
+    const target = i => Math.floor(i * n / m);
+    for (let i = 0; i < m; i++) {
+      const j = target(i);
+      fromNodes[i].nextIds = [toNodes[j].id];
+      if (i < m - 1 && target(i + 1) > j && rng() < 0.5) fromNodes[i].nextIds.push(toNodes[j + 1].id);
+    }
   }
 }
 
 function buildCandidate(seed) {
   const rng = seededRandom(seed);
+  const widths = layerWidths(rng);
   const byLayer = [];
   let index = 0;
   for (let layer = 1; layer <= LAYER_COUNT; layer++) {
-    const types = layer === 1 || layer === LAYER_COUNT ? [...LAYER_TYPE_POOL[layer - 1]] : shuffle(LAYER_TYPE_POOL[layer - 1], rng);
+    const pool = [...LAYER_TYPE_POOL[layer - 1]];
+    while (pool.length < widths[layer - 1]) pool.push("combat");
+    const types = layer === 1 || layer === LAYER_COUNT ? pool : shuffle(pool, rng).slice(0, widths[layer - 1]);
     byLayer.push(types.map(type => ({ id: "n" + index++, layer, type, nextIds: [] })));
   }
-  for (let layer = 1; layer < LAYER_COUNT; layer++) connectLayers(byLayer[layer - 1], byLayer[layer], layer);
+  for (let layer = 1; layer < LAYER_COUNT; layer++) connectLayers(byLayer[layer - 1], byLayer[layer], rng);
   return byLayer.flat();
 }
 
 function validateNodes(nodes) {
-  if (!Array.isArray(nodes) || nodes.length < LAYER_SIZES.reduce((a, b) => a + b, 0) || nodes.length > MAX_NODES) return false;
+  if (!Array.isArray(nodes) || nodes.length < LAYER_COUNT || nodes.length > MAX_NODES) return false;
   const byId = new Map();
   for (const node of nodes) {
     if (!node || !isId(node.id) || byId.has(node.id)) return false;
@@ -1202,7 +1219,7 @@ function validateNodes(nodes) {
   }
   for (let layer = 1; layer <= LAYER_COUNT; layer++) {
     const count = nodes.filter(n => n.layer === layer).length;
-    if (count !== LAYER_SIZES[layer - 1]) return false;
+    if (count < 1 || count > 4) return false;
   }
   const start = nodes.filter(n => n.layer === 1), finish = nodes.filter(n => n.layer === LAYER_COUNT);
   if (start.length !== 1 || start[0].type !== "start" || finish.length !== 1 || finish[0].type !== "final") return false;
@@ -8097,39 +8114,39 @@ const uiSheet = {
   pauseShortcut_x1: { textAlign: "center", color: "rgb(119, 151, 174)", fontSize: 10, display: "none" },
 
   // v0.12 expedition map: surveyed paper chart inside the field terminal.
-  mapScreen: { fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 14, fontWeight: "400", lineHeight: "1.45", color: "rgb(214, 226, 224)", width: "var(--frame-width)", height: "var(--frame-height)", position: "fixed", zIndex: 20, top: 0, right: 0, bottom: 0, left: 0, margin: "auto", display: "flex", flexDirection: "column", backgroundColor: "#ddd8bf", overflowX: "hidden", overflowY: "hidden", borderTopLeftRadius: 8, borderTopRightRadius: 8, borderBottomRightRadius: 8, borderBottomLeftRadius: 8, "@media (max-width: 599px), (pointer: coarse)#1": { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 } },
-  mapHeader: { display: "flex", flexDirection: "column", rowGap: 6, padding: "calc(12px + env(safe-area-inset-top)) 14px 8px", borderBottom: "1px solid #65725f", backgroundColor: "#273c32", flexShrink: 0 },
+  mapScreen: { fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 14, fontWeight: "400", lineHeight: "1.45", color: "#334f5e", width: "var(--frame-width)", height: "var(--frame-height)", position: "fixed", zIndex: 20, top: 0, right: 0, bottom: 0, left: 0, margin: "auto", display: "flex", flexDirection: "column", backgroundColor: "#eee6d5", overflowX: "hidden", overflowY: "hidden", borderTopLeftRadius: 8, borderTopRightRadius: 8, borderBottomRightRadius: 8, borderBottomLeftRadius: 8, "@media (max-width: 599px), (pointer: coarse)#1": { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 } },
+  mapHeader: { display: "flex", flexDirection: "column", rowGap: 6, padding: "calc(12px + env(safe-area-inset-top)) 14px 8px", borderBottom: "1px solid #b2c1c5", backgroundColor: "#f8f0df", flexShrink: 0 },
   mapHeader_row: { display: "flex", alignItems: "center", justifyContent: "space-between", columnGap: 10, minWidth: 0 },
-  mapProgressLabel: { display: "block", fontSize: 12, color: "#c2c7af" },
-  mapProgressValue: { display: "inline", fontSize: 15, fontWeight: 850, color: "#f0ecd9" },
+  mapProgressLabel: { display: "block", fontSize: 12, color: "#657984" },
+  mapProgressValue: { display: "inline", fontSize: 15, fontWeight: 850, color: "#234d62" },
   mapProgressTrack: { display: "block", height: 10, width: "100%" },
-  mapDanger: { display: "block", flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#e5ce9b", whiteSpace: "nowrap" },
-  mapGuide: { display: "block", minWidth: 0, fontSize: 11, color: "#bac3ac", lineHeight: "1.4" },
+  mapDanger: { display: "block", flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#8d6b3d", whiteSpace: "nowrap" },
+  mapGuide: { display: "block", minWidth: 0, fontSize: 11, color: "#71818b", lineHeight: "1.4" },
   mapDetail_heading: { display: "flex", alignItems: "center", justifyContent: "space-between", columnGap: 12 },
   mapHeader_copy: { display: "block", minWidth: 0, flexGrow: 1 },
-  mapEyebrow: { display: "block", fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 9, letterSpacing: "0.16em", color: "#a8b49f", marginBottom: 4 },
-  mapTitle: { display: "block", fontSize: 17, fontWeight: 850, color: "rgb(240, 246, 240)", lineHeight: "1.3", "@media (max-width: 359px)#1": { fontSize: 15 } },
-  mapResult: { display: "block", marginTop: 5, fontSize: 11, color: "rgb(255, 214, 130)", lineHeight: "1.45" },
+  mapEyebrow: { display: "block", fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 9, letterSpacing: "0.16em", color: "#7a8b91", marginBottom: 4 },
+  mapTitle: { display: "block", fontSize: 17, fontWeight: 850, color: "#102f3a", lineHeight: "1.3", "@media (max-width: 359px)#1": { fontSize: 15 } },
+  mapResult: { display: "block", marginTop: 5, fontSize: 11, color: "#947044", lineHeight: "1.45" },
   mapHeader_side: { display: "flex", flexDirection: "column", alignItems: "flex-end", rowGap: 7, columnGap: 7, flexShrink: 0 },
-  mapTokens: { display: "inline", padding: "4px 9px", borderRadius: 5, backgroundColor: "#3c4f40", color: "rgb(224, 234, 230)", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" },
-  mapTokens_b: { display: "inline", color: "rgb(255, 216, 130)", fontWeight: 850 },
+  mapTokens: { display: "inline", padding: "4px 9px", borderRadius: 5, backgroundColor: "#e0e5df", color: "#3f5e6b", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" },
+  mapTokens_b: { display: "inline", color: "#8c6b3d", fontWeight: 850 },
   mapResetRow: { display: "flex", rowGap: 6, columnGap: 6 },
-  mapResetButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", border: "2px outset #767676", cursor: "pointer", paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10, borderRadius: 5, backgroundColor: "transparent", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 1, borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid", borderTopColor: "rgb(96, 128, 136)", borderRightColor: "rgb(96, 128, 136)", borderBottomColor: "rgb(96, 128, 136)", borderLeftColor: "rgb(96, 128, 136)", color: "rgb(178, 198, 196)", fontSize: 11, fontWeight: 700 },
+  mapResetButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", border: "2px outset #767676", cursor: "pointer", paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10, borderRadius: 5, backgroundColor: "transparent", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 1, borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid", borderTopColor: "rgb(96, 128, 136)", borderRightColor: "rgb(96, 128, 136)", borderBottomColor: "rgb(96, 128, 136)", borderLeftColor: "rgb(96, 128, 136)", color: "#526b77", fontSize: 11, fontWeight: 700 },
   mapResetConfirm: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", border: "2px outset #767676", cursor: "pointer", paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10, borderRadius: 5, backgroundColor: "rgb(122, 44, 44)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 1, borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid", borderTopColor: "rgb(196, 110, 100)", borderRightColor: "rgb(196, 110, 100)", borderBottomColor: "rgb(196, 110, 100)", borderLeftColor: "rgb(196, 110, 100)", color: "rgb(255, 228, 220)", fontSize: 11, fontWeight: 750 },
-  mapColumn: { display: "block", flexGrow: 1, flexShrink: 1, minHeight: 0, overflowX: "hidden", overflowY: "auto", padding: 0, backgroundColor: "#ddd8bf" },
+  mapColumn: { display: "block", flexGrow: 1, flexShrink: 1, minHeight: 0, overflowX: "hidden", overflowY: "auto", padding: 0, backgroundColor: "#eee6d5" },
   mapArea: { display: "block", position: "relative", width: "100%" },
-  mapHit: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", position: "absolute", display: "block", width: 56, height: 56, paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0, borderTopWidth: 0, borderRightWidth: 0, borderBottomWidth: 0, borderLeftWidth: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomRightRadius: 28, borderBottomLeftRadius: 28, backgroundColor: "transparent", color: "transparent", fontSize: 9, ":focus-visible#1": { outline: "2px solid #c5d4a4", outlineOffset: 3 } },
-  mapLegend: { display: "block", marginTop: 4, fontSize: 10, color: "#a8b49f", letterSpacing: "0.04em" },
-  mapDetail: { display: "flex", flexDirection: "column", rowGap: 8, padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", borderTop: "2px solid #9aa886", backgroundColor: "#273c32", flexShrink: 0 },
+  mapHit: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", position: "absolute", display: "block", width: 56, height: 56, paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0, borderTopWidth: 0, borderRightWidth: 0, borderBottomWidth: 0, borderLeftWidth: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomRightRadius: 28, borderBottomLeftRadius: 28, backgroundColor: "transparent", color: "transparent", fontSize: 9, ":focus-visible#1": { outline: "2px solid #80a9b7", outlineOffset: 3 } },
+  mapLegend: { display: "block", marginTop: 4, fontSize: 10, color: "#7a8b91", letterSpacing: "0.04em" },
+  mapDetail: { display: "flex", flexDirection: "column", rowGap: 8, padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", borderTop: "2px solid #8eaab3", backgroundColor: "#f8f0df", flexShrink: 0 },
   mapDetail_copy: { display: "block", flexGrow: 1, minWidth: 0 },
-  mapDetail_b: { display: "block", fontSize: 17, fontWeight: 850, color: "rgb(240, 246, 240)" },
-  mapDetail_small: { display: "inline", fontSize: 11, color: "#a8b49f", marginLeft: 5 },
-  mapDetail_p: { display: "block", fontSize: 12, color: "rgb(199, 216, 210)", lineHeight: "1.5" },
-  mapDetail_p_v2: { display: "block", marginTop: 3, fontSize: 12, color: "rgb(255, 214, 130)", lineHeight: "1.5" },
-  mapDetail_p_v3: { display: "block", marginTop: 3, fontSize: 11, color: "#bbc4af", lineHeight: "1.5" },
+  mapDetail_b: { display: "block", fontSize: 17, fontWeight: 850, color: "#102f3a" },
+  mapDetail_small: { display: "inline", fontSize: 11, color: "#7a8b91", marginLeft: 5 },
+  mapDetail_p: { display: "block", fontSize: 12, color: "#4a6471", lineHeight: "1.5" },
+  mapDetail_p_v2: { display: "block", marginTop: 3, fontSize: 12, color: "#947044", lineHeight: "1.5" },
+  mapDetail_p_v3: { display: "block", marginTop: 3, fontSize: 11, color: "#78868b", lineHeight: "1.5" },
   mapDetail_actions: { display: "flex", alignItems: "stretch", columnGap: 10, flexShrink: 0 },
-  mapStartButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 46, flexGrow: 1, minWidth: 0, padding: "8px 14px", borderRadius: 5, backgroundImage: "linear-gradient(#cbdcb8, #8eb7a5)", border: "1px solid #c8e9d6", color: "#173b38", fontSize: 15, fontWeight: 850, ":disabled#1": { cursor: "default", opacity: 0.45, backgroundImage: "none", backgroundColor: "#465347", color: "#b2c6c6", borderColor: "#79846c" }, ":active#2": { transform: "translateY(1px)" }, ":focus-visible#3": { outline: "2px solid #c5d4a4", outlineOffset: 2 } },
-  mapCloseDetail: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 44, padding: "6px 14px", borderRadius: 5, backgroundColor: "transparent", border: "1px solid #78856d", color: "rgb(178, 198, 196)", fontSize: 12, fontWeight: 700 },
+  mapStartButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 46, flexGrow: 1, minWidth: 0, padding: "8px 14px", borderRadius: 5, backgroundImage: "linear-gradient(#4a7d91, #2c596f)", border: "1px solid #527a8b", color: "#f8f0df", fontSize: 15, fontWeight: 850, ":disabled#1": { cursor: "default", opacity: 0.45, backgroundImage: "none", backgroundColor: "#d7dfdd", color: "#6c818b", borderColor: "#9eafb5" }, ":active#2": { transform: "translateY(1px)" }, ":focus-visible#3": { outline: "2px solid #80a9b7", outlineOffset: 2 } },
+  mapCloseDetail: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 44, padding: "6px 14px", borderRadius: 5, backgroundColor: "transparent", border: "1px solid #9eafb5", color: "#526b77", fontSize: 12, fontWeight: 700 },
 };
 
 
@@ -9032,20 +9049,20 @@ const dialogScreens = (() => {
 // The existing controller supplies glyphs rather than types; keep that public
 // projection intact and translate its four alpha.1 glyphs here.
 const railMap = (() => {
-  const TOP_PAD = 94, ROW_SPAN = 104, BOTTOM_PAD = 72, HIT = 64, LAYERS = 12;
+  const TOP_PAD = 94, ROW_SPAN = 104, BOTTOM_PAD = 72, HIT = 56, LAYERS = 12;
   const CONTENT_H = TOP_PAD + (LAYERS - 1) * ROW_SPAN + BOTTOM_PAD;
   const TYPES = { "◈": "start", "⬤": "combat", "⚠": "risk", "★": "final" };
   const NAMES = { start: "启程车站", combat: "废弃站点", risk: "危险区域", elite: "危险区域", final: "污染核心", boss: "污染核心", shop: "补给站", supply: "补给站" };
   const typeOf = node => node.type || TYPES[node.glyph] || "combat";
   const nameOf = node => NAMES[typeOf(node)] || node.name;
-  const sizeOf = type => ["final", "boss"].includes(type) ? 32 : ["risk", "elite"].includes(type) ? 28 : type ? 26 : 20;
+  const sizeOf = type => ["final", "boss"].includes(type) ? 24 : ["risk", "elite"].includes(type) ? 21 : type ? 19 : 12;
   const dangerOf = node => ["final", "boss"].includes(typeOf(node)) ? 3 : ["risk", "elite"].includes(typeOf(node)) ? 2 : ["start", "shop", "supply"].includes(typeOf(node)) ? 0 : 1;
   // One lazy map-only sheet; it never joins the game's boot/battle art gates.
   // Alpha-trimmed sampling bounds retain every icon's original aspect ratio.
-  const ATLAS = "assets/map-legends-v1.webp?v=v0.12.0.5";
+  const ATLAS = "assets/map-legends-v2.webp?v=v0.12.0.6";
   const FRAMES = {
-    train: [87, 24, 91, 226], start: [266, 20, 216, 228], combat: [512, 45, 235, 197],
-    supply: [20, 271, 229, 203], risk: [269, 260, 234, 230], final: [525, 266, 225, 223],
+    train: [28, 49, 211, 195], start: [263, 31, 229, 225], combat: [517, 64, 226, 186],
+    supply: [25, 261, 224, 220], risk: [269, 261, 236, 217], final: [530, 265, 219, 216],
   };
 
   function sprite(ctx, image, type, size) {
@@ -9094,8 +9111,14 @@ const railMap = (() => {
         const known = knownIds.has(id) || node.state === "next";
         // Unknown markers have no type/name/reward projection, so their size,
         // label and hit target cannot accidentally disclose their contents.
+        // Stable topographic placement: offset stations from the rigid grid,
+        // with less lateral scatter in dense rows to preserve finger-sized gaps.
+        let hash = 2166136261;
+        for (const ch of id + ":" + row.layer) hash = Math.imul(hash ^ ch.charCodeAt(0), 16777619) >>> 0;
+        const spread = [0, 0.08, 0.06, 0.025, 0.008][row.nodes.length] || 0;
         nodes.push({ ...(known ? { ...node, type: typeOf(node) } : { id, state: "unknown" }), known, layer: row.layer, slot,
-          cx: (slot + 1) / (row.nodes.length + 1), cy: topPad + (LAYERS - row.layer) * rowSpan });
+          cx: (slot + 1) / (row.nodes.length + 1) + (hash % 1001 / 500 - 1) * spread,
+          cy: topPad + (LAYERS - row.layer) * rowSpan + ((hash >>> 10) % 11 - 5) });
       });
     });
     const ids = new Set(nodes.map(n => n.id));
@@ -9116,7 +9139,7 @@ const railMap = (() => {
     ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
   }
 
-  const PAPER = "#ddd8bf", INK = "#343d36", MUTED = "#7e8371";
+  const PAPER = "#eee6d5", INK = "#283840", MUTED = "#829398";
 
   // Conventional cartographic railway: dark casing with evenly alternating
   // white/black blocks. The same symbol is used throughout the complete map.
@@ -9131,7 +9154,7 @@ const railMap = (() => {
     };
     ctx.save(); ctx.lineCap = "butt";
     if (kind !== "future") {
-      path(); ctx.strokeStyle = kind === "walked" ? "#80a995" : "#c7ae69";
+      path(); ctx.strokeStyle = kind === "walked" ? "#7ca7b3" : "#d8b771";
       ctx.lineWidth = 10; ctx.stroke();
     }
     path(); ctx.strokeStyle = INK; ctx.lineWidth = 5; ctx.stroke();
@@ -9169,16 +9192,12 @@ const railMap = (() => {
     line(ctx, [[-7, 14], [7, 14]], INK, 2);
   }
   function train(ctx) {
-    // A larger locomotive symbol and a position pennant make the train legible
-    // without introducing a different illustration style or glowing ring.
-    polygon(ctx, [[-12, 19], [-12, -16], [-7, -23], [7, -23], [12, -16], [12, 19]], "#f4eed6", INK, 2.5);
-    ctx.fillRect(-7, -14, 14, 8);
-    ctx.strokeRect(-7, -1, 14, 11);
-    for (const y of [-10, 5, 15]) {
-      line(ctx, [[-15, y], [-12, y]], INK, 2.5); line(ctx, [[12, y], [15, y]], INK, 2.5);
-    }
-    line(ctx, [[-8, 23], [8, 23]], INK, 2.5);
-    polygon(ctx, [[0, -34], [5, -28], [-5, -28]], "#315e4d");
+    // Clear locomotive front if the illustrated sheet cannot be decoded.
+    polygon(ctx, [[-17, 16], [-17, -13], [-11, -21], [11, -21], [17, -13], [17, 16]], "#f8f0df", INK, 2);
+    ctx.fillStyle = "#315e73"; ctx.fillRect(-11, -12, 22, 10);
+    line(ctx, [[0, -12], [0, -2]], "#d3e0e0", 2);
+    ctx.fillStyle = "#d7a654"; ctx.fillRect(-12, 4, 5, 4); ctx.fillRect(7, 4, 5, 4);
+    line(ctx, [[-11, 12], [11, 12]], INK, 2); line(ctx, [[-13, 20], [13, 20]], INK, 3);
   }
 
   // Terrain is decorative cartography, independent of node types and rewards.
@@ -9186,9 +9205,9 @@ const railMap = (() => {
   function terrain(ctx, box) {
     ctx.fillStyle = PAPER; ctx.fillRect(box.x, box.y, box.w, box.h);
     ctx.save(); ctx.translate(box.x, box.y);
-    ctx.strokeStyle = "rgba(89, 101, 76, 0.10)"; ctx.lineWidth = 0.7;
-    for (let x = 24; x < box.w; x += 72) line(ctx, [[x, 0], [x, box.h]], "rgba(89, 101, 76, 0.09)", 0.7);
-    for (let y = 28; y < box.h; y += 72) line(ctx, [[0, y], [box.w, y]], "rgba(89, 101, 76, 0.09)", 0.7);
+    ctx.strokeStyle = "rgba(93, 112, 123, 0.10)"; ctx.lineWidth = 0.7;
+    for (let x = 24; x < box.w; x += 72) line(ctx, [[x, 0], [x, box.h]], "rgba(93, 112, 123, 0.09)", 0.7);
+    for (let y = 28; y < box.h; y += 72) line(ctx, [[0, y], [box.w, y]], "rgba(93, 112, 123, 0.09)", 0.7);
     for (let y = 145, cluster = 0; y < box.h; y += 270, cluster++) {
       const left = cluster % 2 === 0, x = left ? -28 : box.w + 28;
       ctx.save(); ctx.translate(x, y); if (!left) ctx.scale(-1, 1);
@@ -9197,19 +9216,19 @@ const railMap = (() => {
         ctx.beginPath(); ctx.moveTo(-15, -r);
         ctx.bezierCurveTo(r * 1.6, -r * 1.3, r * 0.4, -16, r, 22);
         ctx.bezierCurveTo(r * 1.45, r * 0.8, r * 0.35, r * 1.5, -15, r * 1.8);
-        ctx.strokeStyle = "rgba(115, 122, 83, 0.22)"; ctx.lineWidth = 0.8; ctx.stroke();
+        ctx.strokeStyle = "rgba(122, 133, 139, 0.22)"; ctx.lineWidth = 0.8; ctx.stroke();
       }
       ctx.restore();
       // Disused factory blocks beside a surveyed access road.
       const bx = left ? box.w - 47 : 20;
-      ctx.strokeStyle = "rgba(102, 104, 81, 0.23)"; ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(120, 124, 128, 0.23)"; ctx.lineWidth = 1;
       for (let i = 0; i < 3; i++) {
-        ctx.fillStyle = "rgba(141, 137, 105, 0.10)";
+        ctx.fillStyle = "rgba(148, 151, 154, 0.10)";
         ctx.fillRect(bx, y + 32 + i * 19, 17 + (i % 2) * 7, 11);
         ctx.strokeRect(bx, y + 32 + i * 19, 17 + (i % 2) * 7, 11);
       }
       ctx.setLineDash([3, 3]);
-      line(ctx, [[bx - 7, y + 26], [bx - 7, y + 100]], "rgba(102, 104, 81, 0.25)", 1);
+      line(ctx, [[bx - 7, y + 26], [bx - 7, y + 100]], "rgba(120, 124, 128, 0.25)", 1);
       ctx.setLineDash([]);
     }
     // Map border ticks, north arrow and a survey title; no fictional distance.
@@ -9222,11 +9241,12 @@ const railMap = (() => {
     polygon(ctx, [[nx, 28], [nx - 6, 44], [nx, 40]], MUTED);
     ctx.restore();
   }
-  function caption(ctx, text, y, current) {
+  function caption(ctx, text, y, current, selected, next) {
     ctx.font = "600 10px \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif";
-    const w = ctx.measureText(text).width + 12;
-    ctx.fillStyle = current ? "#315e4d" : "#e8e2cc"; ctx.fillRect(-w / 2, y - 8, w, 16);
-    ctx.fillStyle = current ? "#f5f0dc" : INK; ctx.fillText(text, 0, y);
+    // Cartographic text halo masks a rail beneath the letters without a card.
+    ctx.strokeStyle = PAPER; ctx.lineWidth = 3; ctx.strokeText(text, 0, y);
+    ctx.fillStyle = current || selected ? "#245e77" : next ? "#8b6a35" : INK; ctx.fillText(text, 0, y);
+    if (current || selected) line(ctx, [[-19, y + 7], [19, y + 7]], "#508697", 1.5);
   }
   function paint(ctx, box, wrapper, g) {
     ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.setLineDash([]);
@@ -9241,24 +9261,20 @@ const railMap = (() => {
     ctx.font = "10px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (let layer = 1; layer <= LAYERS; layer++) {
       const y = box.y + g.topPad + (LAYERS - layer) * g.rowSpan;
-      ctx.fillStyle = layer === g.currentLayer ? "#315e4d" : MUTED;
+      ctx.fillStyle = layer === g.currentLayer ? "#306d85" : MUTED;
       ctx.fillText("L" + layer, box.x + 14, y);
       line(ctx, [[box.x + box.w - 8, y], [box.x + box.w - 3, y]], MUTED, 1);
     }
     for (const node of positioned.values()) {
       ctx.save(); ctx.translate(node.x, node.y);
-      const current = node.id === g.currentId, r = current ? 30 : sizeOf(node.type);
-      ctx.fillStyle = current ? "#c6d3b5" : node.state === "next" ? "#e9d7a3" : PAPER;
-      ctx.fillRect(-r - 2, -r - 2, (r + 2) * 2, (r + 2) * 2);
+      const current = node.id === g.currentId, r = current ? 23 : sizeOf(node.type);
       ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = 2;
       if (current) {
-        if (!sprite(ctx, atlas, "train", 60)) train(ctx);
-        polygon(ctx, [[0, -39], [5, -33], [-5, -33]], "#315e4d");
+        if (!sprite(ctx, atlas, "train", 46)) train(ctx);
+        polygon(ctx, [[0, -32], [4, -27], [-4, -27]], "#306d85");
       }
       else if (!node.known) {
-        ctx.setLineDash([3, 3]); ctx.strokeStyle = "#929580"; ctx.lineWidth = 1.2;
-        ctx.strokeRect(-16, -16, 32, 32); ctx.setLineDash([]);
-        ctx.fillStyle = "#747b68"; ctx.font = "600 23px ui-monospace, monospace"; ctx.fillText("?", 0, 1);
+        ctx.fillStyle = "#829398"; ctx.font = "600 20px ui-monospace, monospace"; ctx.fillText("?", 0, 1);
       } else {
         if (node.state === "locked") ctx.globalAlpha = 0.55;
         if (!sprite(ctx, atlas, node.type, r * 2)) {
@@ -9268,13 +9284,12 @@ const railMap = (() => {
           else station(ctx, node.type === "start");
         }
       }
-      if (node.id === g.selectedId || node.state === "next") {
-        ctx.strokeStyle = node.id === g.selectedId ? "#315e4d" : "#9e8137";
-        ctx.lineWidth = node.id === g.selectedId ? 2 : 1; ctx.strokeRect(-r - 3, -r - 3, (r + 3) * 2, (r + 3) * 2);
+      if (!current && (node.id === g.selectedId || node.state === "next")) {
+        polygon(ctx, [[0, -r - 4], [3, -r - 9], [-3, -r - 9]], node.id === g.selectedId ? "#306d85" : "#c39445");
       }
       if (current || node.known) {
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        caption(ctx, current ? "列车当前位置" : (node.state === "cleared" ? "✓ " : "") + nameOf(node), r + 14, current);
+        caption(ctx, current ? "当前列车" : nameOf(node), r + 14, current, node.id === g.selectedId, node.state === "next");
       }
       ctx.restore();
     }
@@ -9330,7 +9345,7 @@ const mapScreen = (() => {
           E({ ...S.mapEyebrow, ref: "/2/0/0/0" }, "TACTICAL TERMINAL / 战术终端"),
           E({ ...S.mapDetail_b, key: "mapDetailTitle", ref: "/2/0/0/1" }, name,
             E({ ...S.mapDetail_small, ref: "/2/0/0/1/0" }, "L" + d.layer))),
-        E({ ...S.mapDanger, key: "mapDetailDanger", ref: "/2/0/1", color: danger > 1 ? "#ffaaa0" : "#e5ce9b" }, danger ? "危险 " + "★".repeat(danger) : "安全区")),
+        E({ ...S.mapDanger, key: "mapDetailDanger", ref: "/2/0/1", color: danger > 1 ? "#b15b53" : "#927044" }, danger ? "危险 " + "★".repeat(danger) : "安全区")),
       E({ ...S.mapDetail_copy, ref: "/2/1" },
         E({ ...S.mapDetail_p, ref: "/2/1/0" }, start ? "远征起点 · 沿铁路向上探索" : node.type === "final" ? "目标  走完终点轨道 · 完成整图结算" : "目标  护送列车 · 存活约 60 秒"),
         E({ ...S.mapDetail_p_v2, key: "mapDetailReward", ref: "/2/1/1" }, start ? "启程已完成 · 请选择下一站" : "收益  " + d.rewardHint),
@@ -9360,12 +9375,12 @@ const mapScreen = (() => {
           const progress = (graph.currentLayer - 1) / (railMap.LAYERS - 1);
           const x = box.x + 5, width = Math.max(0, box.w - 10), y = box.y + box.h / 2;
           ctx.save(); ctx.lineCap = "round"; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#65725f"; ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#b7c69b"; ctx.stroke();
-          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#eee9cf"; ctx.fill(); ctx.restore();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#c4cecb"; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#6c9baa"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#346b81"; ctx.fill(); ctx.restore();
         } }),
         E({ ...S.mapHeader_row, ref: "/0/3" },
-          E({ ...S.mapGuide, key: "mapGuide", ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "上滑查看全图 · ？站点尚未侦察"),
+          E({ ...S.mapGuide, key: "mapGuide", ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "拖动查看全图 · ？站点尚未侦察"),
           m.resetConfirm ? E({ ...S.mapResetRow, ref: "/0/1/1" },
             E({ tag: "button", ...S.mapResetConfirm, key: "mapResetConfirm", ref: "/0/1/1/0", onTap: m.on.reset }, "确认重置"),
             E({ tag: "button", ...S.mapCloseDetail, key: "mapResetCancel", ref: "/0/1/1/1", onTap: m.on.cancelReset }, "取消"))
@@ -10733,7 +10748,7 @@ const mapCtl = (() => {
 
 
 
-const GAME_VERSION = "v0.12.0.5";
+const GAME_VERSION = "v0.12.0.6";
 const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
 const canvasHost = (() => {

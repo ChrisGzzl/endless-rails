@@ -12,24 +12,29 @@ const { validate } = require('../services/player-data/server.cjs');
 
 // -- generator constraints (§3/§4.1) ---------------------------------------------------
 
-for (let seed = 1; seed <= 60; seed++) {
+const generatedShapes = new Set(), nodeCounts = new Set(), branchCounts = new Set();
+for (let seed = 1; seed <= 200; seed++) {
   const exp = ex.generateExpedition({ regionId: 'wasteland', seed, id: 'abc123' });
   assert.ok(ex.validateNodes(exp.nodes), 'seed ' + seed + ' validates');
-  assert.equal(exp.nodes.length, 29, 'the alpha.1 template has 29 nodes');
+  assert.ok(exp.nodes.length >= 24 && exp.nodes.length <= ex.MAX_NODES, 'varied maps stay within the existing save budget');
   assert.equal(exp.seed, seed, 'the accepted seed is persisted');
   assert.equal(JSON.stringify(exp.nodes), JSON.stringify(ex.generateExpedition({ regionId: 'wasteland', seed, id: 'abc123' }).nodes), 'the same seed regenerates the same graph');
-  for (let layer = 1; layer <= 12; layer++) assert.equal(exp.nodes.filter(n => n.layer === layer).length, ex.LAYER_SIZES[layer - 1], 'layer sizes follow the template');
+  const widths = Array.from({ length: 12 }, (_, i) => exp.nodes.filter(n => n.layer === i + 1).length);
+  for (const width of [1, 2, 3, 4]) assert.ok(widths.slice(1, -1).includes(width), 'every map contains varied layer widths');
+  generatedShapes.add(widths.join(',')); nodeCounts.add(exp.nodes.length);
   const start = exp.nodes.find(n => n.layer === 1), finish = exp.nodes.find(n => n.layer === 12);
   assert.equal(start.type, 'start'); assert.equal(finish.type, 'final');
   for (const node of exp.nodes) {
     assert.equal(node.nextIds.length >= (node.layer === 12 ? 0 : 1), true, 'every pre-final position keeps at least one forward road');
+    assert.ok(node.nextIds.length <= 3, 'no station has more than three choices');
+    if (node.layer < 12) branchCounts.add(node.nextIds.length);
     for (const id of node.nextIds) {
       const target = ex.nodeById(exp, id);
       assert.equal(target.layer, node.layer + 1, 'edges only connect adjacent layers');
     }
   }
   const startNode = exp.nodes.find(n => n.layer === 1);
-  assert.equal(startNode.nextIds.length, 2, 'departure always offers both L2 roads');
+  assert.equal(startNode.nextIds.length, widths[1], 'departure covers every first destination');
   // Staircase generation is planar: with the natural slot order no two roads cross.
   let layerCrossings = 0;
   for (let l = 1; l < 12; l++) {
@@ -42,6 +47,16 @@ for (let seed = 1; seed <= 60; seed++) {
     }
   }
   assert.equal(layerCrossings, 0, 'generated roads never cross in slot order');
+}
+assert.ok(generatedShapes.size > 100 && nodeCounts.size > 3, 'seeds vary the layer layout and total station count');
+assert.deepEqual([...branchCounts].sort(), [1, 2, 3], 'generation offers single roads, forks and three-way junctions');
+{
+  const legacy = require('./fixtures/expedition-legacy-v1.json');
+  assert.equal(legacy.nodes.length, 29);
+  assert.deepEqual(ex.normalizeExpedition(legacy), legacy, 'an existing saved map keeps all IDs, types, paths and progress');
+  const meta = lt.normalizeMeta({ ...lt.emptyMeta(), activeExpedition: legacy });
+  assert.deepEqual(meta.activeExpedition.nodes, legacy.nodes, 'account normalization never regenerates an existing map');
+  assert.doesNotThrow(() => validate({ schemaVersion: 1, meta, record: rr.emptyRecord() }), 'the save service still accepts legacy maps');
 }
 {
   // Deterministic fallback when no candidate seed is supplied.
@@ -140,7 +155,7 @@ const createGame = require('./test-harness.cjs');
   assert.ok(ui.visible('mapScreen'), 'departure opens the map directly (no L1 contract)');
   assert.equal(run('state.activeExpedition.visitedIds.length'), 1, 'L1 is cleared on departure');
   const first = json('expedition.reachableNext(state.activeExpedition).map(n=>n.id)');
-  assert.equal(first.length, 2, 'two L2 nodes are reachable');
+  assert.ok(first.length >= 1 && first.length <= 3, 'departure offers the generated one to three L2 destinations');
   ui.tap('mapNode-' + first[0]);
   assert.equal(ui.disabled('mapStartButton'), false, 'a reachable node can be started');
   ui.tap('mapStartButton');
@@ -291,7 +306,7 @@ function depthOf(value) {
   exp.riskBlueprints = lt.BLUEPRINTS.map(bp => bp.id).slice(0, 12);
   exp.summary = { attempts: 999999, failures: 999999, kills: 999999 };
   const withExpedition = lt.normalizeMeta({ ...meta, activeExpedition: exp });
-  assert.equal(withExpedition.activeExpedition && withExpedition.activeExpedition.nodes.length, 29, 'the fixture expedition survives normalization');
+  assert.equal(withExpedition.activeExpedition && withExpedition.activeExpedition.nodes.length, exp.nodes.length, 'the variable-width fixture expedition survives normalization');
   const latest = rr.buildRunSummary({ station: 5, kills: 900, scrap: 999, bestCombo: 90, outcome: 'won', activeEvent: null, activeContract: null, modules: exp.build.modules, coreStacks: exp.build.coreStacks, weaponStats: Object.fromEntries(ex.MODULE_IDS.map(id => [id, { damage: 12345.6, kills: 678, volleys: 9012 }])), bondStats: { blue: { damage: 999.9, kills: 99, casts: 45, maxLevel: 9 }, red: { damage: 999.9, kills: 99, casts: 45, maxLevel: 9 }, purple: { damage: 999.9, kills: 99, casts: 45, maxLevel: 9 } } });
   const record = rr.mergeRecord(rr.emptyRecord(), latest);
   const payload = { schemaVersion: 1, meta: withExpedition, record };

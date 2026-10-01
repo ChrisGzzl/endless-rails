@@ -11,6 +11,7 @@
 
 const CONTENT_VERSION = 1;
 const LAYER_COUNT = 12;
+// Legacy template retained for callers/old saves; new maps vary their widths.
 const LAYER_SIZES = Object.freeze([1, 2, 3, 2, 3, 3, 2, 3, 3, 3, 3, 1]);
 const REGION_IDS = Object.freeze(["wasteland", "ruins", "industrial", "infection"]);
 const STATUS_VALUES = Object.freeze(["active", "completed", "reset"]);
@@ -88,45 +89,61 @@ const LAYER_TYPE_POOL = Object.freeze([
   Object.freeze(["final"]),
 ]);
 
-// Staircase roads: each source owns a contiguous run of target slots and the
-// runs advance monotonically (max(run_i) <= min(run_k) for i < k), which makes
-// the drawn graph planar by construction - zero crossings. Edge nodes keep a
-// single road where geometry leaves no room (规划 §3.1's required >=1 rule;
-// the >=2 recommendation is kept wherever the layout allows).
-function connectLayers(fromNodes, toNodes, layer) {
-  const m = fromNodes.length, n = toNodes.length;
-  const j0 = i => Math.min(n - 1, Math.floor(i * n / m));
-  for (let i = 0; i < m; i++) {
-    const a = j0(i);
-    let b = Math.min(a + 1, n - 1);
-    if (i + 1 < m) b = Math.min(b, j0(i + 1)); // stay laminar against the next slot
-    fromNodes[i].nextIds = [toNodes[a].id];
-    if (b !== a) fromNodes[i].nextIds.push(toNodes[b].id);
+// Varied widths fit the existing flat save and 32-node budget. Every new map
+// contains narrow passages and 2/3/4-station layers. A one-station source can
+// cover at most three exits, so it never directly precedes a four-station row.
+function layerWidths(rng) {
+  const middle = [1, 2, 2, 2, 3, 3, 3, 4, 1 + Math.floor(rng() * 4), 1 + Math.floor(rng() * 4)];
+  for (let attempt = 0; attempt < 32; attempt++) {
+    const widths = [1, ...shuffle(middle, rng), 1];
+    if (widths.every((n, i) => !i || n <= widths[i - 1] * 3)) return widths;
   }
-  // Coverage: any target without an incoming road takes its nearest source.
-  const covered = new Set(fromNodes.flatMap(node => node.nextIds));
-  for (let j = 0; j < n; j++) {
-    if (covered.has(toNodes[j].id)) continue;
-    const i = Math.min(m - 1, Math.floor(j * m / n));
-    fromNodes[i].nextIds.push(toNodes[j].id);
-    covered.add(toNodes[j].id);
+  return [1, ...middle.sort((a, b) => a - b), 1];
+}
+
+// Contiguous target runs keep the topology planar. Random run lengths and
+// occasional shared junctions produce one, two or three real forward choices.
+function connectLayers(fromNodes, toNodes, rng) {
+  const m = fromNodes.length, n = toNodes.length;
+  if (n >= m) {
+    const lengths = Array(m).fill(1);
+    for (let extra = n - m; extra > 0; extra--) {
+      const room = lengths.map((length, i) => length < 3 ? i : -1).filter(i => i >= 0);
+      lengths[room[Math.floor(rng() * room.length)]]++;
+    }
+    let cursor = 0;
+    for (let i = 0; i < m; i++) {
+      fromNodes[i].nextIds = toNodes.slice(cursor, cursor + lengths[i]).map(node => node.id);
+      cursor += lengths[i];
+      if (i < m - 1 && lengths[i] < 3 && rng() < 0.5) fromNodes[i].nextIds.push(toNodes[cursor].id);
+    }
+  } else {
+    const target = i => Math.floor(i * n / m);
+    for (let i = 0; i < m; i++) {
+      const j = target(i);
+      fromNodes[i].nextIds = [toNodes[j].id];
+      if (i < m - 1 && target(i + 1) > j && rng() < 0.5) fromNodes[i].nextIds.push(toNodes[j + 1].id);
+    }
   }
 }
 
 function buildCandidate(seed) {
   const rng = seededRandom(seed);
+  const widths = layerWidths(rng);
   const byLayer = [];
   let index = 0;
   for (let layer = 1; layer <= LAYER_COUNT; layer++) {
-    const types = layer === 1 || layer === LAYER_COUNT ? [...LAYER_TYPE_POOL[layer - 1]] : shuffle(LAYER_TYPE_POOL[layer - 1], rng);
+    const pool = [...LAYER_TYPE_POOL[layer - 1]];
+    while (pool.length < widths[layer - 1]) pool.push("combat");
+    const types = layer === 1 || layer === LAYER_COUNT ? pool : shuffle(pool, rng).slice(0, widths[layer - 1]);
     byLayer.push(types.map(type => ({ id: "n" + index++, layer, type, nextIds: [] })));
   }
-  for (let layer = 1; layer < LAYER_COUNT; layer++) connectLayers(byLayer[layer - 1], byLayer[layer], layer);
+  for (let layer = 1; layer < LAYER_COUNT; layer++) connectLayers(byLayer[layer - 1], byLayer[layer], rng);
   return byLayer.flat();
 }
 
 function validateNodes(nodes) {
-  if (!Array.isArray(nodes) || nodes.length < LAYER_SIZES.reduce((a, b) => a + b, 0) || nodes.length > MAX_NODES) return false;
+  if (!Array.isArray(nodes) || nodes.length < LAYER_COUNT || nodes.length > MAX_NODES) return false;
   const byId = new Map();
   for (const node of nodes) {
     if (!node || !isId(node.id) || byId.has(node.id)) return false;
@@ -138,7 +155,7 @@ function validateNodes(nodes) {
   }
   for (let layer = 1; layer <= LAYER_COUNT; layer++) {
     const count = nodes.filter(n => n.layer === layer).length;
-    if (count !== LAYER_SIZES[layer - 1]) return false;
+    if (count < 1 || count > 4) return false;
   }
   const start = nodes.filter(n => n.layer === 1), finish = nodes.filter(n => n.layer === LAYER_COUNT);
   if (start.length !== 1 || start[0].type !== "start" || finish.length !== 1 || finish[0].type !== "final") return false;
