@@ -8096,40 +8096,40 @@ const uiSheet = {
   trainStrip_x1: { borderBlockStartWidth: 1, borderBlockEndWidth: 1, borderBlockStartStyle: "solid", borderBlockEndStyle: "solid", borderBlockStartColor: "rgb(56, 70, 49)", borderBlockEndColor: "rgb(56, 70, 49)", alignItems: "center", rowGap: 10, columnGap: 10, marginTop: 0, marginRight: 0, marginBottom: 0, marginLeft: 0, paddingTop: 4, paddingRight: 0, paddingBottom: 4, paddingLeft: 0, borderTopWidth: 0, borderRightWidth: 0, borderBottomWidth: 0, borderLeftWidth: 0, backgroundImage: "none", display: "none" },
   pauseShortcut_x1: { textAlign: "center", color: "rgb(119, 151, 174)", fontSize: 10, display: "none" },
 
-  // v0.12 expedition route map (规划 §18.2). Dark terminal theme over the page.
-  mapScreen: { fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 14, fontWeight: "400", lineHeight: "1.45", color: "rgb(214, 226, 224)", width: "var(--frame-width)", height: "var(--frame-height)", position: "fixed", zIndex: 20, top: 0, right: 0, bottom: 0, left: 0, margin: "auto", display: "flex", flexDirection: "column", backgroundColor: "rgb(16, 34, 42)", overflowX: "hidden", overflowY: "hidden", borderTopLeftRadius: 8, borderTopRightRadius: 8, borderBottomRightRadius: 8, borderBottomLeftRadius: 8, "@media (max-width: 599px), (pointer: coarse)#1": { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 } },
-  mapHeader: { display: "flex", flexDirection: "column", rowGap: 6, padding: "calc(12px + env(safe-area-inset-top)) 14px 8px", borderBottom: "1px solid #28424c", flexShrink: 0 },
+  // v0.12 expedition map: surveyed paper chart inside the field terminal.
+  mapScreen: { fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 14, fontWeight: "400", lineHeight: "1.45", color: "rgb(214, 226, 224)", width: "var(--frame-width)", height: "var(--frame-height)", position: "fixed", zIndex: 20, top: 0, right: 0, bottom: 0, left: 0, margin: "auto", display: "flex", flexDirection: "column", backgroundColor: "#ddd8bf", overflowX: "hidden", overflowY: "hidden", borderTopLeftRadius: 8, borderTopRightRadius: 8, borderBottomRightRadius: 8, borderBottomLeftRadius: 8, "@media (max-width: 599px), (pointer: coarse)#1": { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 } },
+  mapHeader: { display: "flex", flexDirection: "column", rowGap: 6, padding: "calc(12px + env(safe-area-inset-top)) 14px 8px", borderBottom: "1px solid #65725f", backgroundColor: "#273c32", flexShrink: 0 },
   mapHeader_row: { display: "flex", alignItems: "center", justifyContent: "space-between", columnGap: 10, minWidth: 0 },
-  mapProgressLabel: { display: "block", fontSize: 12, color: "#a6beba" },
-  mapProgressValue: { display: "inline", fontSize: 15, fontWeight: 850, color: "#e2f1df" },
+  mapProgressLabel: { display: "block", fontSize: 12, color: "#c2c7af" },
+  mapProgressValue: { display: "inline", fontSize: 15, fontWeight: 850, color: "#f0ecd9" },
   mapProgressTrack: { display: "block", height: 10, width: "100%" },
   mapDanger: { display: "block", flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#e5ce9b", whiteSpace: "nowrap" },
-  mapGuide: { display: "block", minWidth: 0, fontSize: 11, color: "#90b0b4", lineHeight: "1.4" },
+  mapGuide: { display: "block", minWidth: 0, fontSize: 11, color: "#bac3ac", lineHeight: "1.4" },
   mapDetail_heading: { display: "flex", alignItems: "center", justifyContent: "space-between", columnGap: 12 },
   mapHeader_copy: { display: "block", minWidth: 0, flexGrow: 1 },
-  mapEyebrow: { display: "block", fontFamily: "ui-monospace, monospace", fontSize: 9, letterSpacing: "0.16em", color: "rgb(129, 163, 168)", marginBottom: 4 },
+  mapEyebrow: { display: "block", fontFamily: "\"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif", fontSize: 9, letterSpacing: "0.16em", color: "#a8b49f", marginBottom: 4 },
   mapTitle: { display: "block", fontSize: 17, fontWeight: 850, color: "rgb(240, 246, 240)", lineHeight: "1.3", "@media (max-width: 359px)#1": { fontSize: 15 } },
   mapResult: { display: "block", marginTop: 5, fontSize: 11, color: "rgb(255, 214, 130)", lineHeight: "1.45" },
   mapHeader_side: { display: "flex", flexDirection: "column", alignItems: "flex-end", rowGap: 7, columnGap: 7, flexShrink: 0 },
-  mapTokens: { display: "inline", padding: "4px 9px", borderRadius: 5, backgroundColor: "rgb(35, 62, 70)", color: "rgb(224, 234, 230)", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" },
+  mapTokens: { display: "inline", padding: "4px 9px", borderRadius: 5, backgroundColor: "#3c4f40", color: "rgb(224, 234, 230)", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" },
   mapTokens_b: { display: "inline", color: "rgb(255, 216, 130)", fontWeight: 850 },
   mapResetRow: { display: "flex", rowGap: 6, columnGap: 6 },
   mapResetButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", border: "2px outset #767676", cursor: "pointer", paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10, borderRadius: 5, backgroundColor: "transparent", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 1, borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid", borderTopColor: "rgb(96, 128, 136)", borderRightColor: "rgb(96, 128, 136)", borderBottomColor: "rgb(96, 128, 136)", borderLeftColor: "rgb(96, 128, 136)", color: "rgb(178, 198, 196)", fontSize: 11, fontWeight: 700 },
   mapResetConfirm: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", border: "2px outset #767676", cursor: "pointer", paddingTop: 5, paddingBottom: 5, paddingLeft: 10, paddingRight: 10, borderRadius: 5, backgroundColor: "rgb(122, 44, 44)", borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderLeftWidth: 1, borderTopStyle: "solid", borderRightStyle: "solid", borderBottomStyle: "solid", borderLeftStyle: "solid", borderTopColor: "rgb(196, 110, 100)", borderRightColor: "rgb(196, 110, 100)", borderBottomColor: "rgb(196, 110, 100)", borderLeftColor: "rgb(196, 110, 100)", color: "rgb(255, 228, 220)", fontSize: 11, fontWeight: 750 },
-  mapColumn: { display: "block", flexGrow: 1, flexShrink: 1, minHeight: 0, overflowX: "hidden", overflowY: "auto", padding: "0 12px 12px" },
+  mapColumn: { display: "block", flexGrow: 1, flexShrink: 1, minHeight: 0, overflowX: "hidden", overflowY: "auto", padding: 0, backgroundColor: "#ddd8bf" },
   mapArea: { display: "block", position: "relative", width: "100%" },
-  mapHit: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", position: "absolute", display: "block", width: 56, height: 56, paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0, borderTopWidth: 0, borderRightWidth: 0, borderBottomWidth: 0, borderLeftWidth: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomRightRadius: 28, borderBottomLeftRadius: 28, backgroundColor: "transparent", color: "transparent", fontSize: 9, ":focus-visible#1": { outline: "2px solid #94dce5", outlineOffset: 3 } },
-  mapLegend: { display: "block", marginTop: 4, fontSize: 10, color: "rgb(129, 163, 168)", letterSpacing: "0.04em" },
-  mapDetail: { display: "flex", flexDirection: "column", rowGap: 8, padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", borderTop: "2px solid #67a9a5", backgroundColor: "rgb(19, 40, 48)", flexShrink: 0 },
+  mapHit: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", position: "absolute", display: "block", width: 56, height: 56, paddingTop: 0, paddingRight: 0, paddingBottom: 0, paddingLeft: 0, borderTopWidth: 0, borderRightWidth: 0, borderBottomWidth: 0, borderLeftWidth: 0, borderTopLeftRadius: 28, borderTopRightRadius: 28, borderBottomRightRadius: 28, borderBottomLeftRadius: 28, backgroundColor: "transparent", color: "transparent", fontSize: 9, ":focus-visible#1": { outline: "2px solid #c5d4a4", outlineOffset: 3 } },
+  mapLegend: { display: "block", marginTop: 4, fontSize: 10, color: "#a8b49f", letterSpacing: "0.04em" },
+  mapDetail: { display: "flex", flexDirection: "column", rowGap: 8, padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", borderTop: "2px solid #9aa886", backgroundColor: "#273c32", flexShrink: 0 },
   mapDetail_copy: { display: "block", flexGrow: 1, minWidth: 0 },
   mapDetail_b: { display: "block", fontSize: 17, fontWeight: 850, color: "rgb(240, 246, 240)" },
-  mapDetail_small: { display: "inline", fontSize: 11, color: "rgb(129, 163, 168)", marginLeft: 5 },
+  mapDetail_small: { display: "inline", fontSize: 11, color: "#a8b49f", marginLeft: 5 },
   mapDetail_p: { display: "block", fontSize: 12, color: "rgb(199, 216, 210)", lineHeight: "1.5" },
   mapDetail_p_v2: { display: "block", marginTop: 3, fontSize: 12, color: "rgb(255, 214, 130)", lineHeight: "1.5" },
-  mapDetail_p_v3: { display: "block", marginTop: 3, fontSize: 11, color: "rgb(153, 180, 182)", lineHeight: "1.5" },
+  mapDetail_p_v3: { display: "block", marginTop: 3, fontSize: 11, color: "#bbc4af", lineHeight: "1.5" },
   mapDetail_actions: { display: "flex", alignItems: "stretch", columnGap: 10, flexShrink: 0 },
-  mapStartButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 46, flexGrow: 1, minWidth: 0, padding: "8px 14px", borderRadius: 5, backgroundImage: "linear-gradient(#cbdcb8, #8eb7a5)", border: "1px solid #c8e9d6", color: "#173b38", fontSize: 15, fontWeight: 850, ":disabled#1": { cursor: "default", opacity: 0.45, backgroundImage: "none", backgroundColor: "#344c52", color: "#b2c6c6", borderColor: "#6c8587" }, ":active#2": { transform: "translateY(1px)" }, ":focus-visible#3": { outline: "2px solid #94dce5", outlineOffset: 2 } },
-  mapCloseDetail: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 44, padding: "6px 14px", borderRadius: 5, backgroundColor: "transparent", border: "1px solid #608088", color: "rgb(178, 198, 196)", fontSize: 12, fontWeight: 700 },
+  mapStartButton: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 46, flexGrow: 1, minWidth: 0, padding: "8px 14px", borderRadius: 5, backgroundImage: "linear-gradient(#cbdcb8, #8eb7a5)", border: "1px solid #c8e9d6", color: "#173b38", fontSize: 15, fontWeight: 850, ":disabled#1": { cursor: "default", opacity: 0.45, backgroundImage: "none", backgroundColor: "#465347", color: "#b2c6c6", borderColor: "#79846c" }, ":active#2": { transform: "translateY(1px)" }, ":focus-visible#3": { outline: "2px solid #c5d4a4", outlineOffset: 2 } },
+  mapCloseDetail: { letterSpacing: 0, textAlign: "center", textTransform: "none", textShadow: "none", cursor: "pointer", minHeight: 44, padding: "6px 14px", borderRadius: 5, backgroundColor: "transparent", border: "1px solid #78856d", color: "rgb(178, 198, 196)", fontSize: 12, fontWeight: 700 },
 };
 
 
@@ -9027,23 +9027,22 @@ const dialogScreens = (() => {
 
 /* ---- src/view/components/map/rail-map.js ---- */
 "use strict";
-// Presentation only: never writes the expedition or reveals hidden hit targets.
+// Presentation only: topology stays visible; undiscovered contents stay private.
 // The existing controller supplies glyphs rather than types; keep that public
 // projection intact and translate its four alpha.1 glyphs here.
 const railMap = (() => {
-  const TOP_PAD = 82, ROW_SPAN = 100, BOTTOM_PAD = 66, HIT = 64, LAYERS = 12;
+  const TOP_PAD = 94, ROW_SPAN = 104, BOTTOM_PAD = 72, HIT = 64, LAYERS = 12;
   const CONTENT_H = TOP_PAD + (LAYERS - 1) * ROW_SPAN + BOTTOM_PAD;
   const TYPES = { "◈": "start", "⬤": "combat", "⚠": "risk", "★": "final" };
   const NAMES = { start: "启程车站", combat: "废弃站点", risk: "危险区域", elite: "危险区域", final: "污染核心", boss: "污染核心", shop: "补给站", supply: "补给站" };
   const typeOf = node => node.type || TYPES[node.glyph] || "combat";
   const nameOf = node => NAMES[typeOf(node)] || node.name;
-  const sizeOf = type => type === "final" || type === "boss" ? 34 : type === "risk" || type === "elite" ? 27 : 22;
+  const sizeOf = type => type === "final" || type === "boss" ? 28 : 20;
   const dangerOf = node => ["final", "boss"].includes(typeOf(node)) ? 3 : ["risk", "elite"].includes(typeOf(node)) ? 2 : ["start", "shop", "supply"].includes(typeOf(node)) ? 0 : 1;
 
   function graph(m, shortScreen = false) {
     const currentLayer = Math.max(1, Math.min(LAYERS, m.currentLayer || 1));
-    const horizon = Math.min(LAYERS, currentLayer + 2);
-    const topPad = shortScreen ? 56 : TOP_PAD, rowSpan = shortScreen ? 74 : ROW_SPAN;
+    const topPad = TOP_PAD, rowSpan = shortScreen ? 88 : ROW_SPAN;
     const edges = m.edges || [], inOf = new Map(), outOf = new Map();
     for (const edge of edges) {
       (inOf.get(edge.to) || inOf.set(edge.to, []).get(edge.to)).push(edge.from);
@@ -9065,23 +9064,30 @@ const railMap = (() => {
       for (let r = rows.length - 2; r >= 0; r--) reorder(rows[r], id => inOf.get(id) || []);
       for (let r = 1; r < rows.length; r++) reorder(rows[r], id => outOf.get(id) || []);
     }
+    // Reconstruct discovered junctions from the existing travelled path. This
+    // also retains intelligence about branches the player passed over, without
+    // adding discovery fields to the save or exposing two layers in advance.
+    const visited = new Set(m.rows.flatMap(row => row.nodes)
+      .filter(node => ["cleared", "current"].includes(node.state)).map(node => node.id));
+    const knownIds = new Set(visited);
+    for (const edge of edges) if (visited.has(edge.from)) knownIds.add(edge.to);
     const nodes = [];
     m.rows.forEach((row, r) => {
-      if (row.layer > horizon) return;
       rows[r].forEach((id, slot) => {
         const node = row.nodes.find(n => n.id === id);
-        // Retain the travelled history, never the discarded branches behind it.
-        if (row.layer < currentLayer && !["cleared", "current"].includes(node.state)) return;
-        nodes.push({ ...node, type: typeOf(node), layer: row.layer, slot,
-          cx: (slot + 1) / (row.nodes.length + 1), cy: topPad + (horizon - row.layer) * rowSpan });
+        const known = knownIds.has(id) || node.state === "next";
+        // Unknown markers have no type/name/reward projection, so their size,
+        // label and hit target cannot accidentally disclose their contents.
+        nodes.push({ ...(known ? { ...node, type: typeOf(node) } : { id, state: "unknown" }), known, layer: row.layer, slot,
+          cx: (slot + 1) / (row.nodes.length + 1), cy: topPad + (LAYERS - row.layer) * rowSpan });
       });
     });
     const ids = new Set(nodes.map(n => n.id));
     const currentId = nodes.find(n => n.state === "current")?.id
       || nodes.find(n => n.layer === currentLayer && n.state === "cleared")?.id;
-    return { nodes, currentLayer, currentId, horizon, topPad, rowSpan, selectedId: m.selectedId,
-      edges: edges.filter(e => e.kind !== "future" && ids.has(e.from) && ids.has(e.to)),
-      height: topPad + (horizon - 1) * rowSpan + BOTTOM_PAD };
+    return { nodes, currentLayer, currentId, topPad, rowSpan, selectedId: m.selectedId,
+      edges: edges.filter(e => ids.has(e.from) && ids.has(e.to)),
+      height: topPad + (LAYERS - 1) * rowSpan + BOTTOM_PAD };
   }
 
   function polygon(ctx, points, fill, stroke, width = 1.5) {
@@ -9094,134 +9100,160 @@ const railMap = (() => {
     ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
   }
 
-  // Two offset rails and regularly spaced sleepers follow the same smooth
-  // centerline. Offset from its tangent instead of shifting the whole curve.
+  const PAPER = "#ddd8bf", INK = "#343d36", MUTED = "#7e8371";
+
+  // Conventional cartographic railway: dark casing with evenly alternating
+  // white/black blocks. The same symbol is used throughout the complete map.
   function track(ctx, a, b, kind) {
     const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy) || 1;
-    const start = sizeOf(a.type) + 7, end = sizeOf(b.type) + 7;
+    const start = sizeOf(a.type) + 4, end = sizeOf(b.type) + 4;
     const ax = a.x + dx / length * start, ay = a.y + dy / length * start;
     const bx = b.x - dx / length * end, by = b.y - dy / length * end;
     const middle = (ay + by) / 2;
-    const steps = Math.max(16, Math.ceil(length / 3)), samples = [];
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps, q = 1 - t;
-      const x = q * q * q * ax + 3 * q * q * t * ax + 3 * q * t * t * bx + t * t * t * bx;
-      const y = q * q * q * ay + 3 * q * q * t * middle + 3 * q * t * t * middle + t * t * t * by;
-      const tx = 6 * q * t * (bx - ax);
-      const ty = 3 * q * q * (middle - ay) + 3 * t * t * (by - middle);
-      const norm = Math.hypot(tx, ty) || 1;
-      samples.push({ x, y, nx: -ty / norm, ny: tx / norm });
+    const path = () => {
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.bezierCurveTo(ax, middle, bx, middle, bx, by);
+    };
+    ctx.save(); ctx.lineCap = "butt";
+    if (kind !== "future") {
+      path(); ctx.strokeStyle = kind === "walked" ? "#80a995" : "#c7ae69";
+      ctx.lineWidth = 10; ctx.stroke();
     }
-    const color = kind === "walked" ? "#7de4bd" : "#ffd47a";
-    line(ctx, samples.map(p => [p.x, p.y]), "#0b1c22", 18);
-    let distance = 0;
-    for (let i = 1; i < samples.length; i++) {
-      const p = samples[i], prev = samples[i - 1];
-      distance += Math.hypot(p.x - prev.x, p.y - prev.y);
-      if (distance < 10) continue;
-      distance %= 10;
-      line(ctx, [[p.x - p.nx * 8, p.y - p.ny * 8], [p.x + p.nx * 8, p.y + p.ny * 8]], kind === "walked" ? "#3b6a61" : "#746548", 3);
-    }
-    ctx.shadowColor = color; ctx.shadowBlur = kind === "walked" ? 7 : 3;
-    for (const side of [-1, 1]) line(ctx, samples.map(p => [p.x + p.nx * 4 * side, p.y + p.ny * 4 * side]), color, 2);
-    ctx.shadowBlur = 0;
-    if (kind === "next") {
-      const p = samples[Math.floor(samples.length * 0.5)];
-      polygon(ctx, [[p.x - 4, p.y + 3], [p.x, p.y - 3], [p.x + 4, p.y + 3]], color);
-    }
+    path(); ctx.strokeStyle = INK; ctx.lineWidth = 5; ctx.stroke();
+    ctx.setLineDash([7, 7]);
+    path(); ctx.strokeStyle = "#f6f2e2"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
   }
 
-  function station(ctx, type, color) {
-    // Low industrial building with a platform, broken roof and dark openings.
-    polygon(ctx, [[-25, 20], [19, 20], [27, 13], [-17, 13]], "#233b43", color);
-    polygon(ctx, [[-17, -5], [15, -5], [15, 13], [-17, 13]], "#718587", "#c2d7cf");
-    polygon(ctx, [[-23, -5], [-8, -19], [5, -19], [23, -5]], type === "start" ? "#67a7a0" : "#9ca69c", color, 2);
-    ctx.fillStyle = "#18333e"; ctx.fillRect(-11, 2, 7, 11); ctx.fillRect(4, 1, 6, 6);
-    if (type === "start") {
-      line(ctx, [[-3, -18], [-3, -31]], color);
-      polygon(ctx, [[-3, -31], [11, -31], [8, -26], [-3, -26]], color);
-    } else {
-      polygon(ctx, [[1, -19], [8, -12], [4, -7], [13, -5], [23, -5]], "#10252d");
-      line(ctx, [[-19, 8], [-23, 12]], "#bac3ad", 3);
+  // All icons share the same ink, paper, stroke weight and plan-view language.
+  function station(ctx, start) {
+    ctx.strokeRect(-14, -12, 28, 24);
+    line(ctx, [[-18, 16], [18, 16]], INK, 2);
+    line(ctx, [[-5, -12], [-5, 12]], INK, 2);
+    ctx.fillRect(1, -7, 8, 5); ctx.fillRect(1, 2, 8, 5);
+    if (start) {
+      line(ctx, [[-14, -12], [-14, -23]], INK, 2);
+      polygon(ctx, [[-14, -23], [0, -23], [-3, -18], [-14, -18]], INK);
     }
   }
-  function supply(ctx, color) {
-    polygon(ctx, [[-21, -9], [4, -17], [22, -7], [-3, 2]], "#aeb291", color);
-    polygon(ctx, [[-21, -9], [-3, 2], [-3, 22], [-21, 11]], "#697d71", color);
-    polygon(ctx, [[-3, 2], [22, -7], [22, 12], [-3, 22]], "#819486", color);
-    line(ctx, [[-9, -13], [10, -3], [10, 16]], "#e6d3a0", 4);
-    line(ctx, [[-10, 4], [-10, 13]], "#d9e3ca", 3);
+  function supply(ctx) {
+    ctx.strokeRect(-13, -11, 26, 24);
+    line(ctx, [[-13, -11], [0, -17], [13, -11]], INK, 2);
+    line(ctx, [[0, -11], [0, 13]], INK, 2);
+    line(ctx, [[-7, 1], [7, 1]], INK, 2);
   }
-  function skull(ctx, color) {
-    polygon(ctx, [[-24, -20], [16, -20], [24, -12], [24, 20], [-16, 20], [-24, 12]], "#492b2c", color, 2);
-    line(ctx, [[-20, -16], [-15, -16]], "#ffcd9e", 3);
-    line(ctx, [[16, 16], [20, 16]], "#ffcd9e", 3);
-    polygon(ctx, [[-13, -8], [-7, -14], [7, -14], [13, -8], [12, 2], [6, 7], [6, 13], [-6, 13], [-6, 7], [-12, 2]], "#ffe0bd");
-    ctx.fillStyle = "#532c33"; ctx.fillRect(-8, -6, 5, 5); ctx.fillRect(3, -6, 5, 5);
-    polygon(ctx, [[0, -1], [-3, 4], [3, 4]], "#532c33");
-    line(ctx, [[-2, 9], [-2, 13]], "#532c33", 1); line(ctx, [[2, 9], [2, 13]], "#532c33", 1);
+  function danger(ctx) {
+    polygon(ctx, [[0, -17], [17, 14], [-17, 14]], null, INK, 2);
+    line(ctx, [[0, -7], [0, 4]], INK, 3);
+    ctx.fillRect(-1.5, 8, 3, 3);
   }
-  function core(ctx, color) {
-    ctx.shadowColor = color; ctx.shadowBlur = 16;
-    polygon(ctx, [[0, -34], [24, -23], [33, 4], [19, 29], [-16, 30], [-34, 7], [-24, -23]], "#382838", "#df7279", 2.5);
-    ctx.shadowBlur = 0;
-    polygon(ctx, [[-22, 18], [-14, -8], [-3, -19], [6, -6], [14, -22], [24, 19]], "#653b55", "#d988a0", 2);
-    polygon(ctx, [[0, -17], [12, -2], [5, 18], [-7, 12], [-11, -2]], "#ffb899", "#fff0ca", 2);
-    line(ctx, [[0, -9], [3, 1], [0, 11]], "#fff5d6", 3);
+  function core(ctx) {
+    polygon(ctx, [[0, -24], [24, 0], [0, 24], [-24, 0]], null, INK, 2);
+    polygon(ctx, [[0, -17], [17, 0], [0, 17], [-17, 0]], null, INK, 1.5);
+    polygon(ctx, [[0, -11], [9, 6], [-9, 6]], INK);
+    line(ctx, [[-7, 14], [7, 14]], INK, 2);
   }
   function train(ctx) {
-    ctx.shadowColor = "#94f5d3"; ctx.shadowBlur = 12;
-    polygon(ctx, [[-14, 17], [-14, -14], [-8, -24], [8, -24], [14, -14], [14, 17], [9, 23], [-9, 23]], "#b6d8cf", "#b4ffe1", 2);
-    ctx.shadowBlur = 0;
-    polygon(ctx, [[-10, -5], [-7, -16], [7, -16], [10, -5]], "#284651", "#77c8cb");
-    ctx.fillStyle = "#4b777a"; ctx.fillRect(-9, 1, 18, 12);
-    line(ctx, [[-7, 5], [7, 5]], "#8ab6ae", 2); line(ctx, [[-7, 9], [7, 9]], "#8ab6ae", 2);
-    ctx.fillStyle = "#fff0b0"; ctx.fillRect(-11, -5, 4, 3); ctx.fillRect(7, -5, 4, 3);
-    polygon(ctx, [[-10, -26], [0, -35], [10, -26]], "rgba(189, 255, 225, 0.2)");
-    line(ctx, [[-18, 22], [18, 22]], "#72b4a4", 3);
+    // A larger locomotive symbol and a position pennant make the train legible
+    // without introducing a different illustration style or glowing ring.
+    polygon(ctx, [[-12, 19], [-12, -16], [-7, -23], [7, -23], [12, -16], [12, 19]], "#f4eed6", INK, 2.5);
+    ctx.fillRect(-7, -14, 14, 8);
+    ctx.strokeRect(-7, -1, 14, 11);
+    for (const y of [-10, 5, 15]) {
+      line(ctx, [[-15, y], [-12, y]], INK, 2.5); line(ctx, [[12, y], [15, y]], INK, 2.5);
+    }
+    line(ctx, [[-8, 23], [8, 23]], INK, 2.5);
+    polygon(ctx, [[0, -34], [5, -28], [-5, -28]], "#315e4d");
   }
 
+  // Terrain is decorative cartography, independent of node types and rewards.
+  // It is deliberately quiet enough to keep crossings and ? markers readable.
+  function terrain(ctx, box) {
+    ctx.fillStyle = PAPER; ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.save(); ctx.translate(box.x, box.y);
+    ctx.strokeStyle = "rgba(89, 101, 76, 0.10)"; ctx.lineWidth = 0.7;
+    for (let x = 24; x < box.w; x += 72) line(ctx, [[x, 0], [x, box.h]], "rgba(89, 101, 76, 0.09)", 0.7);
+    for (let y = 28; y < box.h; y += 72) line(ctx, [[0, y], [box.w, y]], "rgba(89, 101, 76, 0.09)", 0.7);
+    for (let y = 145, cluster = 0; y < box.h; y += 270, cluster++) {
+      const left = cluster % 2 === 0, x = left ? -28 : box.w + 28;
+      ctx.save(); ctx.translate(x, y); if (!left) ctx.scale(-1, 1);
+      for (let i = 0; i < 6; i++) {
+        const r = 30 + i * 14;
+        ctx.beginPath(); ctx.moveTo(-15, -r);
+        ctx.bezierCurveTo(r * 1.6, -r * 1.3, r * 0.4, -16, r, 22);
+        ctx.bezierCurveTo(r * 1.45, r * 0.8, r * 0.35, r * 1.5, -15, r * 1.8);
+        ctx.strokeStyle = "rgba(115, 122, 83, 0.22)"; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+      ctx.restore();
+      // Disused factory blocks beside a surveyed access road.
+      const bx = left ? box.w - 47 : 20;
+      ctx.strokeStyle = "rgba(102, 104, 81, 0.23)"; ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        ctx.fillStyle = "rgba(141, 137, 105, 0.10)";
+        ctx.fillRect(bx, y + 32 + i * 19, 17 + (i % 2) * 7, 11);
+        ctx.strokeRect(bx, y + 32 + i * 19, 17 + (i % 2) * 7, 11);
+      }
+      ctx.setLineDash([3, 3]);
+      line(ctx, [[bx - 7, y + 26], [bx - 7, y + 100]], "rgba(102, 104, 81, 0.25)", 1);
+      ctx.setLineDash([]);
+    }
+    // Map border ticks, north arrow and a survey title; no fictional distance.
+    ctx.font = "10px \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillStyle = MUTED; ctx.fillText("RAILWAY SURVEY / 铁路勘测图", 15, 24);
+    ctx.fillText("全线已测绘 · 站点情报待探索", 15, 42);
+    const nx = box.w - 26;
+    ctx.textAlign = "center"; ctx.fillText("N", nx, 17);
+    polygon(ctx, [[nx, 28], [nx - 6, 44], [nx, 40], [nx + 6, 44]], null, MUTED, 1);
+    polygon(ctx, [[nx, 28], [nx - 6, 44], [nx, 40]], MUTED);
+    ctx.restore();
+  }
+  function caption(ctx, text, y, current) {
+    ctx.font = "600 10px \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif";
+    const w = ctx.measureText(text).width + 12;
+    ctx.fillStyle = current ? "#315e4d" : "#e8e2cc"; ctx.fillRect(-w / 2, y - 8, w, 16);
+    ctx.fillStyle = current ? "#f5f0dc" : INK; ctx.fillText(text, 0, y);
+  }
   function paint(ctx, box, wrapper, g) {
     ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.setLineDash([]);
-    // A quiet cartographic ground texture, independent of hidden nodes.
-    ctx.fillStyle = "rgba(82, 118, 118, 0.08)";
-    for (let y = 24; y < box.h; y += 46) for (let x = 18; x < box.w; x += 46) ctx.fillRect(box.x + x, box.y + y, 2, 2);
-    const fog = ctx.createLinearGradient(0, box.y, 0, box.y + 66);
-    fog.addColorStop(0, "#233b43"); fog.addColorStop(1, "rgba(35, 59, 67, 0)");
-    ctx.fillStyle = fog; ctx.fillRect(box.x, box.y, box.w, 66);
-    ctx.font = "600 12px system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillStyle = "#a0b7b8";
-    ctx.fillText(g.horizon < LAYERS ? "?  未知区域 · 前方 2 层已侦察" : "终点已进入侦察范围", box.x + box.w / 2, box.y + (g.topPad < TOP_PAD ? 12 : 24));
+    terrain(ctx, box);
     const positioned = new Map(g.nodes.map(n => [n.id, { ...n, x: box.x + n.cx * box.w, y: box.y + n.cy }]));
-    for (const kind of ["next", "walked"]) for (const edge of g.edges) {
+    // Draw the entire railway network first; travelled/available routes receive
+    // only a subtle coloured underlay, preserving the black/white map symbol.
+    for (const kind of ["future", "next", "walked"]) for (const edge of g.edges) {
       if (edge.kind === kind) track(ctx, positioned.get(edge.from), positioned.get(edge.to), kind);
     }
-    const layers = new Set(g.nodes.map(n => n.layer));
-    ctx.font = "700 10px ui-monospace, monospace";
-    for (const layer of layers) {
-      ctx.fillStyle = layer === g.currentLayer ? "#9ce6c6" : "#708c94";
-      ctx.fillText("L" + layer, box.x + 10, box.y + g.topPad + (g.horizon - layer) * g.rowSpan);
+    ctx.font = "10px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (let layer = 1; layer <= LAYERS; layer++) {
+      const y = box.y + g.topPad + (LAYERS - layer) * g.rowSpan;
+      ctx.fillStyle = layer === g.currentLayer ? "#315e4d" : MUTED;
+      ctx.fillText("L" + layer, box.x + 14, y);
+      line(ctx, [[box.x + box.w - 8, y], [box.x + box.w - 3, y]], MUTED, 1);
     }
     for (const node of positioned.values()) {
       ctx.save(); ctx.translate(node.x, node.y);
-      const color = ["risk", "elite", "final", "boss"].includes(node.type) ? "#ff9390" : node.state === "next" ? "#ffd47a" : "#9bbab5";
-      if (node.state === "locked") ctx.globalAlpha *= 0.35;
-      else if (node.state === "cleared") ctx.globalAlpha *= 0.7;
-      if (node.id === g.currentId) {
-        // The actual train replaces the current-node ring and occupies its hit box.
-        train(ctx);
-      } else if (["risk", "elite"].includes(node.type)) skull(ctx, color);
-      else if (["final", "boss"].includes(node.type)) core(ctx, color);
-      else if (["shop", "supply"].includes(node.type)) supply(ctx, color);
-      else station(ctx, node.type, color);
-      if (node.id === g.selectedId || node.state === "next") {
-        const r = sizeOf(node.type) + 7, c = node.id === g.selectedId ? "#b9f3eb" : "#e7bf74";
-        for (const sx of [-1, 1]) for (const sy of [-1, 1]) line(ctx, [[sx * (r - 6), sy * r], [sx * r, sy * r], [sx * r, sy * (r - 6)]], c, 2);
+      const current = node.id === g.currentId, r = current ? 26 : sizeOf(node.type);
+      ctx.fillStyle = current ? "#c6d3b5" : node.state === "next" ? "#e9d7a3" : PAPER;
+      ctx.fillRect(-r - 2, -r - 2, (r + 2) * 2, (r + 2) * 2);
+      ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+      if (current) train(ctx);
+      else if (!node.known) {
+        ctx.setLineDash([3, 3]); ctx.strokeStyle = "#929580"; ctx.lineWidth = 1.2;
+        ctx.strokeRect(-16, -16, 32, 32); ctx.setLineDash([]);
+        ctx.fillStyle = "#747b68"; ctx.font = "600 23px ui-monospace, monospace"; ctx.fillText("?", 0, 1);
+      } else {
+        if (node.state === "locked") ctx.globalAlpha = 0.55;
+        if (["risk", "elite"].includes(node.type)) danger(ctx);
+        else if (["final", "boss"].includes(node.type)) core(ctx);
+        else if (["shop", "supply"].includes(node.type)) supply(ctx);
+        else station(ctx, node.type === "start");
       }
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.font = "600 11px \"PingFang SC\", \"Microsoft YaHei\", system-ui, sans-serif";
-      ctx.fillStyle = node.id === g.currentId ? "#b4ffe1" : node.state === "next" ? "#ffdf9a" : "#b2c8c3";
-      ctx.fillText(node.id === g.currentId ? "当前列车" : (node.state === "cleared" ? "✓ " : "") + nameOf(node), 0, sizeOf(node.type) + 17);
+      if (node.id === g.selectedId || node.state === "next") {
+        ctx.strokeStyle = node.id === g.selectedId ? "#315e4d" : "#9e8137";
+        ctx.lineWidth = node.id === g.selectedId ? 2 : 1; ctx.strokeRect(-r - 3, -r - 3, (r + 3) * 2, (r + 3) * 2);
+      }
+      if (current || node.known) {
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        caption(ctx, current ? "列车当前位置" : (node.state === "cleared" ? "✓ " : "") + nameOf(node), r + 14, current);
+      }
       ctx.restore();
     }
     ctx.restore();
@@ -9244,11 +9276,30 @@ const railMap = (() => {
 const mapScreen = (() => {
   const E = uiEl, S = uiSheet;
   const CONTENT_H = railMap.CONTENT_H, HIT = railMap.HIT;
+  let keepTrainVisible = false;
+
+  function select(m, node) {
+    keepTrainVisible = ["next", "current"].includes(node.state);
+    m.on.select(node.id);
+  }
+
+  function paintMap(ctx, box, wrapper, graph) {
+    railMap.paint(ctx, box, wrapper, graph);
+    // The sheet reduces the scroll viewport after selection. Adjust once using
+    // the actual laid-out height; ordinary scrolling remains under player control.
+    if (!keepTrainVisible) return;
+    keepTrainVisible = false;
+    const column = uiKit.find("mapColumn"), train = graph.nodes.find(n => n.id === graph.currentId);
+    if (!column || !train) return;
+    const bottom = box.y + train.cy + 52;
+    const overflow = bottom - (column.absY + column.h);
+    if (overflow > 0) uiKit.setScroll("mapColumn", uiKit.getScroll("mapColumn") + overflow, column.scrollMax);
+  }
 
   function detail(m, graph) {
     const d = m.detail;
     const node = graph.nodes.find(n => n.id === d?.id);
-    if (!node) return null;
+    if (!node?.known) return null;
     const name = railMap.nameOf(node), danger = railMap.dangerOf(node);
     const start = node.type === "start";
     return E({ ...S.mapDetail, key: "mapDetail", ref: "/2" },
@@ -9287,20 +9338,20 @@ const mapScreen = (() => {
           const progress = (graph.currentLayer - 1) / (railMap.LAYERS - 1);
           const x = box.x + 5, width = Math.max(0, box.w - 10), y = box.y + box.h / 2;
           ctx.save(); ctx.lineCap = "round"; ctx.lineWidth = 4;
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#344d55"; ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#87dcb9"; ctx.stroke();
-          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#c9f2db"; ctx.fill(); ctx.restore();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width, y); ctx.strokeStyle = "#65725f"; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + width * progress, y); ctx.strokeStyle = "#b7c69b"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x + width * progress, y, 4, 0, Math.PI * 2); ctx.fillStyle = "#eee9cf"; ctx.fill(); ctx.restore();
         } }),
         E({ ...S.mapHeader_row, ref: "/0/3" },
-          E({ ...S.mapGuide, ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "向上探索 · 点选站点查看情报"),
+          E({ ...S.mapGuide, key: "mapGuide", ref: "/0/3/0" }, /已通关|已重置/.test(m.title) ? m.title.split(" · ").pop() : "上滑查看全图 · ？站点尚未侦察"),
           m.resetConfirm ? E({ ...S.mapResetRow, ref: "/0/1/1" },
             E({ tag: "button", ...S.mapResetConfirm, key: "mapResetConfirm", ref: "/0/1/1/0", onTap: m.on.reset }, "确认重置"),
             E({ tag: "button", ...S.mapCloseDetail, key: "mapResetCancel", ref: "/0/1/1/1", onTap: m.on.cancelReset }, "取消"))
             : E({ tag: "button", ...S.mapResetButton, key: "mapResetButton", ref: "/0/1/1", onTap: m.on.reset, label: "重置远征" }, "重置远征")),
         m.result ? E({ ...S.mapResult, key: "mapResult", ref: "/0/4" }, m.result) : null),
       E({ ...S.mapColumn, key: "mapColumn", ref: "/1" },
-        E({ ...S.mapArea, key: "mapArea", ref: "/1/0", height: graph.height, paint: (ctx, box, node) => railMap.paint(ctx, box, node, graph) },
-          graph.nodes.map(node => E({ tag: "button", ...S.mapHit, key: "mapNode-" + node.id, ref: "/1/0/" + node.layer + "/" + node.slot, left: (node.cx * 100) + "%", top: node.cy - HIT / 2, marginLeft: -HIT / 2, width: HIT, height: HIT, borderRadius: 6, label: railMap.nameOf(node) + "·L" + node.layer + "·" + node.tag, onTap: () => m.on.select(node.id) })))),
+        E({ ...S.mapArea, key: "mapArea", ref: "/1/0", height: graph.height, paint: (ctx, box, node) => paintMap(ctx, box, node, graph) },
+          graph.nodes.map(node => E({ tag: "button", ...S.mapHit, key: "mapNode-" + node.id, ref: "/1/0/" + node.layer + "/" + node.slot, left: (node.cx * 100) + "%", top: node.cy - HIT / 2, marginLeft: -HIT / 2, width: HIT, height: HIT, borderRadius: 6, label: node.known ? railMap.nameOf(node) + "·L" + node.layer + "·" + node.tag : "未知站点·L" + node.layer, onTap: node.known ? () => select(m, node) : m.on.closeDetail })))),
       detail(m, graph));
   }
 
@@ -10660,7 +10711,7 @@ const mapCtl = (() => {
 
 
 
-const GAME_VERSION = "v0.12.0.3";
+const GAME_VERSION = "v0.12.0.4";
 const PAGE_BACKGROUND = "rgb(165, 163, 148)";
 
 const canvasHost = (() => {
